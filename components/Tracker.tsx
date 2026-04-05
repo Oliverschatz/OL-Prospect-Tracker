@@ -50,7 +50,7 @@ function openLocalFile(): Promise<Company[] | null> {
 }
 
 // ─── Duplicate check ───
-async function checkDuplicate(companyName: string): Promise<{ duplicate: boolean; message?: string } | null> {
+async function checkDuplicate(params: { company_name?: string; contact_name?: string; contact_email?: string }): Promise<{ duplicate: boolean; message?: string } | null> {
   if (!supabase) return null;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
@@ -58,7 +58,7 @@ async function checkDuplicate(companyName: string): Promise<{ duplicate: boolean
     const res = await fetch('/api/check-duplicate', {
       method: 'POST',
       headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ company_name: companyName }),
+      body: JSON.stringify(params),
     });
     if (res.ok) return await res.json();
   } catch { /* ignore */ }
@@ -131,15 +131,35 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
   };
 
   const updateCompany = async (updated: Company) => {
-    // Check for duplicates when company name changes
     const old = companies.find(c => c.id === updated.id);
+
+    // Check company name duplicates
     if (old && old.name !== updated.name && updated.name !== 'New Company') {
-      const result = await checkDuplicate(updated.name);
+      const result = await checkDuplicate({ company_name: updated.name });
       if (result?.duplicate) {
         setDuplicateWarning(result.message || 'This prospect is tracked by another ambassador.');
-        setTimeout(() => setDuplicateWarning(null), 8000);
+        setTimeout(() => setDuplicateWarning(null), 10000);
       }
     }
+
+    // Check contact duplicates (new or changed contacts)
+    if (old) {
+      for (const ct of updated.contacts) {
+        const oldCt = old.contacts.find(oc => oc.id === ct.id);
+        const isNew = !oldCt;
+        const nameChanged = oldCt && oldCt.name !== ct.name && ct.name;
+        const emailChanged = oldCt && oldCt.email !== ct.email && ct.email;
+        if ((isNew && (ct.name || ct.email)) || nameChanged || emailChanged) {
+          const result = await checkDuplicate({ contact_name: ct.name || undefined, contact_email: ct.email || undefined });
+          if (result?.duplicate) {
+            setDuplicateWarning(result.message || 'This contact is known to another ambassador.');
+            setTimeout(() => setDuplicateWarning(null), 10000);
+          }
+          break; // one check per save to avoid spamming
+        }
+      }
+    }
+
     setCompanies(prev => prev.map(c => (c.id === updated.id ? updated : c)));
   };
 
