@@ -1,152 +1,64 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { STAGES, SECTORS } from '@/lib/constants';
+import { useState, useEffect } from 'react';
+import { STAGES } from '@/lib/constants';
 import { generateId, today, calcFitScore, fitColor, EMPTY_COMPANY } from '@/lib/helpers';
 import { loadAllCompanies, loadTemplates, createCompany, updateCompanyFields, deleteCompanyFromDb, saveAllTemplates, bulkImportCompanies } from '@/lib/db';
 import { StageBadge, PipelineBar } from '@/components/ui';
-import { JsonImportModal, TemplateManagerModal } from '@/components/Modals';
+import { TemplateManagerModal } from '@/components/Modals';
 import CompanyDetail from '@/components/CompanyDetail';
-import type { Company, Template, StageKey } from '@/lib/types';
+import type { Company, Template } from '@/lib/types';
+import type { User } from '@supabase/supabase-js';
 
-// ─── JSON Import logic ───
-function parseJsonImport(
-  jsonString: string,
-  existing: Company[]
-): { success: boolean; count?: number; error?: string; result?: Company[] } {
-  try {
-    let data = JSON.parse(jsonString);
-    if (!Array.isArray(data)) data = [data];
-
-    const imported: Company[] = data.map((c: Record<string, unknown>) => {
-      const stageKey = (c.stage as string) || 'researching';
-      const validStage = STAGES.find(s => s.key === stageKey) ? stageKey : 'researching';
-      const contacts = ((c.contacts as Array<Record<string, unknown>>) || []).map((ct) => ({
-        id: (ct.id as string) || generateId(),
-        name: (ct.name as string) || '',
-        title: (ct.title as string) || '',
-        department: (ct.department as string) || '',
-        email: (ct.email as string) || '',
-        phone: (ct.phone as string) || '',
-        linkedin: (ct.linkedin as string) || '',
-        role: (ct.role as string) || 'target',
-        notes: (ct.notes as string) || '',
-        activities: ((ct.activities as Array<Record<string, unknown>>) || []).map((a) => ({
-          id: (a.id as string) || generateId(),
-          date: (a.date as string) || today(),
-          text: (a.text as string) || '',
-        })),
-      }));
-      const activities = ((c.activities as Array<Record<string, unknown>>) || []).map((a) => ({
-        id: (a.id as string) || generateId(),
-        date: (a.date as string) || today(),
-        text: (a.text as string) || '',
-      }));
-
-      return {
-        ...EMPTY_COMPANY,
-        id: (c.id as string) || generateId(),
-        name: (c.name as string) || 'Unnamed',
-        hq: (c.hq as string) || '',
-        country: (c.country as string) || 'Germany',
-        employees: (c.employees as string) || '',
-        sector: (c.sector as string) || SECTORS[3],
-        website: (c.website as string) || '',
-        stage: validStage as StageKey,
-        fit_scores: (c.fitScores || c.fit_scores || {}) as Record<string, number | undefined>,
-        pain_points: (c.painPoints || c.pain_points || '') as string,
-        entry_angle: (c.entryAngle || c.entry_angle || '') as string,
-        contacts,
-        activities,
-        notes: (c.notes as string) || '',
-        created_at: (c.created || c.created_at || today()) as string,
-        updated_at: today(),
-        next_action: (c.nextAction || c.next_action || '') as string,
-        follow_up_date: (c.followUpDate || c.follow_up_date || '') as string,
-        parent_id: (c.parentId || c.parent_id || '') as string,
-      } as Company;
-    });
-
-    // Merge: update existing by name, add new ones
-    const updated = [...existing];
-    imported.forEach(imp => {
-      const existingIdx = updated.findIndex(e => e.name.toLowerCase() === imp.name.toLowerCase());
-      if (existingIdx >= 0) {
-        const existingContacts = updated[existingIdx].contacts || [];
-        const newContacts = imp.contacts.filter(
-          nc => !existingContacts.find(ec => ec.name.toLowerCase() === nc.name.toLowerCase())
-        );
-        const existingActivities = updated[existingIdx].activities || [];
-        const allActivities = [...existingActivities, ...imp.activities];
-        updated[existingIdx] = {
-          ...updated[existingIdx],
-          ...imp,
-          id: updated[existingIdx].id,
-          contacts: [...existingContacts, ...newContacts],
-          activities: allActivities,
-          created_at: updated[existingIdx].created_at,
-          updated_at: today(),
-        };
-      } else {
-        updated.push(imp);
-      }
-    });
-
-    return { success: true, count: imported.length, result: updated };
-  } catch (err: unknown) {
-    return { success: false, error: (err as Error).message };
-  }
+// ─── Local save/load ───
+function saveLocally(companies: Company[]) {
+  const data = JSON.stringify(companies, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `prospect-tracker-${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
-// ─── XLSX Export ───
-async function exportXlsx(companies: Company[]) {
-  const XLSX = await import('xlsx');
-  const rows = companies.map(c => {
-    const score = calcFitScore(c.fit_scores);
-    return {
-      'Company': c.name,
-      'HQ': c.hq,
-      'Country': c.country,
-      'Employees': c.employees,
-      'Sector': c.sector,
-      'Website': c.website,
-      'Stage': STAGES.find(s => s.key === c.stage)?.label || c.stage,
-      'PBP Fit Score (%)': score,
-      'Pain Points': c.pain_points,
-      'Entry Angle': c.entry_angle,
-      'Contacts': c.contacts.map(ct => ct.name).join('; '),
-      'Contact Titles': c.contacts.map(ct => ct.title).join('; '),
-      'Contact Emails': c.contacts.map(ct => ct.email).join('; '),
-      'Contact LinkedIn': c.contacts.map(ct => ct.linkedin).join('; '),
-      'Last Activity': c.activities.length > 0 ? c.activities[c.activities.length - 1].text : '',
-      'Notes': c.notes,
-      'Created': c.created_at,
-      'Updated': c.updated_at,
+function openLocalFile(): Promise<Company[] | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return resolve(null);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          let data = JSON.parse(ev.target?.result as string);
+          if (!Array.isArray(data)) data = [data];
+          resolve(data as Company[]);
+        } catch {
+          alert('Invalid JSON file');
+          resolve(null);
+        }
+      };
+      reader.readAsText(file);
     };
+    input.click();
   });
-  const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [
-    { wch: 24 }, { wch: 16 }, { wch: 12 }, { wch: 10 }, { wch: 22 }, { wch: 28 },
-    { wch: 13 }, { wch: 14 }, { wch: 30 }, { wch: 30 }, { wch: 28 }, { wch: 28 },
-    { wch: 28 }, { wch: 28 }, { wch: 30 }, { wch: 30 }, { wch: 12 }, { wch: 12 },
-  ];
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'PBP Prospects');
-  XLSX.writeFile(wb, `PBP_Prospects_${today()}.xlsx`);
 }
 
 // ─── Main Tracker ───
-export default function Tracker() {
+export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }: {
+  user: User; onLogout: () => void; isAdmin?: boolean; onAdmin?: () => void; onSettings?: () => void;
+}) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStage, setFilterStage] = useState('all');
   const [search, setSearch] = useState('');
-  const [jsonModal, setJsonModal] = useState(false);
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load data on mount
   useEffect(() => {
@@ -191,54 +103,29 @@ export default function Tracker() {
     await deleteCompanyFromDb(selected.id);
   };
 
-  const handleJsonImport = (jsonString: string) => {
-    const res = parseJsonImport(jsonString, companies);
-    if (res.success && res.result) {
-      setCompanies(res.result);
-      // Persist imported data
-      const newCompanies = res.result;
-      bulkImportCompanies(newCompanies);
-    }
-    return { success: res.success, count: res.count, error: res.error };
+  const handleSaveLocally = () => {
+    saveLocally(companies);
+    setStatusMsg(`Saved ${companies.length} companies to file`);
   };
 
-  const handleXlsxImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const XLSX = await import('xlsx');
-      const data = new Uint8Array(await file.arrayBuffer());
-      const wb = XLSX.read(data, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws) as Record<string, string>[];
-      const imported: Company[] = rows.map(r => {
-        const stageLabel = (r['Stage'] || 'Researching').toLowerCase();
-        const matchedStage = STAGES.find(s => s.label.toLowerCase() === stageLabel);
-        return {
-          ...EMPTY_COMPANY,
-          id: generateId(),
-          name: r['Company'] || 'Unnamed',
-          hq: r['HQ'] || '',
-          country: r['Country'] || 'Germany',
-          employees: r['Employees'] || '',
-          sector: r['Sector'] || SECTORS[3],
-          website: r['Website'] || '',
-          stage: matchedStage ? matchedStage.key : 'researching',
-          pain_points: r['Pain Points'] || '',
-          entry_angle: r['Entry Angle'] || '',
-          notes: r['Notes'] || '',
-          created_at: r['Created'] || today(),
-          updated_at: today(),
-        } as Company;
+  const handleOpenLocal = async () => {
+    const data = await openLocalFile();
+    if (!data) return;
+    // Merge into existing data and persist to Supabase
+    setCompanies(prev => {
+      const merged = [...prev];
+      data.forEach(imp => {
+        const existingIdx = merged.findIndex(e => e.name.toLowerCase() === imp.name.toLowerCase());
+        if (existingIdx >= 0) {
+          merged[existingIdx] = { ...merged[existingIdx], ...imp, id: merged[existingIdx].id, created_at: merged[existingIdx].created_at, updated_at: today() };
+        } else {
+          merged.push({ ...imp, id: imp.id || generateId() });
+        }
       });
-      const merged = [...companies, ...imported];
-      setCompanies(merged);
-      bulkImportCompanies(imported);
-      setStatusMsg(`Imported ${imported.length} companies from XLSX`);
-    } catch (err: unknown) {
-      alert('Import failed: ' + (err as Error).message);
-    }
-    e.target.value = '';
+      bulkImportCompanies(merged);
+      return merged;
+    });
+    setStatusMsg(`Loaded ${data.length} companies from file`);
   };
 
   const handleSaveTemplates = async (newTemplates: Template[]) => {
@@ -306,13 +193,20 @@ export default function Tracker() {
           <button className="btn-secondary btn-sm" onClick={() => setTemplateManagerOpen(true)} title="Message templates">
             &#9993; Templates
           </button>
-          <button className="btn-primary btn-sm" onClick={() => setJsonModal(true)}>
-            Paste from Claude
+          <button className="btn-secondary btn-sm" onClick={handleOpenLocal}>
+            Open Saved
           </button>
-          <input type="file" ref={fileInputRef} accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleXlsxImport} />
-          <button className="btn-secondary btn-sm" onClick={() => fileInputRef.current?.click()}>Import XLSX</button>
-          <button className="btn-secondary btn-sm" onClick={() => exportXlsx(companies)} disabled={companies.length === 0}>Export XLSX</button>
+          <button className="btn-secondary btn-sm" onClick={handleSaveLocally} disabled={companies.length === 0}>
+            Save Locally
+          </button>
           <button className="btn-primary btn-sm" onClick={addCompany}>+ Company</button>
+          {isAdmin && onAdmin && (
+            <button className="btn-secondary btn-sm" onClick={onAdmin} title="Admin Dashboard">Admin</button>
+          )}
+          <button className="btn-ghost btn-sm" onClick={onSettings} title="Settings" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11 }}>
+            {user.email}
+          </button>
+          <button className="btn-ghost btn-sm" onClick={onLogout} title="Log out" style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Logout</button>
         </div>
       </div>
 
@@ -331,11 +225,6 @@ export default function Tracker() {
           onSave={handleSaveTemplates}
           onClose={() => setTemplateManagerOpen(false)}
         />
-      )}
-
-      {/* JSON Import Modal */}
-      {jsonModal && (
-        <JsonImportModal onImport={handleJsonImport} onClose={() => setJsonModal(false)} />
       )}
 
       {/* Body: sidebar + main */}
