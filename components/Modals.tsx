@@ -159,64 +159,6 @@ export function ActivityModal({
   );
 }
 
-// ─── JSON Import Modal ───
-export function JsonImportModal({
-  onImport,
-  onClose,
-}: {
-  onImport: (json: string) => { success: boolean; count?: number; error?: string };
-  onClose: () => void;
-}) {
-  const [json, setJson] = useState('');
-  const [result, setResult] = useState<{ success: boolean; count?: number; error?: string } | null>(null);
-  const handleImport = () => {
-    if (!json.trim()) return;
-    const res = onImport(json.trim());
-    setResult(res);
-    if (res.success) setTimeout(onClose, 1200);
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ width: 560 }}>
-        <div className="modal-header">
-          <h3>Import from Claude</h3>
-          <button className="btn-ghost" onClick={onClose}>&#10005;</button>
-        </div>
-        <div className="modal-body">
-          <p style={{ fontSize: 13, color: 'var(--pbf-muted)', marginBottom: 10 }}>
-            Paste the JSON block from Claude here. Existing companies with the same name will be updated (contacts and activities merged).
-          </p>
-          <textarea
-            value={json}
-            onChange={e => setJson(e.target.value)}
-            rows={12}
-            placeholder={'[{"name": "Company", "hq": "City", ...}]'}
-            style={{ fontFamily: 'monospace', fontSize: 12 }}
-          />
-          {result && (
-            <div
-              style={{
-                marginTop: 10, padding: '8px 12px', borderRadius: 'var(--radius)',
-                background: result.success ? 'var(--pbf-green-bg)' : 'var(--pbf-red-bg)',
-                color: result.success ? 'var(--pbf-green)' : 'var(--pbf-red)', fontSize: 13,
-              }}
-            >
-              {result.success
-                ? `Imported ${result.count} compan${result.count === 1 ? 'y' : 'ies'}`
-                : `Error: ${result.error}`}
-            </div>
-          )}
-        </div>
-        <div className="modal-footer">
-          <button className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={handleImport}>Import</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Template Manager Modal ───
 export function TemplateManagerModal({
   templates,
