@@ -50,6 +50,7 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
   const [inviteName, setInviteName] = useState('');
   const [invitePassword, setInvitePassword] = useState('');
   const [inviteMsg, setInviteMsg] = useState('');
+  const [testEmailMsg, setTestEmailMsg] = useState('');
 
   const fetchData = async () => {
     setLoading(true);
@@ -99,6 +100,22 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
     } else {
       setInviteMsg(`Error: ${data.error}`);
     }
+  };
+
+  const handleTestEmail = async () => {
+    setTestEmailMsg('Sending...');
+    const token = await getToken();
+    const res = await fetch('/api/admin/test-email', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setTestEmailMsg(`Test email sent to ${data.to}`);
+    } else {
+      setTestEmailMsg(`Error: ${data.error}`);
+    }
+    setTimeout(() => setTestEmailMsg(''), 8000);
   };
 
   const handleToggleBan = async (userId: string, currentlyBanned: boolean) => {
@@ -168,6 +185,14 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
                   <div style={{ fontSize: 12, color: 'var(--pbf-muted)', marginTop: 4 }}>{card.label}</div>
                 </div>
               ))}
+            </div>
+
+            {/* Test email */}
+            <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button className="btn-primary btn-sm" onClick={handleTestEmail}>Send Test Email</button>
+              {testEmailMsg && (
+                <span style={{ fontSize: 13, color: testEmailMsg.startsWith('Error') ? 'var(--pbf-red)' : 'var(--pbf-green)' }}>{testEmailMsg}</span>
+              )}
             </div>
 
             {/* Per-user usage table */}
