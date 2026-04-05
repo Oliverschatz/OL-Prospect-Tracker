@@ -30,6 +30,20 @@ export async function getUser(): Promise<User | null> {
   return user;
 }
 
+export async function changePassword(newPassword: string) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+}
+
+export async function resetPassword(email: string) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  if (error) throw error;
+}
+
 export function onAuthStateChange(callback: (user: User | null) => void) {
   if (!supabase) return { data: { subscription: { unsubscribe: () => {} } } };
   return supabase.auth.onAuthStateChange((_event, session) => {

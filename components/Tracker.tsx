@@ -48,7 +48,9 @@ function openLocalFile(): Promise<Company[] | null> {
 }
 
 // ─── Main Tracker ───
-export default function Tracker({ user, onLogout }: { user: User; onLogout: () => void }) {
+export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }: {
+  user: User; onLogout: () => void; isAdmin?: boolean; onAdmin?: () => void; onSettings?: () => void;
+}) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -198,8 +200,13 @@ export default function Tracker({ user, onLogout }: { user: User; onLogout: () =
             Save Locally
           </button>
           <button className="btn-primary btn-sm" onClick={addCompany}>+ Company</button>
-          <span style={{ fontSize: 11, color: 'var(--pbf-muted)', marginLeft: 8 }}>{user.email}</span>
-          <button className="btn-ghost btn-sm" onClick={onLogout} title="Log out" style={{ fontSize: 11 }}>Logout</button>
+          {isAdmin && onAdmin && (
+            <button className="btn-secondary btn-sm" onClick={onAdmin} title="Admin Dashboard">Admin</button>
+          )}
+          <button className="btn-ghost btn-sm" onClick={onSettings} title="Settings" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11 }}>
+            {user.email}
+          </button>
+          <button className="btn-ghost btn-sm" onClick={onLogout} title="Log out" style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Logout</button>
         </div>
       </div>
 
