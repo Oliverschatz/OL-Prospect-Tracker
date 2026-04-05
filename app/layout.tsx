@@ -4,6 +4,9 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Prospect Tracker — OliverLehmann.com',
   description: 'CRM and sales pipeline tracker for PBP prospects',
+  icons: {
+    icon: 'https://oliverlehmann.com/wp-content/uploads/Portrait-02-2021-512-2.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
