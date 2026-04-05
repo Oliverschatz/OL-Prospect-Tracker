@@ -1,140 +1,71 @@
-import { supabase } from "@/lib/supabase";
-import { PIPELINE_STAGES } from "@/lib/types";
-import type { Prospect } from "@/lib/types";
-import Link from "next/link";
+'use client';
 
-export const dynamic = "force-dynamic";
+import { useState, useEffect } from 'react';
+import Tracker from '@/components/Tracker';
 
-async function getStats() {
-  const { data: prospects } = await supabase
-    .from("prospects")
-    .select("*")
-    .returns<Prospect[]>();
+const APP_PASSWORD_HASH = process.env.NEXT_PUBLIC_APP_PASSWORD_HASH || '';
 
-  if (!prospects) return { total: 0, stages: {}, totalValue: 0, recentProspects: [] };
-
-  const stages: Record<string, number> = {};
-  let totalValue = 0;
-
-  for (const p of prospects) {
-    stages[p.stage] = (stages[p.stage] || 0) + 1;
-    if (p.stage !== "closed_lost") {
-      totalValue += Number(p.deal_value);
-    }
-  }
-
-  const recentProspects = [...prospects]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 5);
-
-  return { total: prospects.length, stages, totalValue, recentProspects };
+async function hashPassword(pw: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(pw);
+  const buffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-export default async function Dashboard() {
-  const { total, stages, totalValue, recentProspects } = await getStats();
+export default function Home() {
+  const [unlocked, setUnlocked] = useState(false);
+  const [input, setInput] = useState('');
+  const [error, setError] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem('pbp_auth');
+    if (stored === 'ok') setUnlocked(true);
+    // If no password hash configured, skip authentication
+    if (!APP_PASSWORD_HASH) setUnlocked(true);
+    setChecking(false);
+  }, []);
+
+  const handleSubmit = async () => {
+    const hash = await hashPassword(input);
+    if (hash === APP_PASSWORD_HASH) {
+      sessionStorage.setItem('pbp_auth', 'ok');
+      setUnlocked(true);
+    } else {
+      setError(true);
+      setTimeout(() => setError(false), 2000);
+    }
+  };
+
+  if (checking) return null;
+  if (unlocked) return <Tracker />;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <p className="text-sm text-gray-500">Total Prospects</p>
-          <p className="text-3xl font-bold mt-1">{total}</p>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--pbf-navy)' }}>
+      <div style={{ background: 'var(--pbf-white)', borderRadius: 8, padding: '40px 36px', width: 360, boxShadow: '0 20px 60px rgba(0,0,0,0.3)', textAlign: 'center' }}>
+        <h1 style={{ fontFamily: "'Source Serif 4', Georgia, serif", fontSize: 20, color: 'var(--pbf-navy)', marginBottom: 4 }}>
+          Prospect Tracker
+        </h1>
+        <p style={{ fontSize: 13, color: 'var(--pbf-muted)', marginBottom: 24 }}>OliverLehmann.com</p>
+        <div style={{ marginBottom: 16 }}>
+          <input
+            type="password"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
+            placeholder="Password"
+            style={{
+              width: '100%', padding: '10px 14px', fontSize: 15, textAlign: 'center',
+              border: error ? '2px solid var(--pbf-red)' : '1px solid var(--pbf-border)',
+              borderRadius: 'var(--radius)',
+            }}
+            autoFocus
+          />
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <p className="text-sm text-gray-500">Pipeline Value</p>
-          <p className="text-3xl font-bold mt-1">
-            ${totalValue.toLocaleString()}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <p className="text-sm text-gray-500">Won Deals</p>
-          <p className="text-3xl font-bold mt-1 text-green-600">
-            {stages["closed_won"] || 0}
-          </p>
-        </div>
-      </div>
-
-      {/* Pipeline Overview */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-        <h2 className="text-lg font-semibold mb-4">Pipeline Overview</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-          {PIPELINE_STAGES.map((s) => (
-            <div key={s.value} className="text-center">
-              <div
-                className="text-2xl font-bold"
-                style={{ color: s.color }}
-              >
-                {stages[s.value] || 0}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Recent Prospects */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Recent Prospects</h2>
-          <Link
-            href="/prospects/new"
-            className="bg-brand text-white text-sm px-4 py-2 rounded-lg hover:bg-brand-dark transition-colors"
-          >
-            + Add Prospect
-          </Link>
-        </div>
-        {recentProspects.length === 0 ? (
-          <p className="text-gray-500 text-sm">
-            No prospects yet.{" "}
-            <Link href="/prospects/new" className="text-brand hover:underline">
-              Add your first prospect
-            </Link>
-            .
-          </p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 text-left text-gray-500">
-                <th className="pb-2 font-medium">Company</th>
-                <th className="pb-2 font-medium">Contact</th>
-                <th className="pb-2 font-medium">Stage</th>
-                <th className="pb-2 font-medium text-right">Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentProspects.map((p) => {
-                const stage = PIPELINE_STAGES.find((s) => s.value === p.stage);
-                return (
-                  <tr key={p.id} className="border-b border-gray-50">
-                    <td className="py-2">
-                      <Link
-                        href={`/prospects/${p.id}`}
-                        className="text-brand hover:underline font-medium"
-                      >
-                        {p.company_name}
-                      </Link>
-                    </td>
-                    <td className="py-2 text-gray-600">{p.contact_name}</td>
-                    <td className="py-2">
-                      <span
-                        className="inline-block px-2 py-0.5 rounded text-xs font-medium text-white"
-                        style={{ backgroundColor: stage?.color }}
-                      >
-                        {stage?.label}
-                      </span>
-                    </td>
-                    <td className="py-2 text-right text-gray-600">
-                      ${Number(p.deal_value).toLocaleString()}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+        {error && <p style={{ color: 'var(--pbf-red)', fontSize: 13, marginBottom: 12 }}>Wrong password</p>}
+        <button className="btn-primary" onClick={handleSubmit} style={{ width: '100%', padding: '10px', fontSize: 14 }}>
+          Open
+        </button>
       </div>
     </div>
   );

@@ -1,0 +1,462 @@
+'use client';
+
+import { useState } from 'react';
+import { STAGES, SECTORS, FIT_CRITERIA, COMPANY_ACTIVITIES, CONTACT_ACTIVITIES, COMPANY_STAGE_TRIGGERS, CONTACT_STAGE_TRIGGERS } from '@/lib/constants';
+import { today, generateId, autoAdvanceStage, calcFitScore, fitColor } from '@/lib/helpers';
+import { updateCompanyFields, upsertContact, deleteContactFromDb, createActivity, updateActivity, deleteActivityFromDb } from '@/lib/db';
+import { StageBadge, FitScoreDisplay } from '@/components/ui';
+import { ContactModal, ActivityModal, UseTemplateModal } from '@/components/Modals';
+import type { Company, Contact, Activity, Template, StageKey, FitScores } from '@/lib/types';
+
+interface Props {
+  company: Company;
+  onChange: (c: Company) => void;
+  onDelete: () => void;
+  allCompanies: Company[];
+  templates: Template[];
+}
+
+export default function CompanyDetail({ company, onChange, onDelete, allCompanies, templates }: Props) {
+  const [contactModal, setContactModal] = useState<Contact | 'new' | null>(null);
+  const [activityModal, setActivityModal] = useState(false);
+  const [contactActivityModal, setContactActivityModal] = useState<string | null>(null);
+  const [useTemplateContact, setUseTemplateContact] = useState<Contact | null>(null);
+  const [editingActivity, setEditingActivity] = useState<{ id: string; text: string; source: string } | null>(null);
+
+  const set = (key: string, value: unknown) => {
+    const updated = { ...company, [key]: value, updated_at: today() };
+    onChange(updated);
+    updateCompanyFields(company.id, { [key]: value } as Partial<Company>);
+  };
+
+  const setFit = (criterionKey: string, value: number | undefined) => {
+    const newScores = { ...company.fit_scores, [criterionKey]: value };
+    const updated = { ...company, fit_scores: newScores, updated_at: today() };
+    onChange(updated);
+    updateCompanyFields(company.id, { fit_scores: newScores });
+  };
+
+  const saveContact = (contact: Contact) => {
+    let contacts: Contact[];
+    if (company.contacts.find(c => c.id === contact.id)) {
+      contacts = company.contacts.map(c => (c.id === contact.id ? contact : c));
+    } else {
+      contacts = [...company.contacts, contact];
+    }
+    onChange({ ...company, contacts, updated_at: today() });
+    upsertContact(company.id, contact);
+    setContactModal(null);
+  };
+
+  const deleteContact = (id: string) => {
+    onChange({ ...company, contacts: company.contacts.filter(c => c.id !== id), updated_at: today() });
+    deleteContactFromDb(id);
+  };
+
+  const logActivity = (text: string) => {
+    const activity: Activity = { id: generateId(), date: today(), text };
+    const newStage = autoAdvanceStage(company.stage, text, COMPANY_STAGE_TRIGGERS);
+    const updated = { ...company, activities: [...company.activities, activity], stage: newStage, updated_at: today() };
+    onChange(updated);
+    createActivity(company.id, null, activity);
+    if (newStage !== company.stage) {
+      updateCompanyFields(company.id, { stage: newStage });
+    }
+    setActivityModal(false);
+  };
+
+  const logContactActivity = (contactId: string, text: string) => {
+    const activity: Activity = { id: generateId(), date: today(), text };
+    const contacts = company.contacts.map(c => {
+      if (c.id !== contactId) return c;
+      return { ...c, activities: [...(c.activities || []), activity] };
+    });
+    const newStage = autoAdvanceStage(company.stage, text, CONTACT_STAGE_TRIGGERS);
+    const updated = { ...company, contacts, stage: newStage, updated_at: today() };
+    onChange(updated);
+    createActivity(company.id, contactId, activity);
+    if (newStage !== company.stage) {
+      updateCompanyFields(company.id, { stage: newStage });
+    }
+    setContactActivityModal(null);
+  };
+
+  const deleteActivityHandler = (activityId: string) => {
+    // Remove from company activities
+    const inCompany = company.activities.find(a => a.id === activityId);
+    if (inCompany) {
+      onChange({ ...company, activities: company.activities.filter(a => a.id !== activityId), updated_at: today() });
+    } else {
+      // Remove from contact activities
+      const contacts = company.contacts.map(c => ({
+        ...c,
+        activities: (c.activities || []).filter(a => a.id !== activityId),
+      }));
+      onChange({ ...company, contacts, updated_at: today() });
+    }
+    deleteActivityFromDb(activityId);
+  };
+
+  const editActivityHandler = (activityId: string, newText: string, source: string) => {
+    if (source === 'company') {
+      const activities = company.activities.map(a => (a.id === activityId ? { ...a, text: newText } : a));
+      onChange({ ...company, activities, updated_at: today() });
+    } else {
+      const contacts = company.contacts.map(c => ({
+        ...c,
+        activities: (c.activities || []).map(a => (a.id === activityId ? { ...a, text: newText } : a)),
+      }));
+      onChange({ ...company, contacts, updated_at: today() });
+    }
+    updateActivity(activityId, newText);
+    setEditingActivity(null);
+  };
+
+  // Consolidated timeline
+  const allActivities = [
+    ...company.activities.map(a => ({ ...a, source: 'company', contactName: '' })),
+    ...company.contacts.flatMap(ct =>
+      (ct.activities || []).map(a => ({ ...a, source: 'contact', contactName: ct.name }))
+    ),
+  ].sort((a, b) => b.date.localeCompare(a.date));
+
+  const parentCompany = company.parent_id ? allCompanies.find(c => c.id === company.parent_id) : null;
+  const childCompanies = allCompanies.filter(c => c.parent_id === company.id);
+
+  const roleLabel = (role: string) => {
+    switch (role) {
+      case 'target': return 'Decision Maker';
+      case 'champion': return 'Champion';
+      case 'influencer': return 'Influencer';
+      case 'gatekeeper': return 'Gatekeeper';
+      case 'referral': return 'Referral';
+      default: return role;
+    }
+  };
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="detail-header">
+        <div>
+          {parentCompany && (
+            <div style={{ fontSize: 11, color: 'var(--pbf-muted)', marginBottom: 2 }}>
+              &uarr; {parentCompany.name}
+            </div>
+          )}
+          <h2>{company.name}</h2>
+          <div className="detail-header-meta">
+            {company.hq && `${company.hq} · `}{company.country}
+            {company.employees && ` · ~${company.employees} employees`}
+            {company.sector && ` · ${company.sector}`}
+            {childCompanies.length > 0 && ` · ${childCompanies.length} subsidiar${childCompanies.length === 1 ? 'y' : 'ies'}`}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <StageBadge stage={company.stage} />
+          <button className="btn-danger btn-sm" onClick={onDelete}>Delete</button>
+        </div>
+      </div>
+
+      {/* Company Profile */}
+      <div className="section">
+        <div className="section-header"><h3>Company Profile</h3></div>
+        <div className="section-body">
+          <div className="field-row">
+            <div className="field-group">
+              <label>Company Name</label>
+              <input value={company.name} onChange={e => set('name', e.target.value)} />
+            </div>
+            <div className="field-group">
+              <label>Pipeline Stage</label>
+              <select value={company.stage} onChange={e => set('stage', e.target.value)}>
+                {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="field-row">
+            <div className="field-group">
+              <label>Headquarters</label>
+              <input value={company.hq} onChange={e => set('hq', e.target.value)} placeholder="City" />
+            </div>
+            <div className="field-group">
+              <label>Country</label>
+              <input value={company.country} onChange={e => set('country', e.target.value)} />
+            </div>
+          </div>
+          <div className="field-row">
+            <div className="field-group">
+              <label>Employees</label>
+              <input value={company.employees} onChange={e => set('employees', e.target.value)} placeholder="e.g. 50,000" />
+            </div>
+            <div className="field-group">
+              <label>Sector</label>
+              <select value={company.sector} onChange={e => set('sector', e.target.value)}>
+                {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="field-row full">
+            <div className="field-group">
+              <label>Website</label>
+              <input value={company.website} onChange={e => set('website', e.target.value)} placeholder="https://" />
+            </div>
+          </div>
+          <div className="field-row full">
+            <div className="field-group">
+              <label>Parent Company</label>
+              <select value={company.parent_id || ''} onChange={e => set('parent_id', e.target.value)}>
+                <option value="">— None (top-level) —</option>
+                {allCompanies.filter(c => c.id !== company.id).map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* PBP Fit Assessment */}
+      <div className="section">
+        <div className="section-header"><h3>PBP Fit Assessment</h3></div>
+        <div className="section-body">
+          <FitScoreDisplay scores={company.fit_scores} />
+          <div style={{ marginTop: 14 }}>
+            {FIT_CRITERIA.map(cr => (
+              <div key={cr.key} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <div style={{ flex: 1, fontSize: 13 }}>{cr.label}</div>
+                <select
+                  value={company.fit_scores[cr.key] ?? ''}
+                  onChange={e => setFit(cr.key, e.target.value === '' ? undefined : Number(e.target.value))}
+                  style={{ width: 120 }}
+                >
+                  <option value="">Not rated</option>
+                  <option value="0">0 – No</option>
+                  <option value="1">1 – Unlikely</option>
+                  <option value="2">2 – Likely</option>
+                  <option value="3">3 – Confirmed</option>
+                </select>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Pain Points & Entry Angle */}
+      <div className="section">
+        <div className="section-header"><h3>Pain Points &amp; Entry Angle</h3></div>
+        <div className="section-body">
+          <div className="field-row full">
+            <div className="field-group">
+              <label>Pain Points (why they need PBP)</label>
+              <textarea value={company.pain_points} onChange={e => set('pain_points', e.target.value)} rows={3}
+                placeholder="e.g. Unstructured project reporting across subsidiaries; inconsistent PM capability" />
+            </div>
+          </div>
+          <div className="field-row full">
+            <div className="field-group">
+              <label>Entry Angle (how to get in)</label>
+              <textarea value={company.entry_angle} onChange={e => set('entry_angle', e.target.value)} rows={3}
+                placeholder="e.g. PMO Director spoke at PM conference 2025; L&D head is 2nd-degree LinkedIn connection" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contacts */}
+      <div className="section">
+        <div className="section-header">
+          <h3>Contacts ({company.contacts.length})</h3>
+          <button className="btn-primary btn-sm" onClick={() => setContactModal('new')}>+ Add</button>
+        </div>
+        <div className="section-body">
+          {company.contacts.length === 0 && (
+            <div style={{ color: 'var(--pbf-muted)', fontSize: 13, textAlign: 'center', padding: 12 }}>
+              No contacts yet. Research and add decision makers.
+            </div>
+          )}
+          {company.contacts.map(ct => (
+            <div key={ct.id} className="contact-card">
+              <div className="contact-card-header">
+                <div>
+                  <div className="contact-name">{ct.name || 'Unnamed'}</div>
+                  <div className="contact-role">{ct.title}{ct.department && ` · ${ct.department}`}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {templates.length > 0 && (
+                    <button className="btn-ghost btn-sm" onClick={() => setUseTemplateContact(ct)} title="Use message template" style={{ fontSize: 13 }}>&#9993;</button>
+                  )}
+                  <button className="btn-primary btn-sm" onClick={() => setContactActivityModal(ct.id)} title="Log activity">+ Log</button>
+                  <button className="btn-ghost btn-sm" onClick={() => setContactModal(ct)}>Edit</button>
+                  <button className="btn-danger btn-sm" onClick={() => deleteContact(ct.id)}>&#10005;</button>
+                </div>
+              </div>
+              {ct.email && (
+                <div className="contact-detail">
+                  &#9993; <a href={`mailto:${ct.email}`} style={{ color: 'var(--pbf-blue)' }}>{ct.email}</a>
+                </div>
+              )}
+              {ct.linkedin && (
+                <div className="contact-detail">
+                  &#128279; <a href={ct.linkedin.startsWith('http') ? ct.linkedin : `https://${ct.linkedin}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pbf-blue)' }}>{ct.linkedin}</a>
+                </div>
+              )}
+              {ct.phone && (
+                <div className="contact-detail">
+                  &#128222; <a href={`tel:${ct.phone}`} style={{ color: 'var(--pbf-blue)' }}>{ct.phone}</a>
+                </div>
+              )}
+              <span className="stage-badge" style={{ marginTop: 4, background: 'var(--pbf-light)', color: 'var(--pbf-muted)', fontSize: 10 }}>
+                {roleLabel(ct.role)}
+              </span>
+              {(ct.activities || []).length > 0 && (
+                <div style={{ marginTop: 8, borderTop: '1px solid var(--pbf-border)', paddingTop: 6 }}>
+                  {[...(ct.activities || [])].reverse().map(a => (
+                    <div key={a.id} className="activity-item" style={{ padding: '4px 0', alignItems: 'flex-start' }}>
+                      <div className="activity-date">{a.date}</div>
+                      <div style={{ flex: 1 }}>
+                        {editingActivity && editingActivity.id === a.id ? (
+                          <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end' }}>
+                            <textarea
+                              value={editingActivity.text}
+                              onChange={e => setEditingActivity({ ...editingActivity, text: e.target.value })}
+                              style={{ flex: 1, fontSize: 12, padding: '4px 6px', minHeight: 36, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.4 }}
+                              autoFocus
+                            />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <button className="btn-primary btn-sm" onClick={() => editActivityHandler(a.id, editingActivity.text, 'contact')}>&#10003;</button>
+                              <button className="btn-ghost btn-sm" onClick={() => setEditingActivity(null)}>&#10005;</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="activity-text" style={{ fontSize: 12 }}>{a.text}</div>
+                        )}
+                      </div>
+                      {(!editingActivity || editingActivity.id !== a.id) && (
+                        <div style={{ display: 'flex', gap: 2, marginLeft: 4, flexShrink: 0 }}>
+                          <button className="btn-ghost btn-sm" style={{ fontSize: 10, padding: '0px 3px' }}
+                            onClick={() => setEditingActivity({ id: a.id, text: a.text, source: 'contact' })}>&#9998;</button>
+                          <button className="btn-danger btn-sm" style={{ fontSize: 10, padding: '0px 3px' }}
+                            onClick={() => deleteActivityHandler(a.id)}>&#10005;</button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Next Action */}
+      <div className="section">
+        <div className="section-header"><h3>Next Action</h3></div>
+        <div className="section-body">
+          <div className="field-row">
+            <div className="field-group">
+              <label>Next Action</label>
+              <input value={company.next_action || ''} onChange={e => set('next_action', e.target.value)}
+                placeholder="e.g. Follow up if no LinkedIn response within 7 days" />
+            </div>
+            <div className="field-group">
+              <label>Follow-up Date</label>
+              <input type="date" value={company.follow_up_date || ''} onChange={e => set('follow_up_date', e.target.value)} />
+            </div>
+          </div>
+          {company.follow_up_date && company.follow_up_date <= today() && (
+            <div style={{ marginTop: 6, padding: '6px 10px', borderRadius: 'var(--radius)', background: 'var(--pbf-red-bg)', color: 'var(--pbf-red)', fontSize: 13, fontWeight: 600 }}>
+              &#9888; Follow-up is due{company.follow_up_date < today() ? ' (overdue)' : ' today'}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Consolidated Activity Log */}
+      <div className="section">
+        <div className="section-header">
+          <h3>Activity Log ({allActivities.length})</h3>
+          <button className="btn-primary btn-sm" onClick={() => setActivityModal(true)}>+ Company Log</button>
+        </div>
+        <div className="section-body">
+          {allActivities.length === 0 && (
+            <div style={{ color: 'var(--pbf-muted)', fontSize: 13, textAlign: 'center', padding: 12 }}>
+              No activities logged yet.
+            </div>
+          )}
+          {allActivities.map(a => (
+            <div key={a.id} className="activity-item" style={{ alignItems: 'flex-start' }}>
+              <div className="activity-date">{a.date}</div>
+              <div style={{ flex: 1 }}>
+                {editingActivity && editingActivity.id === a.id ? (
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end' }}>
+                    <textarea
+                      value={editingActivity.text}
+                      onChange={e => setEditingActivity({ ...editingActivity, text: e.target.value })}
+                      style={{ flex: 1, fontSize: 13, padding: '4px 6px', minHeight: 36, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.4 }}
+                      autoFocus
+                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <button className="btn-primary btn-sm" onClick={() => editActivityHandler(a.id, editingActivity.text, a.source)}>&#10003;</button>
+                      <button className="btn-ghost btn-sm" onClick={() => setEditingActivity(null)}>&#10005;</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="activity-text">
+                    {a.contactName && <span style={{ fontWeight: 600, color: 'var(--pbf-blue)', marginRight: 6 }}>{a.contactName}:</span>}
+                    {a.text}
+                  </div>
+                )}
+              </div>
+              {(!editingActivity || editingActivity.id !== a.id) && (
+                <div style={{ display: 'flex', gap: 2, marginLeft: 4, flexShrink: 0 }}>
+                  <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: '1px 4px' }}
+                    onClick={() => setEditingActivity({ id: a.id, text: a.text, source: a.source })}>&#9998;</button>
+                  <button className="btn-danger btn-sm" style={{ fontSize: 11, padding: '1px 4px' }}
+                    onClick={() => deleteActivityHandler(a.id)}>&#10005;</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* General Notes */}
+      <div className="section">
+        <div className="section-header"><h3>General Notes</h3></div>
+        <div className="section-body">
+          <textarea value={company.notes} onChange={e => set('notes', e.target.value)} rows={4}
+            placeholder="Free-form notes — research findings, strategic observations, follow-up reminders..." />
+        </div>
+      </div>
+
+      {/* Modals */}
+      {contactModal && (
+        <ContactModal
+          contact={contactModal === 'new' ? null : contactModal}
+          onSave={saveContact}
+          onClose={() => setContactModal(null)}
+        />
+      )}
+      {activityModal && (
+        <ActivityModal onSave={logActivity} onClose={() => setActivityModal(false)} templates={COMPANY_ACTIVITIES} label="Log Company Activity" />
+      )}
+      {contactActivityModal && (
+        <ActivityModal
+          onSave={(text) => logContactActivity(contactActivityModal, text)}
+          onClose={() => setContactActivityModal(null)}
+          templates={CONTACT_ACTIVITIES}
+          label={`Log Activity — ${(company.contacts.find(c => c.id === contactActivityModal))?.name || ''}`}
+        />
+      )}
+      {useTemplateContact && templates.length > 0 && (
+        <UseTemplateModal
+          templates={templates}
+          contact={useTemplateContact}
+          company={company}
+          onClose={() => setUseTemplateContact(null)}
+        />
+      )}
+    </div>
+  );
+}

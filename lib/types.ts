@@ -1,40 +1,68 @@
-export type PipelineStage =
-  | "lead"
-  | "contacted"
-  | "qualified"
-  | "proposal"
-  | "negotiation"
-  | "closed_won"
-  | "closed_lost";
+// ─── Pipeline Stages ───
+export type StageKey = 'researching' | 'qualified' | 'contacted' | 'dialogue' | 'won' | 'lost';
 
-export const PIPELINE_STAGES: { value: PipelineStage; label: string; color: string }[] = [
-  { value: "lead", label: "Lead", color: "#94A3B8" },
-  { value: "contacted", label: "Contacted", color: "#3B82F6" },
-  { value: "qualified", label: "Qualified", color: "#8B5CF6" },
-  { value: "proposal", label: "Proposal", color: "#F59E0B" },
-  { value: "negotiation", label: "Negotiation", color: "#F97316" },
-  { value: "closed_won", label: "Closed Won", color: "#22C55E" },
-  { value: "closed_lost", label: "Closed Lost", color: "#EF4444" },
-];
-
-export interface Prospect {
-  id: string;
-  company_name: string;
-  contact_name: string;
-  contact_email: string;
-  contact_phone: string;
-  stage: PipelineStage;
-  deal_value: number;
-  notes: string;
-  source: string;
-  created_at: string;
-  updated_at: string;
+export interface StageInfo {
+  key: StageKey;
+  label: string;
+  short: string;
+  cls: string;
+  color: string;
 }
 
+// ─── Fit Scores ───
+export type FitScores = Record<string, number | undefined>;
+
+// ─── Activity ───
 export interface Activity {
   id: string;
-  prospect_id: string;
-  type: "call" | "email" | "meeting" | "note" | "task";
-  description: string;
+  company_id?: string;
+  contact_id?: string | null;
+  date: string;
+  text: string;
+}
+
+// ─── Contact ───
+export interface Contact {
+  id: string;
+  company_id?: string;
+  name: string;
+  title: string;
+  department: string;
+  email: string;
+  phone: string;
+  linkedin: string;
+  role: 'target' | 'champion' | 'influencer' | 'gatekeeper' | 'referral';
+  notes: string;
+  activities: Activity[];
+}
+
+// ─── Company ───
+export interface Company {
+  id: string;
+  name: string;
+  hq: string;
+  country: string;
+  employees: string;
+  sector: string;
+  website: string;
+  stage: StageKey;
+  fit_scores: FitScores;
+  pain_points: string;
+  entry_angle: string;
+  notes: string;
+  next_action: string;
+  follow_up_date: string;
+  parent_id: string;
   created_at: string;
+  updated_at: string;
+  contacts: Contact[];
+  activities: Activity[];
+}
+
+// ─── Template ───
+export interface Template {
+  id: string;
+  name: string;
+  body: string;
+  sort_order: number;
 }
