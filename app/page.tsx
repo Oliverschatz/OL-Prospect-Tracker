@@ -216,16 +216,67 @@ export default function Home() {
   );
 }
 
-// ─── Settings Panel (password change) ───
+// ─── Common timezones ───
+const TIMEZONES = [
+  { value: 'Europe/Berlin', label: 'Europe/Berlin (CET/CEST)' },
+  { value: 'Europe/London', label: 'Europe/London (GMT/BST)' },
+  { value: 'Europe/Paris', label: 'Europe/Paris (CET/CEST)' },
+  { value: 'Europe/Zurich', label: 'Europe/Zurich (CET/CEST)' },
+  { value: 'Europe/Vienna', label: 'Europe/Vienna (CET/CEST)' },
+  { value: 'Europe/Amsterdam', label: 'Europe/Amsterdam (CET/CEST)' },
+  { value: 'Europe/Madrid', label: 'Europe/Madrid (CET/CEST)' },
+  { value: 'Europe/Rome', label: 'Europe/Rome (CET/CEST)' },
+  { value: 'Europe/Stockholm', label: 'Europe/Stockholm (CET/CEST)' },
+  { value: 'Europe/Warsaw', label: 'Europe/Warsaw (CET/CEST)' },
+  { value: 'Europe/Istanbul', label: 'Europe/Istanbul (TRT)' },
+  { value: 'Europe/Moscow', label: 'Europe/Moscow (MSK)' },
+  { value: 'America/New_York', label: 'US Eastern (ET)' },
+  { value: 'America/Chicago', label: 'US Central (CT)' },
+  { value: 'America/Denver', label: 'US Mountain (MT)' },
+  { value: 'America/Los_Angeles', label: 'US Pacific (PT)' },
+  { value: 'America/Sao_Paulo', label: 'South America (BRT)' },
+  { value: 'Asia/Dubai', label: 'Dubai (GST)' },
+  { value: 'Asia/Kolkata', label: 'India (IST)' },
+  { value: 'Asia/Singapore', label: 'Singapore (SGT)' },
+  { value: 'Asia/Tokyo', label: 'Japan (JST)' },
+  { value: 'Asia/Shanghai', label: 'China (CST)' },
+  { value: 'Australia/Sydney', label: 'Australia Eastern (AEST)' },
+];
+
+// ─── Settings Panel ───
 function SettingsPanel({ user, isAdmin, onBack, onAdmin, onLogout }: {
   user: User; isAdmin: boolean; onBack: () => void; onAdmin: () => void; onLogout: () => void;
 }) {
-  const [oldPw, setOldPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [timezone, setTimezone] = useState('Europe/Berlin');
+  const [dailyEmail, setDailyEmail] = useState(true);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const [prefsSaving, setPrefsSaving] = useState(false);
+
+  // Load preferences from profiles table
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.from('profiles').select('timezone, daily_email').eq('id', user.id).single().then(({ data }) => {
+      if (data) {
+        setTimezone(data.timezone || 'Europe/Berlin');
+        setDailyEmail(data.daily_email !== false);
+      }
+      setPrefsLoaded(true);
+    });
+  }, [user.id]);
+
+  const savePrefs = async () => {
+    if (!supabase) return;
+    setPrefsSaving(true);
+    await supabase.from('profiles').update({ timezone, daily_email: dailyEmail }).eq('id', user.id);
+    setPrefsSaving(false);
+    setSuccess('Preferences saved!');
+    setTimeout(() => setSuccess(''), 3000);
+  };
 
   const handleChange = async () => {
     setError('');
@@ -236,7 +287,6 @@ function SettingsPanel({ user, isAdmin, onBack, onAdmin, onLogout }: {
     try {
       await changePassword(newPw);
       setSuccess('Password changed successfully!');
-      setOldPw('');
       setNewPw('');
       setConfirmPw('');
     } catch (e: unknown) {
@@ -275,6 +325,53 @@ function SettingsPanel({ user, isAdmin, onBack, onAdmin, onLogout }: {
           </div>
         </div>
 
+        {/* Notifications */}
+        <div className="section">
+          <div className="section-header"><h3>Daily Follow-up Email</h3></div>
+          <div className="section-body">
+            <p style={{ fontSize: 13, color: 'var(--pbf-muted)', marginBottom: 12 }}>
+              Receive a daily email at 8:00 AM (Mon–Fri) with your overdue, due today, and upcoming follow-ups.
+            </p>
+            <div className="field-row">
+              <div className="field-group">
+                <label>Timezone</label>
+                <select value={timezone} onChange={e => setTimezone(e.target.value)} disabled={!prefsLoaded}>
+                  {TIMEZONES.map(tz => (
+                    <option key={tz.value} value={tz.value}>{tz.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="field-group">
+                <label>Daily Email</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 4 }}>
+                  <button
+                    onClick={() => setDailyEmail(!dailyEmail)}
+                    style={{
+                      width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
+                      background: dailyEmail ? 'var(--stage-won)' : 'var(--pbf-border)',
+                      position: 'relative', transition: 'background 0.2s',
+                    }}
+                  >
+                    <div style={{
+                      width: 18, height: 18, borderRadius: '50%', background: 'white',
+                      position: 'absolute', top: 3,
+                      left: dailyEmail ? 23 : 3,
+                      transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                    }} />
+                  </button>
+                  <span style={{ fontSize: 13, color: dailyEmail ? 'var(--stage-won)' : 'var(--pbf-muted)' }}>
+                    {dailyEmail ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button className="btn-primary btn-sm" onClick={savePrefs} disabled={prefsSaving} style={{ marginTop: 8 }}>
+              {prefsSaving ? 'Saving...' : 'Save Preferences'}
+            </button>
+          </div>
+        </div>
+
+        {/* Password change */}
         <div className="section">
           <div className="section-header"><h3>Change Password</h3></div>
           <div className="section-body">
