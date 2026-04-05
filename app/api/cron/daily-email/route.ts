@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
+import nodemailer from 'nodemailer';
 
 // Vercel Cron calls this every hour. We check which users have 8:00 AM
 // in their timezone right now (Mon-Fri) and send them their follow-up digest.
@@ -14,13 +15,25 @@ export async function GET(req: NextRequest) {
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ error: 'Not configured' }, { status: 500 });
 
-  const resendKey = process.env.RESEND_API_KEY;
+  // SMTP config
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
   const fromEmail = process.env.EMAIL_FROM || 'Prospect Tracker <noreply@oliverlehmann.com>';
-  if (!resendKey) return NextResponse.json({ error: 'RESEND_API_KEY not set' }, { status: 500 });
+
+  if (!smtpHost || !smtpUser || !smtpPass) {
+    return NextResponse.json({ error: 'SMTP not configured' }, { status: 500 });
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpPort === 465,
+    auth: { user: smtpUser, pass: smtpPass },
+  });
 
   const now = new Date();
-  const utcHour = now.getUTCHours();
-  const utcDay = now.getUTCDay(); // 0=Sun, 6=Sat
 
   // Get all users with daily_email enabled
   const { data: profiles } = await admin
@@ -62,7 +75,7 @@ export async function GET(req: NextRequest) {
       const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
       localDay = dayMap[dayName] ?? 0;
     } catch {
-      continue; // Invalid timezone
+      continue;
     }
 
     // Only send at 8:00 AM, Mon-Fri
@@ -72,7 +85,7 @@ export async function GET(req: NextRequest) {
     // Get today's date in user's timezone
     let todayStr: string;
     try {
-      const dateFormatter = new Intl.DateTimeFormat('sv-SE', { timeZone: tz }); // sv-SE gives YYYY-MM-DD
+      const dateFormatter = new Intl.DateTimeFormat('sv-SE', { timeZone: tz });
       todayStr = dateFormatter.format(now);
     } catch {
       continue;
@@ -104,24 +117,18 @@ export async function GET(req: NextRequest) {
 
     if (overdue.length === 0 && dueToday.length === 0 && dueTomorrow.length === 0) continue;
 
-    // Build email HTML
+    // Build and send email
     const html = buildEmailHtml(userInfo.name, overdue, dueToday, dueTomorrow, todayStr);
-
-    // Send via Resend
     try {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: fromEmail,
-          to: [userInfo.email],
-          subject: buildSubject(overdue.length, dueToday.length, dueTomorrow.length),
-          html,
-        }),
+      await transporter.sendMail({
+        from: fromEmail,
+        to: userInfo.email,
+        subject: buildSubject(overdue.length, dueToday.length, dueTomorrow.length),
+        html,
       });
       sent++;
     } catch {
-      // Log but continue with other users
+      // Continue with other users
     }
   }
 
