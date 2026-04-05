@@ -22,6 +22,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
   const [contactActivityModal, setContactActivityModal] = useState<string | null>(null);
   const [useTemplateContact, setUseTemplateContact] = useState<Contact | null>(null);
   const [editingActivity, setEditingActivity] = useState<{ id: string; text: string; source: string } | null>(null);
+  const [newTag, setNewTag] = useState('');
 
   const set = (key: string, value: unknown) => {
     const updated = { ...company, [key]: value, updated_at: today() };
@@ -213,6 +214,36 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
               </select>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Tags */}
+      <div className="section">
+        <div className="section-header"><h3>Tags</h3></div>
+        <div className="section-body" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+          {(company.tags || []).map(tag => (
+            <span key={tag} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--pbf-yellow-bg)',
+              color: '#b7791f', padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600,
+              border: '1px solid #ecc94b',
+            }}>
+              {tag}
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#b7791f', fontSize: 14, padding: 0, lineHeight: 1 }}
+                onClick={() => set('tags', (company.tags || []).filter(t => t !== tag))}>&#10005;</button>
+            </span>
+          ))}
+          <form onSubmit={e => {
+            e.preventDefault();
+            const t = newTag.trim();
+            if (t && !(company.tags || []).includes(t)) {
+              set('tags', [...(company.tags || []), t]);
+            }
+            setNewTag('');
+          }} style={{ display: 'inline-flex', gap: 4 }}>
+            <input value={newTag} onChange={e => setNewTag(e.target.value)} placeholder="Add tag..."
+              style={{ width: 100, fontSize: 12, padding: '3px 8px' }} />
+            <button type="submit" className="btn-ghost btn-sm" style={{ fontSize: 11 }}>+</button>
+          </form>
         </div>
       </div>
 

@@ -53,6 +53,7 @@ export interface Company {
   next_action: string;
   follow_up_date: string;
   parent_id: string;
+  tags: string[];
   created_at: string;
   updated_at: string;
   contacts: Contact[];

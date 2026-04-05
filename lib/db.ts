@@ -45,6 +45,7 @@ export async function loadAllCompanies(): Promise<Company[]> {
   return companies.map(c => ({
     ...c,
     fit_scores: (c.fit_scores || {}) as FitScores,
+    tags: (Array.isArray((c as Record<string, unknown>).tags) ? (c as Record<string, unknown>).tags : []) as string[],
     contacts: contactsByCompany[c.id] || [],
     activities: companyActivities[c.id] || [],
   }));

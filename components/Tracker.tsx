@@ -9,11 +9,13 @@ import { TemplateManagerModal } from '@/components/Modals';
 import CompanyDetail from '@/components/CompanyDetail';
 import type { Company, Template } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 
 // ─── Local save/load ───
-function saveLocally(companies: Company[]) {
-  const data = JSON.stringify(companies, null, 2);
-  const blob = new Blob([data], { type: 'application/json' });
+function saveLocally(companies: Company[], filterFn?: (c: Company) => boolean) {
+  const data = filterFn ? companies.filter(filterFn) : companies;
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -47,6 +49,22 @@ function openLocalFile(): Promise<Company[] | null> {
   });
 }
 
+// ─── Duplicate check ───
+async function checkDuplicate(companyName: string): Promise<{ duplicate: boolean; message?: string } | null> {
+  if (!supabase) return null;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return null;
+  try {
+    const res = await fetch('/api/check-duplicate', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ company_name: companyName }),
+    });
+    if (res.ok) return await res.json();
+  } catch { /* ignore */ }
+  return null;
+}
+
 // ─── Main Tracker ───
 export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }: {
   user: User; onLogout: () => void; isAdmin?: boolean; onAdmin?: () => void; onSettings?: () => void;
@@ -55,10 +73,14 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStage, setFilterStage] = useState('all');
+  const [filterTag, setFilterTag] = useState('all');
   const [search, setSearch] = useState('');
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState('');
+  const [view, setView] = useState<'pipeline' | 'followups' | 'timeline'>('pipeline');
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
   // Load data on mount
   useEffect(() => {
@@ -72,9 +94,25 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
 
   const selected = companies.find(c => c.id === selectedId);
 
+  // Gather all tags
+  const allTags = Array.from(new Set(companies.flatMap(c => c.tags || []))).sort();
+
+  // Enhanced search: company name, contact name, contact email, HQ, sector
+  const matchesSearch = (c: Company, q: string) => {
+    const lq = q.toLowerCase();
+    if (c.name.toLowerCase().includes(lq)) return true;
+    if (c.hq.toLowerCase().includes(lq)) return true;
+    if (c.sector.toLowerCase().includes(lq)) return true;
+    if (c.contacts.some(ct => ct.name.toLowerCase().includes(lq))) return true;
+    if (c.contacts.some(ct => ct.email.toLowerCase().includes(lq))) return true;
+    if (c.contacts.some(ct => ct.title.toLowerCase().includes(lq))) return true;
+    return false;
+  };
+
   const filtered = companies.filter(c => {
     if (filterStage !== 'all' && c.stage !== filterStage) return false;
-    if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterTag !== 'all' && !(c.tags || []).includes(filterTag)) return false;
+    if (search && !matchesSearch(c, search)) return false;
     return true;
   });
 
@@ -88,10 +126,20 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
     } as Company;
     setCompanies(prev => [newCo, ...prev]);
     setSelectedId(newCo.id);
+    setView('pipeline');
     await createCompany(newCo);
   };
 
-  const updateCompany = (updated: Company) => {
+  const updateCompany = async (updated: Company) => {
+    // Check for duplicates when company name changes
+    const old = companies.find(c => c.id === updated.id);
+    if (old && old.name !== updated.name && updated.name !== 'New Company') {
+      const result = await checkDuplicate(updated.name);
+      if (result?.duplicate) {
+        setDuplicateWarning(result.message || 'This prospect is tracked by another ambassador.');
+        setTimeout(() => setDuplicateWarning(null), 8000);
+      }
+    }
     setCompanies(prev => prev.map(c => (c.id === updated.id ? updated : c)));
   };
 
@@ -103,15 +151,15 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
     await deleteCompanyFromDb(selected.id);
   };
 
-  const handleSaveLocally = () => {
-    saveLocally(companies);
-    setStatusMsg(`Saved ${companies.length} companies to file`);
+  const handleSaveLocally = (filterFn?: (c: Company) => boolean) => {
+    saveLocally(companies, filterFn);
+    setStatusMsg(`Saved to file`);
+    setExportMenuOpen(false);
   };
 
   const handleOpenLocal = async () => {
     const data = await openLocalFile();
     if (!data) return;
-    // Merge into existing data and persist to Supabase
     setCompanies(prev => {
       const merged = [...prev];
       data.forEach(imp => {
@@ -132,6 +180,24 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
     setTemplates(newTemplates);
     await saveAllTemplates(newTemplates);
   };
+
+  // ─── Follow-up data ───
+  const todayStr = today();
+  const overdue = companies.filter(c => c.follow_up_date && c.follow_up_date < todayStr).sort((a, b) => a.follow_up_date.localeCompare(b.follow_up_date));
+  const dueToday = companies.filter(c => c.follow_up_date === todayStr);
+  const upcoming = companies.filter(c => c.follow_up_date && c.follow_up_date > todayStr).sort((a, b) => a.follow_up_date.localeCompare(b.follow_up_date)).slice(0, 15);
+
+  // ─── Global activity timeline ───
+  const globalTimeline = companies.flatMap(co => [
+    ...co.activities.map(a => ({ ...a, companyName: co.name, companyId: co.id, contactName: '', stage: co.stage })),
+    ...co.contacts.flatMap(ct =>
+      (ct.activities || []).map(a => ({ ...a, companyName: co.name, companyId: co.id, contactName: ct.name, stage: co.stage }))
+    ),
+  ]).sort((a, b) => b.date.localeCompare(a.date));
+
+  // Group timeline by date for swimlane display
+  const timelineDates = Array.from(new Set(globalTimeline.map(a => a.date))).sort((a, b) => b.localeCompare(a));
+  const timelineCompanies = Array.from(new Set(globalTimeline.map(a => a.companyName))).sort();
 
   // ─── Sidebar: grouped and sorted ───
   const hasNamedContact = (c: Company) => c.contacts.some(ct => ct.name && ct.name.trim());
@@ -158,7 +224,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
       <div
         key={c.id}
         className={`company-item ${selectedId === c.id ? 'active' : ''}`}
-        onClick={() => setSelectedId(c.id)}
+        onClick={() => { setSelectedId(c.id); setView('pipeline'); }}
         style={{ paddingLeft: 16 + (c.depth || 0) * 16 }}
       >
         <div className="company-item-name">
@@ -172,7 +238,10 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
           )}
           {c.hq && ` · ${c.hq}`}
           {c.contacts.length > 0 && ` · ${c.contacts.filter(ct => ct.name && ct.name.trim()).length} named`}
-          {c.follow_up_date && c.follow_up_date <= today() && (
+          {(c.tags || []).length > 0 && (
+            <span style={{ marginLeft: 4 }}>{(c.tags || []).map(t => <span key={t} style={{ background: 'var(--pbf-yellow-bg)', color: 'var(--pbf-accent)', fontSize: 9, padding: '1px 4px', borderRadius: 2, marginLeft: 2 }}>{t}</span>)}</span>
+          )}
+          {c.follow_up_date && c.follow_up_date <= todayStr && (
             <span style={{ color: 'var(--pbf-red)', fontWeight: 600, marginLeft: 4 }}>&#9888;</span>
           )}
         </div>
@@ -196,9 +265,39 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
           <button className="btn-secondary btn-sm" onClick={handleOpenLocal}>
             Open Saved
           </button>
-          <button className="btn-secondary btn-sm" onClick={handleSaveLocally} disabled={companies.length === 0}>
-            Save Locally
-          </button>
+          {/* Export dropdown */}
+          <div style={{ position: 'relative' }}>
+            <button className="btn-secondary btn-sm" onClick={() => setExportMenuOpen(!exportMenuOpen)} disabled={companies.length === 0}>
+              Export &#9662;
+            </button>
+            {exportMenuOpen && (
+              <div style={{
+                position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--pbf-white)', border: '1px solid var(--pbf-border)',
+                borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-md)', zIndex: 50, minWidth: 200, padding: 4,
+              }}>
+                <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '6px 12px', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pbf-text)' }}
+                  onClick={() => handleSaveLocally()}>
+                  All Companies ({companies.length})
+                </button>
+                {filterStage !== 'all' && (
+                  <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '6px 12px', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pbf-text)' }}
+                    onClick={() => handleSaveLocally(c => c.stage === filterStage)}>
+                    Current Filter: {STAGES.find(s => s.key === filterStage)?.label} ({filtered.length})
+                  </button>
+                )}
+                {selected && (
+                  <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '6px 12px', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pbf-text)' }}
+                    onClick={() => handleSaveLocally(c => c.id === selected.id)}>
+                    Selected: {selected.name}
+                  </button>
+                )}
+                <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '6px 12px', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pbf-muted)' }}
+                  onClick={() => setExportMenuOpen(false)}>
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
           <button className="btn-primary btn-sm" onClick={addCompany}>+ Company</button>
           {isAdmin && onAdmin && (
             <button className="btn-secondary btn-sm" onClick={onAdmin} title="Admin Dashboard">Admin</button>
@@ -209,6 +308,14 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
           <button className="btn-ghost btn-sm" onClick={onLogout} title="Log out" style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Logout</button>
         </div>
       </div>
+
+      {/* Duplicate warning */}
+      {duplicateWarning && (
+        <div style={{ background: 'var(--pbf-yellow-bg)', padding: '8px 24px', fontSize: 13, color: '#b7791f', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ecc94b' }}>
+          <span>&#9888; {duplicateWarning}</span>
+          <button className="btn-ghost" style={{ fontSize: 11, padding: '1px 6px' }} onClick={() => setDuplicateWarning(null)}>&#10005;</button>
+        </div>
+      )}
 
       {/* Status bar */}
       {statusMsg && (
@@ -232,40 +339,157 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
         <div className="sidebar">
           <div className="sidebar-header">
             <h2>Pipeline</h2>
-            <select value={filterStage} onChange={e => setFilterStage(e.target.value)} style={{ width: 100, padding: '3px 6px', fontSize: 12 }}>
-              <option value="all">All stages</option>
-              {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
-            </select>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <select value={filterStage} onChange={e => setFilterStage(e.target.value)} style={{ width: 90, padding: '3px 6px', fontSize: 11 }}>
+                <option value="all">All stages</option>
+                {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+              </select>
+              {allTags.length > 0 && (
+                <select value={filterTag} onChange={e => setFilterTag(e.target.value)} style={{ width: 80, padding: '3px 6px', fontSize: 11 }}>
+                  <option value="all">All tags</option>
+                  {allTags.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              )}
+            </div>
           </div>
           <PipelineBar companies={companies} />
-          <div style={{ padding: '0 12px 8px' }}>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search companies..." style={{ fontSize: 12, padding: '5px 8px' }} />
-          </div>
-          <div className="company-list">
-            {filtered.length === 0 && (
-              <div style={{ padding: 20, textAlign: 'center', color: 'var(--pbf-muted)', fontSize: 13 }}>
-                {companies.length === 0 ? 'No companies yet. Add one to start.' : 'No matches.'}
-              </div>
-            )}
-            {treeWith.length > 0 && (
-              <div>
-                <div style={{ padding: '8px 16px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--pbf-green)' }}>
-                  With Contacts ({withContacts.length})
-                </div>
-                {treeWith.map(renderItem)}
-              </div>
-            )}
-            {treeWithout.length > 0 && (
-              <div>
-                <div style={{
-                  padding: '8px 16px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                  letterSpacing: '0.06em', color: 'var(--pbf-muted)',
-                  borderTop: treeWith.length > 0 ? '1px solid var(--pbf-border)' : 'none',
-                  marginTop: treeWith.length > 0 ? 4 : 0,
+
+          {/* View tabs */}
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--pbf-border)', padding: '0 8px' }}>
+            {([['pipeline', 'Companies'], ['followups', 'Follow-ups'], ['timeline', 'Timeline']] as const).map(([k, label]) => (
+              <button key={k} onClick={() => setView(k)}
+                style={{
+                  flex: 1, padding: '6px 0', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  borderBottom: view === k ? '2px solid var(--pbf-navy)' : '2px solid transparent',
+                  color: view === k ? 'var(--pbf-navy)' : 'var(--pbf-muted)',
                 }}>
-                  Research Needed ({withoutContacts.length})
-                </div>
-                {treeWithout.map(renderItem)}
+                {label}
+                {k === 'followups' && overdue.length > 0 && (
+                  <span style={{ background: 'var(--pbf-red)', color: 'white', borderRadius: 8, padding: '0 5px', fontSize: 9, marginLeft: 3 }}>{overdue.length}</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ padding: '0 12px 8px', marginTop: 8 }}>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search companies, contacts..." style={{ fontSize: 12, padding: '5px 8px' }} />
+          </div>
+
+          {/* View content */}
+          <div className="company-list">
+            {view === 'pipeline' && (
+              <>
+                {filtered.length === 0 && (
+                  <div style={{ padding: 20, textAlign: 'center', color: 'var(--pbf-muted)', fontSize: 13 }}>
+                    {companies.length === 0 ? 'No companies yet. Add one to start.' : 'No matches.'}
+                  </div>
+                )}
+                {treeWith.length > 0 && (
+                  <div>
+                    <div style={{ padding: '8px 16px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--pbf-green)' }}>
+                      With Contacts ({withContacts.length})
+                    </div>
+                    {treeWith.map(renderItem)}
+                  </div>
+                )}
+                {treeWithout.length > 0 && (
+                  <div>
+                    <div style={{
+                      padding: '8px 16px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.06em', color: 'var(--pbf-muted)',
+                      borderTop: treeWith.length > 0 ? '1px solid var(--pbf-border)' : 'none',
+                      marginTop: treeWith.length > 0 ? 4 : 0,
+                    }}>
+                      Research Needed ({withoutContacts.length})
+                    </div>
+                    {treeWithout.map(renderItem)}
+                  </div>
+                )}
+              </>
+            )}
+
+            {view === 'followups' && (
+              <div style={{ padding: '0 4px' }}>
+                {overdue.length === 0 && dueToday.length === 0 && upcoming.length === 0 && (
+                  <div style={{ padding: 20, textAlign: 'center', color: 'var(--pbf-muted)', fontSize: 13 }}>No follow-ups scheduled.</div>
+                )}
+                {overdue.length > 0 && (
+                  <div>
+                    <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--pbf-red)' }}>
+                      Overdue ({overdue.length})
+                    </div>
+                    {overdue.map(c => (
+                      <div key={c.id} className={`company-item ${selectedId === c.id ? 'active' : ''}`}
+                        onClick={() => { setSelectedId(c.id); setView('pipeline'); }} style={{ paddingLeft: 16 }}>
+                        <div className="company-item-name">{c.name}</div>
+                        <div className="company-item-meta">
+                          <span style={{ color: 'var(--pbf-red)', fontWeight: 600 }}>{c.follow_up_date}</span>
+                          {c.next_action && <span> · {c.next_action}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {dueToday.length > 0 && (
+                  <div>
+                    <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--pbf-accent)' }}>
+                      Due Today ({dueToday.length})
+                    </div>
+                    {dueToday.map(c => (
+                      <div key={c.id} className={`company-item ${selectedId === c.id ? 'active' : ''}`}
+                        onClick={() => { setSelectedId(c.id); setView('pipeline'); }} style={{ paddingLeft: 16 }}>
+                        <div className="company-item-name">{c.name}</div>
+                        <div className="company-item-meta">
+                          {c.next_action || 'Follow up today'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {upcoming.length > 0 && (
+                  <div>
+                    <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--pbf-blue)' }}>
+                      Upcoming
+                    </div>
+                    {upcoming.map(c => (
+                      <div key={c.id} className={`company-item ${selectedId === c.id ? 'active' : ''}`}
+                        onClick={() => { setSelectedId(c.id); setView('pipeline'); }} style={{ paddingLeft: 16 }}>
+                        <div className="company-item-name">{c.name}</div>
+                        <div className="company-item-meta">
+                          <span style={{ color: 'var(--pbf-blue)' }}>{c.follow_up_date}</span>
+                          {c.next_action && <span> · {c.next_action}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {view === 'timeline' && (
+              <div style={{ padding: '0 4px' }}>
+                {globalTimeline.length === 0 && (
+                  <div style={{ padding: 20, textAlign: 'center', color: 'var(--pbf-muted)', fontSize: 13 }}>No activities yet.</div>
+                )}
+                {timelineDates.slice(0, 30).map(date => (
+                  <div key={date}>
+                    <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 700, color: 'var(--pbf-muted)', borderTop: '1px solid var(--pbf-border)', marginTop: 2 }}>
+                      {date}
+                    </div>
+                    {globalTimeline.filter(a => a.date === date).map(a => (
+                      <div key={a.id} style={{ padding: '4px 12px', fontSize: 12, cursor: 'pointer', display: 'flex', gap: 8, alignItems: 'flex-start' }}
+                        onClick={() => { setSelectedId(a.companyId); setView('pipeline'); }}>
+                        <StageBadge stage={a.stage} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ fontWeight: 600, fontSize: 11 }}>{a.companyName}</span>
+                          {a.contactName && <span style={{ color: 'var(--pbf-blue)', fontSize: 11 }}> / {a.contactName}</span>}
+                          <div style={{ color: 'var(--pbf-muted)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.text}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
             )}
           </div>

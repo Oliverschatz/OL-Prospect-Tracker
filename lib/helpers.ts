@@ -72,6 +72,7 @@ export const EMPTY_COMPANY: Omit<Company, 'id' | 'created_at' | 'updated_at'> = 
   next_action: '',
   follow_up_date: '',
   parent_id: '',
+  tags: [],
   contacts: [],
   activities: [],
 };
