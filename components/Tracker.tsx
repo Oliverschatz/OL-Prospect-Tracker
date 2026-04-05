@@ -7,6 +7,7 @@ import { loadAllCompanies, loadTemplates, createCompany, updateCompanyFields, de
 import { StageBadge, PipelineBar } from '@/components/ui';
 import { TemplateManagerModal } from '@/components/Modals';
 import CompanyDetail from '@/components/CompanyDetail';
+import TimelineDiagram from '@/components/TimelineDiagram';
 import type { Company, Template } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -378,7 +379,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
           {/* View tabs */}
           <div style={{ display: 'flex', borderBottom: '1px solid var(--pbf-border)', padding: '0 8px' }}>
             {([['pipeline', 'Companies'], ['followups', 'Follow-ups'], ['timeline', 'Timeline']] as const).map(([k, label]) => (
-              <button key={k} onClick={() => setView(k)}
+              <button key={k} onClick={() => { setView(k); if (k === 'timeline') setSelectedId(null); }}
                 style={{
                   flex: 1, padding: '6px 0', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em',
                   background: 'none', border: 'none', cursor: 'pointer',
@@ -518,7 +519,12 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
 
         {/* Main Content */}
         <div className="main-content">
-          {selected ? (
+          {view === 'timeline' && !selected ? (
+            <TimelineDiagram
+              companies={companies}
+              onSelectCompany={(id) => { setSelectedId(id); setView('pipeline'); }}
+            />
+          ) : selected ? (
             <CompanyDetail
               company={selected}
               onChange={updateCompany}
