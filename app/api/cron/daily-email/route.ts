@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import nodemailer from 'nodemailer';
 
-// Vercel Cron calls this every hour. We check which users have 8:00 AM
-// in their timezone right now (Mon-Fri) and send them their follow-up digest.
+// Vercel Cron calls this once daily at 6:00 AM UTC (8:00 AM CET), Mon-Fri.
+// Sends follow-up digest to all opted-in users.
 
 export async function GET(req: NextRequest) {
   // Verify cron secret to prevent unauthorized calls
@@ -58,29 +58,6 @@ export async function GET(req: NextRequest) {
     const tz = profile.timezone || 'Europe/Berlin';
     const userInfo = emailMap[profile.id];
     if (!userInfo?.email) continue;
-
-    // Check if it's 8:00 AM in the user's timezone right now
-    let localHour: number;
-    let localDay: number;
-    try {
-      const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: tz,
-        hour: 'numeric',
-        hour12: false,
-        weekday: 'short',
-      });
-      const parts = formatter.formatToParts(now);
-      localHour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
-      const dayName = parts.find(p => p.type === 'weekday')?.value || '';
-      const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-      localDay = dayMap[dayName] ?? 0;
-    } catch {
-      continue;
-    }
-
-    // Only send at 8:00 AM, Mon-Fri
-    if (localHour !== 8) continue;
-    if (localDay === 0 || localDay === 6) continue;
 
     // Get today's date in user's timezone
     let todayStr: string;
