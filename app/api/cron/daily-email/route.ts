@@ -78,36 +78,53 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
-    // Fetch user's companies with follow-up dates (service role bypasses RLS)
+    // Fetch planned events (not done)
+    const { data: plannedEvents } = await admin
+      .from('planned_events')
+      .select('description, event_date, company_id, contact_id, done')
+      .eq('user_id', profile.id)
+      .eq('done', false)
+      .order('event_date');
+
+    // Fetch legacy follow-up dates from companies
     const { data: companies } = await admin
       .from('companies')
-      .select('name, follow_up_date, next_action, stage')
-      .eq('user_id', profile.id)
-      .not('follow_up_date', 'is', null)
-      .order('follow_up_date');
+      .select('id, name, follow_up_date, next_action, stage')
+      .eq('user_id', profile.id);
 
-    // Fetch user's contacts with follow-up dates
+    // Fetch legacy follow-up dates from contacts
     const { data: contactFollowUps } = await admin
       .from('contacts')
-      .select('name, follow_up_date, next_action, company_id')
-      .eq('user_id', profile.id)
-      .not('follow_up_date', 'is', null)
-      .order('follow_up_date');
-
-    // Get company names for contact follow-ups
-    const { data: allUserCompanies } = await admin
-      .from('companies')
-      .select('id, name')
+      .select('id, name, follow_up_date, next_action, company_id')
       .eq('user_id', profile.id);
-    const companyNameMap: Record<string, string> = {};
-    for (const co of allUserCompanies || []) companyNameMap[co.id] = co.name;
 
-    // Merge company + contact follow-ups into a unified list
+    // Build company name map
+    const companyNameMap: Record<string, string> = {};
+    for (const co of companies || []) companyNameMap[co.id] = co.name;
+
+    // Build contact name map
+    const contactNameMap: Record<string, string> = {};
+    for (const ct of contactFollowUps || []) contactNameMap[ct.id] = ct.name || 'Contact';
+
+    // Collect company IDs that have planned events
+    const companiesWithEvents = new Set((plannedEvents || []).filter(e => !e.contact_id).map(e => e.company_id));
+    const contactsWithEvents = new Set((plannedEvents || []).filter(e => e.contact_id).map(e => e.contact_id));
+
+    // Merge planned events + legacy follow-ups into a unified list
     const allItems: FollowUp[] = [
-      ...(companies || []).filter(c => c.stage !== 'won' && c.stage !== 'lost').map(c => ({
+      // Planned events
+      ...(plannedEvents || []).map(ev => ({
+        name: ev.contact_id
+          ? `${contactNameMap[ev.contact_id] || 'Contact'} @ ${companyNameMap[ev.company_id] || '?'}`
+          : companyNameMap[ev.company_id] || '?',
+        follow_up_date: ev.event_date, next_action: ev.description, stage: '',
+      })),
+      // Legacy company follow-ups (only if no planned events for that company)
+      ...(companies || []).filter(c => c.follow_up_date && c.stage !== 'won' && c.stage !== 'lost' && !companiesWithEvents.has(c.id)).map(c => ({
         name: c.name, follow_up_date: c.follow_up_date, next_action: c.next_action, stage: c.stage,
       })),
-      ...(contactFollowUps || []).map(ct => ({
+      // Legacy contact follow-ups (only if no planned events for that contact)
+      ...(contactFollowUps || []).filter(ct => ct.follow_up_date && !contactsWithEvents.has(ct.id)).map(ct => ({
         name: `${ct.name || 'Contact'} @ ${companyNameMap[ct.company_id] || '?'}`,
         follow_up_date: ct.follow_up_date, next_action: ct.next_action, stage: '',
       })),

@@ -203,23 +203,53 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
     await saveAllTemplates(newTemplates);
   };
 
-  // ─── Follow-up data (companies + contacts) ───
+  // ─── Follow-up data (planned events + legacy follow_up_date fields) ───
   const todayStr = today();
 
-  type FollowUpItem = { id: string; label: string; sublabel?: string; follow_up_date: string; next_action: string; companyId: string; type: 'company' | 'contact' };
+  type FollowUpItem = { id: string; label: string; sublabel?: string; follow_up_date: string; next_action: string; companyId: string; type: 'company' | 'contact'; done?: boolean };
 
-  const allFollowUps: FollowUpItem[] = [
-    ...companies.filter(c => c.follow_up_date).map(c => ({
-      id: c.id, label: c.name, follow_up_date: c.follow_up_date, next_action: c.next_action, companyId: c.id, type: 'company' as const,
-    })),
-    ...companies.flatMap(co => co.contacts.filter(ct => ct.follow_up_date).map(ct => ({
-      id: ct.id, label: ct.name || 'Unnamed', sublabel: co.name, follow_up_date: ct.follow_up_date, next_action: ct.next_action, companyId: co.id, type: 'contact' as const,
-    }))),
-  ];
+  const allFollowUps: FollowUpItem[] = [];
 
-  const overdue = allFollowUps.filter(f => f.follow_up_date < todayStr).sort((a, b) => a.follow_up_date.localeCompare(b.follow_up_date));
-  const dueToday = allFollowUps.filter(f => f.follow_up_date === todayStr);
-  const upcoming = allFollowUps.filter(f => f.follow_up_date > todayStr).sort((a, b) => a.follow_up_date.localeCompare(b.follow_up_date)).slice(0, 15);
+  for (const co of companies) {
+    // Planned events (company-level)
+    for (const ev of co.planned_events || []) {
+      allFollowUps.push({
+        id: ev.id, label: co.name, follow_up_date: ev.event_date, next_action: ev.description,
+        companyId: co.id, type: 'company', done: ev.done,
+      });
+    }
+    // Legacy company follow_up_date (only if no planned events)
+    if ((co.planned_events || []).length === 0 && co.follow_up_date) {
+      allFollowUps.push({
+        id: `legacy-${co.id}`, label: co.name, follow_up_date: co.follow_up_date, next_action: co.next_action,
+        companyId: co.id, type: 'company',
+      });
+    }
+    // Planned events (contact-level)
+    for (const ct of co.contacts) {
+      for (const ev of ct.planned_events || []) {
+        allFollowUps.push({
+          id: ev.id, label: ct.name || 'Contact', sublabel: co.name,
+          follow_up_date: ev.event_date, next_action: ev.description,
+          companyId: co.id, type: 'contact', done: ev.done,
+        });
+      }
+      // Legacy contact follow_up_date
+      if ((ct.planned_events || []).length === 0 && ct.follow_up_date) {
+        allFollowUps.push({
+          id: `legacy-ct-${ct.id}`, label: ct.name || 'Contact', sublabel: co.name,
+          follow_up_date: ct.follow_up_date, next_action: ct.next_action,
+          companyId: co.id, type: 'contact',
+        });
+      }
+    }
+  }
+
+  // Filter out completed events
+  const pendingFollowUps = allFollowUps.filter(f => !f.done);
+  const overdue = pendingFollowUps.filter(f => f.follow_up_date < todayStr).sort((a, b) => a.follow_up_date.localeCompare(b.follow_up_date));
+  const dueToday = pendingFollowUps.filter(f => f.follow_up_date === todayStr);
+  const upcoming = pendingFollowUps.filter(f => f.follow_up_date > todayStr).sort((a, b) => a.follow_up_date.localeCompare(b.follow_up_date)).slice(0, 15);
 
   // ─── Global activity timeline ───
   const globalTimeline = companies.flatMap(co => [

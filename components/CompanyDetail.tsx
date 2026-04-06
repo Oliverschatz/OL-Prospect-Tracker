@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { STAGES, SECTORS, FIT_CRITERIA, COMPANY_ACTIVITIES, CONTACT_ACTIVITIES, COMPANY_STAGE_TRIGGERS, CONTACT_STAGE_TRIGGERS } from '@/lib/constants';
 import { today, generateId, autoAdvanceStage, calcFitScore, fitColor } from '@/lib/helpers';
-import { updateCompanyFields, upsertContact, deleteContactFromDb, createActivity, updateActivity, deleteActivityFromDb } from '@/lib/db';
+import { updateCompanyFields, upsertContact, deleteContactFromDb, createActivity, updateActivity, deleteActivityFromDb, upsertPlannedEvent, deletePlannedEvent } from '@/lib/db';
 import { StageBadge, FitScoreDisplay } from '@/components/ui';
 import { ContactModal, ActivityModal, UseTemplateModal } from '@/components/Modals';
-import type { Company, Contact, Activity, Template, StageKey, FitScores } from '@/lib/types';
+import type { Company, Contact, Activity, PlannedEvent, Template, StageKey, FitScores } from '@/lib/types';
 
 interface Props {
   company: Company;
@@ -23,6 +23,8 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
   const [useTemplateContact, setUseTemplateContact] = useState<Contact | null>(null);
   const [editingActivity, setEditingActivity] = useState<{ id: string; text: string; source: string } | null>(null);
   const [newTag, setNewTag] = useState('');
+  const [newEvent, setNewEvent] = useState<{ date: string; desc: string; target: 'company' | string }>({ date: '', desc: '', target: 'company' });
+  const [showEventForm, setShowEventForm] = useState(false);
 
   const set = (key: string, value: unknown) => {
     const updated = { ...company, [key]: value, updated_at: today() };
@@ -112,6 +114,61 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
     updateActivity(activityId, newText);
     setEditingActivity(null);
   };
+
+  const addPlannedEvent = () => {
+    if (!newEvent.date || !newEvent.desc) return;
+    const ev: PlannedEvent = {
+      id: generateId(), company_id: company.id,
+      contact_id: newEvent.target === 'company' ? null : newEvent.target,
+      event_date: newEvent.date, description: newEvent.desc, done: false,
+    };
+    if (ev.contact_id) {
+      const contacts = company.contacts.map(c =>
+        c.id === ev.contact_id ? { ...c, planned_events: [...(c.planned_events || []), ev] } : c
+      );
+      onChange({ ...company, contacts, updated_at: today() });
+    } else {
+      onChange({ ...company, planned_events: [...(company.planned_events || []), ev], updated_at: today() });
+    }
+    upsertPlannedEvent(ev);
+    setNewEvent({ date: '', desc: '', target: 'company' });
+    setShowEventForm(false);
+  };
+
+  const toggleEventDone = (ev: PlannedEvent) => {
+    const updated = { ...ev, done: !ev.done };
+    if (ev.contact_id) {
+      const contacts = company.contacts.map(c =>
+        c.id === ev.contact_id ? { ...c, planned_events: (c.planned_events || []).map(e => e.id === ev.id ? updated : e) } : c
+      );
+      onChange({ ...company, contacts, updated_at: today() });
+    } else {
+      onChange({ ...company, planned_events: (company.planned_events || []).map(e => e.id === ev.id ? updated : e), updated_at: today() });
+    }
+    upsertPlannedEvent(updated);
+  };
+
+  const removeEvent = (ev: PlannedEvent) => {
+    if (ev.contact_id) {
+      const contacts = company.contacts.map(c =>
+        c.id === ev.contact_id ? { ...c, planned_events: (c.planned_events || []).filter(e => e.id !== ev.id) } : c
+      );
+      onChange({ ...company, contacts, updated_at: today() });
+    } else {
+      onChange({ ...company, planned_events: (company.planned_events || []).filter(e => e.id !== ev.id), updated_at: today() });
+    }
+    deletePlannedEvent(ev.id);
+  };
+
+  // All planned events (company + contacts) for display
+  const allEvents: (PlannedEvent & { ownerName: string })[] = [
+    ...(company.planned_events || []).map(e => ({ ...e, ownerName: company.name })),
+    ...company.contacts.flatMap(ct =>
+      (ct.planned_events || []).map(e => ({ ...e, ownerName: ct.name || 'Contact' }))
+    ),
+  ].sort((a, b) => a.event_date.localeCompare(b.event_date));
+
+  const todayDate = today();
 
   // Consolidated timeline
   const allActivities = [
@@ -391,9 +448,93 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
         </div>
       </div>
 
-      {/* Next Action */}
+      {/* Planned Events */}
       <div className="section">
-        <div className="section-header"><h3>Next Action</h3></div>
+        <div className="section-header">
+          <h3>Planned Events ({allEvents.length})</h3>
+          <button className="btn-primary btn-sm" onClick={() => setShowEventForm(!showEventForm)}>+ Plan Event</button>
+        </div>
+        <div className="section-body">
+          {/* Add event form */}
+          {showEventForm && (
+            <div style={{ padding: 12, background: 'var(--pbf-yellow-bg)', borderRadius: 'var(--radius)', marginBottom: 12, border: '1px solid #ecc94b' }}>
+              <div className="field-row">
+                <div className="field-group">
+                  <label>Date</label>
+                  <input type="date" value={newEvent.date} onChange={e => setNewEvent({ ...newEvent, date: e.target.value })} />
+                </div>
+                <div className="field-group">
+                  <label>For</label>
+                  <select value={newEvent.target} onChange={e => setNewEvent({ ...newEvent, target: e.target.value })}>
+                    <option value="company">{company.name} (Company)</option>
+                    {company.contacts.filter(c => c.name).map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="field-row full">
+                <div className="field-group">
+                  <label>Description</label>
+                  <input value={newEvent.desc} onChange={e => setNewEvent({ ...newEvent, desc: e.target.value })}
+                    placeholder="e.g. Send proposal, Follow up call, Schedule demo..."
+                    onKeyDown={e => { if (e.key === 'Enter') addPlannedEvent(); }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                <button className="btn-primary btn-sm" onClick={addPlannedEvent} disabled={!newEvent.date || !newEvent.desc}>Add</button>
+                <button className="btn-ghost btn-sm" onClick={() => setShowEventForm(false)}>Cancel</button>
+              </div>
+            </div>
+          )}
+
+          {allEvents.length === 0 && !showEventForm && (
+            <div style={{ color: 'var(--pbf-muted)', fontSize: 13, textAlign: 'center', padding: 12 }}>
+              No events planned. Click &quot;+ Plan Event&quot; to schedule follow-ups.
+            </div>
+          )}
+
+          {allEvents.map(ev => {
+            const isOverdue = !ev.done && ev.event_date < todayDate;
+            const isDueToday = !ev.done && ev.event_date === todayDate;
+            return (
+              <div key={ev.id} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 10px', marginBottom: 4,
+                borderRadius: 'var(--radius)',
+                background: ev.done ? 'var(--pbf-green-bg)' : isOverdue ? 'var(--pbf-red-bg)' : isDueToday ? 'var(--pbf-yellow-bg)' : 'var(--pbf-light)',
+                border: `1px solid ${ev.done ? 'var(--stage-won)' : isOverdue ? 'var(--pbf-red)' : isDueToday ? '#ecc94b' : 'var(--pbf-border)'}`,
+                opacity: ev.done ? 0.7 : 1,
+              }}>
+                <input type="checkbox" checked={ev.done} onChange={() => toggleEventDone(ev)}
+                  style={{ marginTop: 3, cursor: 'pointer', accentColor: 'var(--stage-won)' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontSize: 13, fontWeight: 600, textDecoration: ev.done ? 'line-through' : 'none',
+                    color: ev.done ? 'var(--stage-won)' : isOverdue ? 'var(--pbf-red)' : 'var(--pbf-text)',
+                  }}>
+                    {ev.description}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--pbf-muted)', marginTop: 2 }}>
+                    <span style={{ fontWeight: 600, color: isOverdue ? 'var(--pbf-red)' : isDueToday ? '#d69e2e' : 'var(--pbf-blue)' }}>
+                      {ev.event_date}
+                    </span>
+                    {ev.contact_id && <span> · {ev.ownerName}</span>}
+                    {!ev.contact_id && <span> · Company</span>}
+                    {isOverdue && <span style={{ color: 'var(--pbf-red)', fontWeight: 600 }}> · OVERDUE</span>}
+                    {isDueToday && <span style={{ color: '#d69e2e', fontWeight: 600 }}> · TODAY</span>}
+                  </div>
+                </div>
+                <button className="btn-danger btn-sm" style={{ fontSize: 10, padding: '0px 4px', flexShrink: 0 }}
+                  onClick={() => removeEvent(ev)}>&#10005;</button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Legacy Next Action (kept for backwards compat) */}
+      <div className="section">
+        <div className="section-header"><h3>Quick Follow-up</h3></div>
         <div className="section-body">
           <div className="field-row">
             <div className="field-group">

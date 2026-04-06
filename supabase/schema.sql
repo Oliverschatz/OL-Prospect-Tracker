@@ -82,6 +82,17 @@ CREATE TABLE activities (
   text TEXT NOT NULL DEFAULT ''
 );
 
+-- Planned events (multiple follow-ups per company/contact)
+CREATE TABLE planned_events (
+  id TEXT PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  company_id TEXT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  contact_id TEXT REFERENCES contacts(id) ON DELETE CASCADE,
+  event_date DATE NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  done BOOLEAN NOT NULL DEFAULT false
+);
+
 -- Message templates
 CREATE TABLE templates (
   id TEXT PRIMARY KEY,
@@ -101,12 +112,17 @@ CREATE INDEX idx_activities_user_id ON activities(user_id);
 CREATE INDEX idx_companies_stage ON companies(stage);
 CREATE INDEX idx_companies_parent_id ON companies(parent_id);
 CREATE INDEX idx_templates_user_id ON templates(user_id);
+CREATE INDEX idx_planned_events_user_id ON planned_events(user_id);
+CREATE INDEX idx_planned_events_company_id ON planned_events(company_id);
+CREATE INDEX idx_planned_events_contact_id ON planned_events(contact_id);
+CREATE INDEX idx_planned_events_date ON planned_events(event_date);
 
 -- Enable RLS
 ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE planned_events ENABLE ROW LEVEL SECURITY;
 
 -- RLS policies: each user can only access their own data
 CREATE POLICY "Users see own companies" ON companies
@@ -119,4 +135,7 @@ CREATE POLICY "Users see own activities" ON activities
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users see own templates" ON templates
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users see own planned_events" ON planned_events
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);

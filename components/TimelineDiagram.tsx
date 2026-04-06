@@ -1,24 +1,24 @@
 'use client';
 
 import { StageBadge } from '@/components/ui';
-import type { Company } from '@/lib/types';
+import type { Company, PlannedEvent } from '@/lib/types';
 
 interface TimelineEntry {
   id: string;
-  companyName: string;
+  label: string;
+  sublabel?: string;
   companyId: string;
-  followUpDate: string;
-  nextAction: string;
+  eventDate: string;
+  description: string;
   stage: Company['stage'];
-  completed: boolean;
-  displayDate: string; // The date shown on the arrow (completed early → today)
+  done: boolean;
+  type: 'company' | 'contact';
 }
 
 function getStatus(entry: TimelineEntry, todayStr: string): 'future' | 'today' | 'overdue' | 'completed' {
-  if (entry.completed && entry.followUpDate > todayStr) return 'completed'; // completed early
-  if (entry.completed) return 'completed';
-  if (entry.displayDate < todayStr) return 'overdue';
-  if (entry.displayDate === todayStr) return 'today';
+  if (entry.done) return 'completed';
+  if (entry.eventDate < todayStr) return 'overdue';
+  if (entry.eventDate === todayStr) return 'today';
   return 'future';
 }
 
@@ -52,67 +52,78 @@ function statusDot(status: string): string {
   }
 }
 
-function isCompleted(company: Company, todayStr: string): boolean {
-  // A follow-up is "completed" if:
-  // 1. Stage is 'won' or 'lost' (terminal)
-  // 2. An activity was logged on or after the follow-up date
-  if (company.stage === 'won' || company.stage === 'lost') return true;
-  if (!company.follow_up_date) return false;
-
-  const allActivities = [
-    ...company.activities,
-    ...company.contacts.flatMap(ct => ct.activities || []),
-  ];
-  return allActivities.some(a => a.date >= company.follow_up_date);
-}
-
 export default function TimelineDiagram({ companies, onSelectCompany }: {
   companies: Company[];
   onSelectCompany: (id: string) => void;
 }) {
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  // Build entries from companies with follow-up dates
-  const entries: TimelineEntry[] = companies
-    .filter(c => c.follow_up_date)
-    .map(c => {
-      const completed = isCompleted(c, todayStr);
-      // Completed early: display at today instead of future date
-      const displayDate = (completed && c.follow_up_date > todayStr) ? todayStr : c.follow_up_date;
-      return {
-        id: c.id,
-        companyName: c.name,
-        companyId: c.id,
-        followUpDate: c.follow_up_date,
-        nextAction: c.next_action || '',
-        stage: c.stage,
-        completed,
-        displayDate,
-      };
-    })
-    .sort((a, b) => a.displayDate.localeCompare(b.displayDate));
+  // Build entries from planned_events + legacy follow_up_date fields
+  const entries: TimelineEntry[] = [];
+
+  for (const co of companies) {
+    // Company-level planned events
+    for (const ev of co.planned_events || []) {
+      entries.push({
+        id: ev.id, label: co.name, companyId: co.id,
+        eventDate: ev.event_date, description: ev.description, stage: co.stage,
+        done: ev.done, type: 'company',
+      });
+    }
+    // Legacy company follow_up_date (only if no planned events exist)
+    if ((co.planned_events || []).length === 0 && co.follow_up_date) {
+      entries.push({
+        id: `legacy-co-${co.id}`, label: co.name, companyId: co.id,
+        eventDate: co.follow_up_date, description: co.next_action || '', stage: co.stage,
+        done: co.stage === 'won' || co.stage === 'lost', type: 'company',
+      });
+    }
+    // Contact-level planned events
+    for (const ct of co.contacts) {
+      for (const ev of ct.planned_events || []) {
+        entries.push({
+          id: ev.id, label: ct.name || 'Contact', sublabel: co.name, companyId: co.id,
+          eventDate: ev.event_date, description: ev.description, stage: co.stage,
+          done: ev.done, type: 'contact',
+        });
+      }
+      // Legacy contact follow_up_date
+      if ((ct.planned_events || []).length === 0 && ct.follow_up_date) {
+        entries.push({
+          id: `legacy-ct-${ct.id}`, label: ct.name || 'Contact', sublabel: co.name, companyId: co.id,
+          eventDate: ct.follow_up_date, description: ct.next_action || '', stage: co.stage,
+          done: false, type: 'contact',
+        });
+      }
+    }
+  }
+
+  entries.sort((a, b) => a.eventDate.localeCompare(b.eventDate));
 
   if (entries.length === 0) {
     return (
       <div className="empty-state">
         <h3>Timeline</h3>
-        <p style={{ maxWidth: 360 }}>No follow-up dates set. Add follow-up dates to your companies to see them here.</p>
+        <p style={{ maxWidth: 360 }}>No events planned. Add planned events to your companies or contacts to see them here.</p>
       </div>
     );
   }
 
-  // Group by displayDate
+  // Group by date
   const dateGroups: Record<string, TimelineEntry[]> = {};
   for (const e of entries) {
-    if (!dateGroups[e.displayDate]) dateGroups[e.displayDate] = [];
-    dateGroups[e.displayDate].push(e);
+    if (!dateGroups[e.eventDate]) dateGroups[e.eventDate] = [];
+    dateGroups[e.eventDate].push(e);
   }
   const sortedDates = Object.keys(dateGroups).sort();
 
-  // Find today's position for the "NOW" marker
-  const todayIdx = sortedDates.findIndex(d => d >= todayStr);
+  const fmtDateShort = (d: string) => {
+    const dt = new Date(d + 'T00:00:00');
+    const day = dt.getDate();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${day} ${months[dt.getMonth()]}`;
+  };
 
-  // Format date for display
   const fmtDate = (d: string) => {
     const dt = new Date(d + 'T00:00:00');
     const day = dt.getDate();
@@ -126,161 +137,176 @@ export default function TimelineDiagram({ companies, onSelectCompany }: {
     if (diff === 0) return 'Today';
     if (diff === 1) return 'Tomorrow';
     if (diff === -1) return 'Yesterday';
-    if (diff > 0) return `In ${diff} days`;
-    return `${Math.abs(diff)} days ago`;
+    if (diff > 0) return `In ${diff}d`;
+    return `${Math.abs(diff)}d ago`;
+  };
+
+  // Determine the dominant status for each date (for coloring the horizontal timeline)
+  const dateStatus = (date: string): string => {
+    const group = dateGroups[date];
+    if (group.every(e => getStatus(e, todayStr) === 'completed')) return 'completed';
+    if (date === todayStr) return 'today';
+    if (date < todayStr && group.some(e => getStatus(e, todayStr) === 'overdue')) return 'overdue';
+    if (date > todayStr) return 'future';
+    return 'future';
   };
 
   return (
-    <div style={{ padding: '24px 0' }}>
-      <h2 style={{ fontFamily: "'Source Serif 4', serif", fontSize: 20, fontWeight: 700, marginBottom: 24, paddingLeft: 60 }}>
+    <div style={{ padding: '24px 20px' }}>
+      <h2 style={{ fontFamily: "'Source Serif 4', serif", fontSize: 20, fontWeight: 700, marginBottom: 16 }}>
         Follow-up Timeline
       </h2>
 
-      <div style={{ position: 'relative', paddingLeft: 60 }}>
-        {/* Vertical line (the time arrow) */}
+      {/* ─── Horizontal timeline bar ─── */}
+      <div style={{ position: 'relative', marginBottom: 32, padding: '0 8px' }}>
+        {/* The horizontal line */}
         <div style={{
-          position: 'absolute', left: 28, top: 0, bottom: 0, width: 2,
-          background: 'linear-gradient(to bottom, var(--pbf-border), var(--pbf-navy), var(--pbf-border))',
+          position: 'absolute', top: 14, left: 0, right: 0, height: 3,
+          background: 'linear-gradient(to right, var(--pbf-border), var(--pbf-navy), var(--pbf-border))',
+          borderRadius: 2,
         }} />
 
-        {/* Arrow head at top */}
+        {/* Arrow at right end */}
         <div style={{
-          position: 'absolute', left: 22, top: -8,
+          position: 'absolute', top: 9, right: -6,
           width: 0, height: 0,
-          borderLeft: '7px solid transparent', borderRight: '7px solid transparent',
-          borderBottom: '10px solid var(--pbf-border)',
+          borderTop: '6px solid transparent', borderBottom: '6px solid transparent',
+          borderLeft: '9px solid var(--pbf-border)',
         }} />
 
-        {sortedDates.map((date, idx) => {
-          const group = dateGroups[date];
-          const isToday = date === todayStr;
+        {/* Date markers */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', minHeight: 50, overflowX: 'auto' }}>
+          {sortedDates.map((date, idx) => {
+            const status = dateStatus(date);
+            const isToday = date === todayStr;
+            const count = dateGroups[date].length;
 
-          // Insert "TODAY" marker if we passed it
-          const showTodayBefore = idx === todayIdx && !isToday && todayIdx > 0;
+            // Insert today marker if today is between dates
+            const prevDate = idx > 0 ? sortedDates[idx - 1] : null;
+            const showTodayGap = !sortedDates.includes(todayStr) && prevDate && prevDate < todayStr && date > todayStr;
 
-          return (
-            <div key={date}>
-              {/* TODAY marker between past and future */}
-              {showTodayBefore && (
-                <div style={{ position: 'relative', margin: '16px 0', paddingLeft: 20 }}>
-                  <div style={{
-                    position: 'absolute', left: -38, top: '50%', transform: 'translateY(-50%)',
-                    width: 14, height: 14, borderRadius: '50%', background: '#d69e2e',
-                    border: '3px solid var(--pbf-yellow-bg)', zIndex: 2,
-                  }} />
-                  <div style={{
-                    padding: '4px 14px', background: 'var(--pbf-yellow-bg)', borderRadius: 4,
-                    fontSize: 11, fontWeight: 700, color: '#d69e2e', textTransform: 'uppercase',
-                    letterSpacing: '0.08em', display: 'inline-block',
-                    border: '1px solid #ecc94b',
-                  }}>
-                    Today &mdash; {fmtDate(todayStr)}
+            return (
+              <div key={date} style={{ display: 'flex', alignItems: 'flex-start' }}>
+                {showTodayGap && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 44, marginRight: 4 }}>
+                    <div style={{
+                      width: 16, height: 16, borderRadius: '50%', background: '#d69e2e',
+                      border: '3px solid var(--pbf-yellow-bg)', zIndex: 2, marginTop: 6,
+                    }} />
+                    <div style={{ fontSize: 9, fontWeight: 700, color: '#d69e2e', marginTop: 4, textTransform: 'uppercase' }}>Today</div>
                   </div>
-                </div>
-              )}
-
-              {/* Date group */}
-              <div style={{ position: 'relative', marginBottom: 8 }}>
-                {/* Date label */}
+                )}
                 <div style={{
-                  position: 'relative', paddingLeft: 20, marginBottom: 4, marginTop: idx === 0 ? 0 : 12,
-                }}>
-                  {/* Dot on the line */}
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 52, cursor: 'pointer',
+                }}
+                  onClick={() => {
+                    const firstEntry = dateGroups[date][0];
+                    if (firstEntry) onSelectCompany(firstEntry.companyId);
+                  }}
+                >
                   <div style={{
-                    position: 'absolute', left: -35, top: '50%', transform: 'translateY(-50%)',
-                    width: isToday ? 14 : 10, height: isToday ? 14 : 10,
-                    borderRadius: '50%',
-                    background: isToday ? '#d69e2e' : 'var(--pbf-border)',
-                    border: isToday ? '3px solid var(--pbf-yellow-bg)' : '2px solid var(--pbf-white)',
-                    zIndex: 2,
+                    width: isToday ? 16 : 12, height: isToday ? 16 : 12, borderRadius: '50%',
+                    background: statusDot(status),
+                    border: isToday ? '3px solid var(--pbf-yellow-bg)' : '2px solid white',
+                    zIndex: 2, marginTop: isToday ? 6 : 8,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
                   }} />
                   <div style={{
-                    fontSize: 12, fontWeight: 700,
-                    color: isToday ? '#d69e2e' : (date < todayStr ? 'var(--pbf-muted)' : 'var(--pbf-text)'),
+                    fontSize: 10, fontWeight: 700, marginTop: 4,
+                    color: statusColor(status),
+                    whiteSpace: 'nowrap',
                   }}>
-                    {fmtDate(date)}
-                    <span style={{ fontWeight: 400, marginLeft: 8, fontSize: 11, color: 'var(--pbf-muted)' }}>
-                      {daysDiff(date)}
-                    </span>
+                    {fmtDateShort(date)}
                   </div>
+                  <div style={{ fontSize: 9, color: 'var(--pbf-muted)' }}>{daysDiff(date)}</div>
+                  {count > 1 && (
+                    <div style={{
+                      fontSize: 9, fontWeight: 600, color: 'white', background: statusDot(status),
+                      borderRadius: 8, padding: '0 5px', marginTop: 1,
+                    }}>{count}</div>
+                  )}
                 </div>
-
-                {/* Entries for this date */}
-                {group.map(entry => {
-                  const status = getStatus(entry, todayStr);
-                  return (
-                    <div key={entry.id}
-                      onClick={() => onSelectCompany(entry.companyId)}
-                      style={{
-                        position: 'relative', marginLeft: 20, marginBottom: 4, padding: '8px 14px',
-                        background: statusBg(status), borderRadius: 'var(--radius)',
-                        border: `1px solid ${status === 'overdue' ? 'var(--pbf-red)' : status === 'today' ? '#ecc94b' : status === 'completed' ? 'var(--stage-won)' : 'var(--pbf-border)'}`,
-                        cursor: 'pointer', transition: 'box-shadow 0.15s',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-md)')}
-                      onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-                    >
-                      {/* Status dot connector */}
-                      <div style={{
-                        position: 'absolute', left: -27, top: 14,
-                        width: 8, height: 2, background: statusDot(status),
-                      }} />
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                        {/* Status indicator */}
-                        <span style={{
-                          display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
-                          background: statusDot(status), flexShrink: 0,
-                        }} />
-                        <span style={{ fontWeight: 600, fontSize: 14, color: statusColor(status) }}>
-                          {entry.companyName}
-                        </span>
-                        <StageBadge stage={entry.stage} />
-                        {entry.completed && entry.followUpDate > todayStr && (
-                          <span style={{ fontSize: 10, color: 'var(--stage-won)', fontWeight: 600 }}>completed early</span>
-                        )}
-                      </div>
-                      {entry.nextAction && (
-                        <div style={{ fontSize: 12, color: 'var(--pbf-muted)', marginLeft: 16 }}>
-                          {entry.nextAction}
-                        </div>
-                      )}
-                      {entry.followUpDate !== entry.displayDate && (
-                        <div style={{ fontSize: 11, color: 'var(--stage-won)', marginLeft: 16, fontStyle: 'italic' }}>
-                          Originally scheduled: {entry.followUpDate}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
               </div>
-            </div>
-          );
-        })}
-
-        {/* Bottom arrow */}
-        <div style={{
-          position: 'absolute', left: 22, bottom: -8,
-          width: 0, height: 0,
-          borderLeft: '7px solid transparent', borderRight: '7px solid transparent',
-          borderTop: '10px solid var(--pbf-border)',
-        }} />
+            );
+          })}
+        </div>
       </div>
 
-      {/* Legend */}
-      <div style={{ display: 'flex', gap: 16, marginTop: 32, paddingLeft: 60, flexWrap: 'wrap' }}>
+      {/* ─── Legend ─── */}
+      <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { color: 'var(--pbf-text)', bg: 'var(--pbf-light)', label: 'Future' },
-          { color: '#d69e2e', bg: 'var(--pbf-yellow-bg)', label: 'Today' },
-          { color: 'var(--stage-won)', bg: 'var(--pbf-green-bg)', label: 'Completed' },
-          { color: 'var(--pbf-red)', bg: 'var(--pbf-red-bg)', label: 'Overdue' },
+          { color: 'var(--pbf-text)', label: 'Future' },
+          { color: '#d69e2e', label: 'Today' },
+          { color: 'var(--stage-won)', label: 'Completed' },
+          { color: 'var(--pbf-red)', label: 'Overdue' },
         ].map(item => (
-          <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
-            <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: item.color }} />
+          <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
+            <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', background: item.color }} />
             <span style={{ color: 'var(--pbf-muted)' }}>{item.label}</span>
           </div>
         ))}
       </div>
+
+      {/* ─── Event list below ─── */}
+      {sortedDates.map(date => {
+        const group = dateGroups[date];
+        const isToday = date === todayStr;
+
+        return (
+          <div key={date} style={{ marginBottom: 12 }}>
+            <div style={{
+              fontSize: 12, fontWeight: 700, padding: '6px 0', borderBottom: '1px solid var(--pbf-border)',
+              color: isToday ? '#d69e2e' : (date < todayStr ? 'var(--pbf-muted)' : 'var(--pbf-text)'),
+            }}>
+              {fmtDate(date)}
+              <span style={{ fontWeight: 400, marginLeft: 8, fontSize: 11, color: 'var(--pbf-muted)' }}>
+                {daysDiff(date)}
+              </span>
+            </div>
+            {group.map(entry => {
+              const status = getStatus(entry, todayStr);
+              return (
+                <div key={entry.id}
+                  onClick={() => onSelectCompany(entry.companyId)}
+                  style={{
+                    padding: '8px 14px', marginTop: 4,
+                    background: statusBg(status), borderRadius: 'var(--radius)',
+                    border: `1px solid ${status === 'overdue' ? 'var(--pbf-red)' : status === 'today' ? '#ecc94b' : status === 'completed' ? 'var(--stage-won)' : 'var(--pbf-border)'}`,
+                    cursor: 'pointer', transition: 'box-shadow 0.15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-md)')}
+                  onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                    <span style={{
+                      display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
+                      background: statusDot(status), flexShrink: 0,
+                    }} />
+                    {entry.type === 'contact' && (
+                      <span style={{ color: 'var(--pbf-blue)', fontSize: 10, fontWeight: 600 }}>&#9679;</span>
+                    )}
+                    <span style={{ fontWeight: 600, fontSize: 13, color: statusColor(status) }}>
+                      {entry.label}
+                    </span>
+                    {entry.sublabel && (
+                      <span style={{ fontSize: 11, color: 'var(--pbf-muted)' }}>@ {entry.sublabel}</span>
+                    )}
+                    <StageBadge stage={entry.stage} />
+                    {entry.done && (
+                      <span style={{ fontSize: 10, color: 'var(--stage-won)', fontWeight: 600 }}>&#10003; done</span>
+                    )}
+                  </div>
+                  {entry.description && (
+                    <div style={{ fontSize: 12, color: 'var(--pbf-muted)', marginLeft: 16 }}>
+                      {entry.description}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
     </div>
   );
 }

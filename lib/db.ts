@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Company, Contact, Activity, Template, FitScores } from './types';
+import type { Company, Contact, Activity, PlannedEvent, Template, FitScores } from './types';
 import { generateId, today } from './helpers';
 
 // ─── Get current user id ───
@@ -15,30 +15,40 @@ async function getUserId(): Promise<string | null> {
 export async function loadAllCompanies(): Promise<Company[]> {
   if (!supabase) return [];
 
-  const [companiesRes, contactsRes, activitiesRes] = await Promise.all([
+  const [companiesRes, contactsRes, activitiesRes, eventsRes] = await Promise.all([
     supabase.from('companies').select('*').order('name'),
     supabase.from('contacts').select('*'),
     supabase.from('activities').select('*').order('date', { ascending: true }),
+    supabase.from('planned_events').select('*').order('event_date', { ascending: true }),
   ]);
 
-  const companies = (companiesRes.data || []) as Array<Omit<Company, 'contacts' | 'activities'>>;
-  const contacts = (contactsRes.data || []) as Array<Omit<Contact, 'activities'> & { company_id: string }>;
+  const companies = (companiesRes.data || []) as Array<Omit<Company, 'contacts' | 'activities' | 'planned_events'>>;
+  const contacts = (contactsRes.data || []) as Array<Omit<Contact, 'activities' | 'planned_events'> & { company_id: string }>;
   const activities = (activitiesRes.data || []) as Array<Activity & { company_id: string; contact_id: string | null }>;
+  const events = (eventsRes.data || []) as Array<PlannedEvent & { user_id?: string }>;
 
   // Group contacts by company
   const contactsByCompany: Record<string, Contact[]> = {};
   for (const ct of contacts) {
     if (!contactsByCompany[ct.company_id]) contactsByCompany[ct.company_id] = [];
     const contactActivities = activities.filter(a => a.contact_id === ct.id);
-    contactsByCompany[ct.company_id].push({ ...ct, activities: contactActivities });
+    const contactEvents = events.filter(e => e.contact_id === ct.id);
+    contactsByCompany[ct.company_id].push({ ...ct, activities: contactActivities, planned_events: contactEvents });
   }
 
-  // Group company-level activities
+  // Group company-level activities and events
   const companyActivities: Record<string, Activity[]> = {};
   for (const a of activities) {
     if (!a.contact_id) {
       if (!companyActivities[a.company_id]) companyActivities[a.company_id] = [];
       companyActivities[a.company_id].push(a);
+    }
+  }
+  const companyEvents: Record<string, PlannedEvent[]> = {};
+  for (const e of events) {
+    if (!e.contact_id) {
+      if (!companyEvents[e.company_id]) companyEvents[e.company_id] = [];
+      companyEvents[e.company_id].push(e);
     }
   }
 
@@ -48,6 +58,7 @@ export async function loadAllCompanies(): Promise<Company[]> {
     tags: (Array.isArray((c as Record<string, unknown>).tags) ? (c as Record<string, unknown>).tags : []) as string[],
     contacts: contactsByCompany[c.id] || [],
     activities: companyActivities[c.id] || [],
+    planned_events: companyEvents[c.id] || [],
   }));
 }
 
@@ -129,6 +140,19 @@ export async function updateActivity(id: string, text: string): Promise<void> {
 export async function deleteActivityFromDb(id: string): Promise<void> {
   if (!supabase) return;
   await supabase.from('activities').delete().eq('id', id);
+}
+
+// ─── Planned Event CRUD ───
+
+export async function upsertPlannedEvent(event: PlannedEvent): Promise<void> {
+  if (!supabase) return;
+  const userId = await getUserId();
+  await supabase.from('planned_events').upsert({ ...event, user_id: userId });
+}
+
+export async function deletePlannedEvent(id: string): Promise<void> {
+  if (!supabase) return;
+  await supabase.from('planned_events').delete().eq('id', id);
 }
 
 // ─── Template CRUD ───

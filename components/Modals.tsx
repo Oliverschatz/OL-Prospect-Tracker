@@ -29,6 +29,7 @@ export function ContactModal({
       follow_up_date: '',
       next_action: '',
       activities: [],
+      planned_events: [],
     }
   );
   const set = (k: keyof Contact, v: string) => setForm(prev => ({ ...prev, [k]: v }));

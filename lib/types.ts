@@ -21,6 +21,16 @@ export interface Activity {
   text: string;
 }
 
+// ─── Planned Event ───
+export interface PlannedEvent {
+  id: string;
+  company_id: string;
+  contact_id: string | null;
+  event_date: string;
+  description: string;
+  done: boolean;
+}
+
 // ─── Contact ───
 export interface Contact {
   id: string;
@@ -36,6 +46,7 @@ export interface Contact {
   follow_up_date: string;
   next_action: string;
   activities: Activity[];
+  planned_events: PlannedEvent[];
 }
 
 // ─── Company ───
@@ -60,6 +71,7 @@ export interface Company {
   updated_at: string;
   contacts: Contact[];
   activities: Activity[];
+  planned_events: PlannedEvent[];
 }
 
 // ─── Template ───

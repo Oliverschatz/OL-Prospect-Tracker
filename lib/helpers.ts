@@ -75,6 +75,7 @@ export const EMPTY_COMPANY: Omit<Company, 'id' | 'created_at' | 'updated_at'> = 
   tags: [],
   contacts: [],
   activities: [],
+  planned_events: [],
 };
 
 export const EMPTY_CONTACT: Omit<Contact, 'id'> = {
@@ -89,4 +90,5 @@ export const EMPTY_CONTACT: Omit<Contact, 'id'> = {
   follow_up_date: '',
   next_action: '',
   activities: [],
+  planned_events: [],
 };
