@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import nodemailer from 'nodemailer';
 
-// Vercel Cron calls this once daily at 6:00 AM UTC (8:00 AM CET), Mon-Fri.
+// Vercel Cron calls this once daily at midnight UTC, Mon-Fri.
+// That's 1 AM CET, 5 PM PDT (prev day), 9 AM JST.
 // Sends follow-up digest to all opted-in users.
 
 export async function GET(req: NextRequest) {
