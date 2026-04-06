@@ -67,7 +67,9 @@ CREATE TABLE contacts (
   linkedin TEXT NOT NULL DEFAULT '',
   role TEXT NOT NULL DEFAULT 'target'
     CHECK (role IN ('target', 'champion', 'influencer', 'gatekeeper', 'referral')),
-  notes TEXT NOT NULL DEFAULT ''
+  notes TEXT NOT NULL DEFAULT '',
+  follow_up_date DATE,
+  next_action TEXT NOT NULL DEFAULT ''
 );
 
 -- Activities table (company-level when contact_id is NULL, contact-level otherwise)

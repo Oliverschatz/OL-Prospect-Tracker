@@ -337,9 +337,20 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                   &#128222; <a href={`tel:${ct.phone}`} style={{ color: 'var(--pbf-blue)' }}>{ct.phone}</a>
                 </div>
               )}
-              <span className="stage-badge" style={{ marginTop: 4, background: 'var(--pbf-light)', color: 'var(--pbf-muted)', fontSize: 10 }}>
-                {roleLabel(ct.role)}
-              </span>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+                <span className="stage-badge" style={{ background: 'var(--pbf-light)', color: 'var(--pbf-muted)', fontSize: 10 }}>
+                  {roleLabel(ct.role)}
+                </span>
+                {ct.follow_up_date && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 8,
+                    background: ct.follow_up_date < today() ? 'var(--pbf-red-bg)' : ct.follow_up_date === today() ? 'var(--pbf-yellow-bg)' : 'var(--pbf-blue-bg)',
+                    color: ct.follow_up_date < today() ? 'var(--pbf-red)' : ct.follow_up_date === today() ? '#b7791f' : 'var(--pbf-blue)',
+                  }}>
+                    &#128197; {ct.follow_up_date}{ct.next_action ? ` · ${ct.next_action}` : ''}
+                  </span>
+                )}
+              </div>
               {(ct.activities || []).length > 0 && (
                 <div style={{ marginTop: 8, borderTop: '1px solid var(--pbf-border)', paddingTop: 6 }}>
                   {[...(ct.activities || [])].reverse().map(a => (

@@ -86,11 +86,38 @@ export async function GET(req: NextRequest) {
       .not('follow_up_date', 'is', null)
       .order('follow_up_date');
 
-    if (!companies || companies.length === 0) continue;
+    // Fetch user's contacts with follow-up dates
+    const { data: contactFollowUps } = await admin
+      .from('contacts')
+      .select('name, follow_up_date, next_action, company_id')
+      .eq('user_id', profile.id)
+      .not('follow_up_date', 'is', null)
+      .order('follow_up_date');
 
-    const overdue = companies.filter(c => c.follow_up_date < todayStr && c.stage !== 'won' && c.stage !== 'lost');
-    const dueToday = companies.filter(c => c.follow_up_date === todayStr);
-    const dueTomorrow = companies.filter(c => c.follow_up_date === tomorrowStr);
+    // Get company names for contact follow-ups
+    const { data: allUserCompanies } = await admin
+      .from('companies')
+      .select('id, name')
+      .eq('user_id', profile.id);
+    const companyNameMap: Record<string, string> = {};
+    for (const co of allUserCompanies || []) companyNameMap[co.id] = co.name;
+
+    // Merge company + contact follow-ups into a unified list
+    const allItems: FollowUp[] = [
+      ...(companies || []).filter(c => c.stage !== 'won' && c.stage !== 'lost').map(c => ({
+        name: c.name, follow_up_date: c.follow_up_date, next_action: c.next_action, stage: c.stage,
+      })),
+      ...(contactFollowUps || []).map(ct => ({
+        name: `${ct.name || 'Contact'} @ ${companyNameMap[ct.company_id] || '?'}`,
+        follow_up_date: ct.follow_up_date, next_action: ct.next_action, stage: '',
+      })),
+    ];
+
+    if (allItems.length === 0) continue;
+
+    const overdue = allItems.filter(c => c.follow_up_date < todayStr);
+    const dueToday = allItems.filter(c => c.follow_up_date === todayStr);
+    const dueTomorrow = allItems.filter(c => c.follow_up_date === tomorrowStr);
 
     if (overdue.length === 0 && dueToday.length === 0 && dueTomorrow.length === 0) continue;
 

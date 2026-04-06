@@ -93,7 +93,8 @@ export async function upsertContact(companyId: string, contact: Contact): Promis
   if (!supabase) return;
   const userId = await getUserId();
   const { activities, ...row } = contact;
-  await supabase.from('contacts').upsert({ ...row, company_id: companyId, user_id: userId });
+  const dbRow = { ...row, company_id: companyId, user_id: userId, follow_up_date: row.follow_up_date || null };
+  await supabase.from('contacts').upsert(dbRow);
 }
 
 export async function deleteContactFromDb(id: string): Promise<void> {

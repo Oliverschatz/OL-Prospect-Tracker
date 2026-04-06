@@ -33,6 +33,8 @@ export interface Contact {
   linkedin: string;
   role: 'target' | 'champion' | 'influencer' | 'gatekeeper' | 'referral';
   notes: string;
+  follow_up_date: string;
+  next_action: string;
   activities: Activity[];
 }
 

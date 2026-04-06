@@ -86,5 +86,7 @@ export const EMPTY_CONTACT: Omit<Contact, 'id'> = {
   linkedin: '',
   role: 'target',
   notes: '',
+  follow_up_date: '',
+  next_action: '',
   activities: [],
 };

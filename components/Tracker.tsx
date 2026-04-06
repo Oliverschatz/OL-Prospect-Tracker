@@ -203,11 +203,23 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
     await saveAllTemplates(newTemplates);
   };
 
-  // ─── Follow-up data ───
+  // ─── Follow-up data (companies + contacts) ───
   const todayStr = today();
-  const overdue = companies.filter(c => c.follow_up_date && c.follow_up_date < todayStr).sort((a, b) => a.follow_up_date.localeCompare(b.follow_up_date));
-  const dueToday = companies.filter(c => c.follow_up_date === todayStr);
-  const upcoming = companies.filter(c => c.follow_up_date && c.follow_up_date > todayStr).sort((a, b) => a.follow_up_date.localeCompare(b.follow_up_date)).slice(0, 15);
+
+  type FollowUpItem = { id: string; label: string; sublabel?: string; follow_up_date: string; next_action: string; companyId: string; type: 'company' | 'contact' };
+
+  const allFollowUps: FollowUpItem[] = [
+    ...companies.filter(c => c.follow_up_date).map(c => ({
+      id: c.id, label: c.name, follow_up_date: c.follow_up_date, next_action: c.next_action, companyId: c.id, type: 'company' as const,
+    })),
+    ...companies.flatMap(co => co.contacts.filter(ct => ct.follow_up_date).map(ct => ({
+      id: ct.id, label: ct.name || 'Unnamed', sublabel: co.name, follow_up_date: ct.follow_up_date, next_action: ct.next_action, companyId: co.id, type: 'contact' as const,
+    }))),
+  ];
+
+  const overdue = allFollowUps.filter(f => f.follow_up_date < todayStr).sort((a, b) => a.follow_up_date.localeCompare(b.follow_up_date));
+  const dueToday = allFollowUps.filter(f => f.follow_up_date === todayStr);
+  const upcoming = allFollowUps.filter(f => f.follow_up_date > todayStr).sort((a, b) => a.follow_up_date.localeCompare(b.follow_up_date)).slice(0, 15);
 
   // ─── Global activity timeline ───
   const globalTimeline = companies.flatMap(co => [
@@ -441,13 +453,17 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
                     <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--pbf-red)' }}>
                       Overdue ({overdue.length})
                     </div>
-                    {overdue.map(c => (
-                      <div key={c.id} className={`company-item ${selectedId === c.id ? 'active' : ''}`}
-                        onClick={() => { setSelectedId(c.id); setView('pipeline'); }} style={{ paddingLeft: 16 }}>
-                        <div className="company-item-name">{c.name}</div>
+                    {overdue.map(f => (
+                      <div key={`${f.type}-${f.id}`} className={`company-item ${selectedId === f.companyId ? 'active' : ''}`}
+                        onClick={() => { setSelectedId(f.companyId); setView('pipeline'); }} style={{ paddingLeft: 16 }}>
+                        <div className="company-item-name">
+                          {f.type === 'contact' && <span style={{ color: 'var(--pbf-blue)', fontSize: 10, marginRight: 4 }}>&#9679;</span>}
+                          {f.label}
+                        </div>
                         <div className="company-item-meta">
-                          <span style={{ color: 'var(--pbf-red)', fontWeight: 600 }}>{c.follow_up_date}</span>
-                          {c.next_action && <span> · {c.next_action}</span>}
+                          <span style={{ color: 'var(--pbf-red)', fontWeight: 600 }}>{f.follow_up_date}</span>
+                          {f.sublabel && <span style={{ color: 'var(--pbf-muted)' }}> @ {f.sublabel}</span>}
+                          {f.next_action && <span> · {f.next_action}</span>}
                         </div>
                       </div>
                     ))}
@@ -458,12 +474,16 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
                     <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--pbf-accent)' }}>
                       Due Today ({dueToday.length})
                     </div>
-                    {dueToday.map(c => (
-                      <div key={c.id} className={`company-item ${selectedId === c.id ? 'active' : ''}`}
-                        onClick={() => { setSelectedId(c.id); setView('pipeline'); }} style={{ paddingLeft: 16 }}>
-                        <div className="company-item-name">{c.name}</div>
+                    {dueToday.map(f => (
+                      <div key={`${f.type}-${f.id}`} className={`company-item ${selectedId === f.companyId ? 'active' : ''}`}
+                        onClick={() => { setSelectedId(f.companyId); setView('pipeline'); }} style={{ paddingLeft: 16 }}>
+                        <div className="company-item-name">
+                          {f.type === 'contact' && <span style={{ color: 'var(--pbf-blue)', fontSize: 10, marginRight: 4 }}>&#9679;</span>}
+                          {f.label}
+                        </div>
                         <div className="company-item-meta">
-                          {c.next_action || 'Follow up today'}
+                          {f.sublabel && <span style={{ color: 'var(--pbf-muted)' }}>{f.sublabel} · </span>}
+                          {f.next_action || 'Follow up today'}
                         </div>
                       </div>
                     ))}
@@ -474,13 +494,17 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
                     <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--pbf-blue)' }}>
                       Upcoming
                     </div>
-                    {upcoming.map(c => (
-                      <div key={c.id} className={`company-item ${selectedId === c.id ? 'active' : ''}`}
-                        onClick={() => { setSelectedId(c.id); setView('pipeline'); }} style={{ paddingLeft: 16 }}>
-                        <div className="company-item-name">{c.name}</div>
+                    {upcoming.map(f => (
+                      <div key={`${f.type}-${f.id}`} className={`company-item ${selectedId === f.companyId ? 'active' : ''}`}
+                        onClick={() => { setSelectedId(f.companyId); setView('pipeline'); }} style={{ paddingLeft: 16 }}>
+                        <div className="company-item-name">
+                          {f.type === 'contact' && <span style={{ color: 'var(--pbf-blue)', fontSize: 10, marginRight: 4 }}>&#9679;</span>}
+                          {f.label}
+                        </div>
                         <div className="company-item-meta">
-                          <span style={{ color: 'var(--pbf-blue)' }}>{c.follow_up_date}</span>
-                          {c.next_action && <span> · {c.next_action}</span>}
+                          <span style={{ color: 'var(--pbf-blue)' }}>{f.follow_up_date}</span>
+                          {f.sublabel && <span style={{ color: 'var(--pbf-muted)' }}> @ {f.sublabel}</span>}
+                          {f.next_action && <span> · {f.next_action}</span>}
                         </div>
                       </div>
                     ))}
