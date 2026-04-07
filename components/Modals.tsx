@@ -185,11 +185,20 @@ export function TemplateManagerModal({
   const save = () => {
     if (!form.name.trim() || !form.body.trim()) return;
     if (editing === 'new') {
-      setList([...list, { id: generateId(), name: form.name, body: form.body, sort_order: list.length }]);
+      setList(prev => [...prev, { id: generateId(), name: form.name, body: form.body, sort_order: prev.length }]);
     } else if (typeof editing === 'number') {
       setList(list.map((t, i) => (i === editing ? { ...t, name: form.name, body: form.body } : t)));
     }
     setEditing(null);
+  };
+  // Flush any pending edit into `list` and return the resulting list
+  const flushPending = (): Template[] => {
+    if (editing === null) return list;
+    if (!form.name.trim() || !form.body.trim()) return list;
+    if (editing === 'new') {
+      return [...list, { id: generateId(), name: form.name, body: form.body, sort_order: list.length }];
+    }
+    return list.map((t, i) => (i === editing ? { ...t, name: form.name, body: form.body } : t));
   };
   const remove = (idx: number) => {
     setList(list.filter((_, i) => i !== idx));
@@ -226,7 +235,7 @@ export function TemplateManagerModal({
                       <button className="btn-danger btn-sm" onClick={() => remove(idx)}>&#10005;</button>
                     </div>
                   </div>
-                  <pre style={{ fontSize: 12, color: 'var(--pbf-muted)', whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.4 }}>{t.body}</pre>
+                  <pre style={{ fontSize: 12, color: 'var(--pbf-text)', whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.4 }}>{t.body}</pre>
                 </div>
               )}
             </div>
@@ -246,7 +255,7 @@ export function TemplateManagerModal({
           <button className="btn-ghost" onClick={startNew}>+ New Template</button>
           <div style={{ flex: 1 }} />
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={() => { onSave(list); onClose(); }}>Save All</button>
+          <button className="btn-primary" onClick={() => { const final = flushPending(); setList(final); onSave(final); onClose(); }}>Save All</button>
         </div>
       </div>
     </div>
@@ -293,9 +302,11 @@ export function UseTemplateModal({
             <div className="field-group">
               <label>Template</label>
               <select value={selectedIdx} onChange={e => setSelectedIdx(Number(e.target.value))}>
-                {templates.map((t, i) => (
-                  <option key={t.id} value={i}>{t.name}</option>
-                ))}
+                {templates.map((t, i) => {
+                  const titleLine = (t.body || '').split('\n').find(l => l.trim()) || t.name;
+                  const label = titleLine.length > 70 ? titleLine.slice(0, 67) + '…' : titleLine;
+                  return <option key={t.id} value={i}>{t.name} — {label}</option>;
+                })}
               </select>
             </div>
             <div className="field-group">
