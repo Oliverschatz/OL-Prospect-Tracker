@@ -60,7 +60,7 @@ export default function TimelineDiagram({ companies, onSelectCompany, filter = '
 }) {
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  // Build entries from planned_events
+  // Build entries from planned_events (and from the activity log for the history view)
   const entries: TimelineEntry[] = [];
 
   for (const co of companies) {
@@ -78,6 +78,25 @@ export default function TimelineDiagram({ companies, onSelectCompany, filter = '
           eventDate: ev.event_date, description: ev.title || ev.description, stage: co.stage,
           done: ev.done, type: 'contact',
         });
+      }
+    }
+
+    if (filter === 'history') {
+      for (const a of co.activities || []) {
+        entries.push({
+          id: `act-${a.id}`, label: co.name, companyId: co.id,
+          eventDate: a.date, description: a.text, stage: co.stage,
+          done: true, type: 'company',
+        });
+      }
+      for (const ct of co.contacts) {
+        for (const a of ct.activities || []) {
+          entries.push({
+            id: `act-${a.id}`, label: ct.name || 'Contact', sublabel: co.name, companyId: co.id,
+            eventDate: a.date, description: a.text, stage: co.stage,
+            done: true, type: 'contact',
+          });
+        }
       }
     }
   }
