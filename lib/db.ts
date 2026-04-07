@@ -26,6 +26,8 @@ export async function loadAllCompanies(): Promise<Company[]> {
   const contacts = (contactsRes.data || []) as Array<Omit<Contact, 'activities' | 'planned_events'> & { company_id: string }>;
   const activities = (activitiesRes.data || []) as Array<Activity & { company_id: string; contact_id: string | null }>;
   const events = (eventsRes.data || []) as Array<PlannedEvent & { user_id?: string }>;
+  // Backfill title for legacy rows that predate the title column
+  for (const e of events) if (e.title == null) e.title = '';
 
   // Group contacts by company
   const contactsByCompany: Record<string, Contact[]> = {};

@@ -60,24 +60,26 @@ function downloadIcs(ev: PlannedEvent, title: string) {
   URL.revokeObjectURL(url);
 }
 
-// Collapsible tile wrapper. Collapsed: title + single-line preview. Expanded: full children.
-function Tile({ title, preview, expanded, onToggle, children, minWidth = 240, accentBg, accentBorder, grow = true }: {
+// Fixed tile width so content never stretches over a wide box.
+const TILE_WIDTH = 280;
+
+// Collapsible tile wrapper. Collapsed: title + single-line preview. Expanded: full children (full row width).
+function Tile({ title, preview, expanded, onToggle, children, width = TILE_WIDTH, accentBg, accentBorder }: {
   title: string;
   preview?: string;
   expanded: boolean;
   onToggle: () => void;
   children: ReactNode;
-  minWidth?: number;
+  width?: number;
   accentBg?: string;
   accentBorder?: string;
-  grow?: boolean;
 }) {
   return (
     <div
       onClick={!expanded ? onToggle : undefined}
       style={{
-        flex: expanded ? '1 1 100%' : (grow ? `1 1 ${minWidth}px` : `0 0 ${minWidth}px`),
-        minWidth,
+        flex: expanded ? '1 1 100%' : `0 0 ${width}px`,
+        width: expanded ? '100%' : width,
         maxWidth: '100%',
         background: accentBg || 'var(--pbf-white)',
         border: `1px solid ${accentBorder || 'var(--pbf-border)'}`,
@@ -141,7 +143,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
   const [useTemplateContact, setUseTemplateContact] = useState<Contact | null>(null);
   const [editingActivity, setEditingActivity] = useState<{ id: string; text: string; source: string } | null>(null);
   const [newTag, setNewTag] = useState('');
-  const [newEvent, setNewEvent] = useState<{ date: string; desc: string; target: 'company' | string }>({ date: '', desc: '', target: 'company' });
+  const [newEvent, setNewEvent] = useState<{ date: string; title: string; desc: string; target: 'company' | string }>({ date: '', title: '', desc: '', target: 'company' });
   const [showEventForm, setShowEventForm] = useState(false);
 
   const set = (key: string, value: unknown) => {
@@ -234,11 +236,14 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
   };
 
   const addPlannedEvent = () => {
-    if (!newEvent.date || !newEvent.desc) return;
+    if (!newEvent.date || !newEvent.title) return;
     const ev: PlannedEvent = {
       id: generateId(), company_id: company.id,
       contact_id: newEvent.target === 'company' ? null : newEvent.target,
-      event_date: newEvent.date, description: newEvent.desc, done: false,
+      event_date: newEvent.date,
+      title: newEvent.title,
+      description: newEvent.desc,
+      done: false,
     };
     if (ev.contact_id) {
       const contacts = company.contacts.map(c =>
@@ -249,7 +254,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
       onChange({ ...company, planned_events: [...(company.planned_events || []), ev], updated_at: today() });
     }
     upsertPlannedEvent(ev);
-    setNewEvent({ date: '', desc: '', target: 'company' });
+    setNewEvent({ date: '', title: '', desc: '', target: 'company' });
     setShowEventForm(false);
   };
 
@@ -258,7 +263,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
     const activity: Activity = {
       id: generateId(),
       date: today(),
-      text: `Completed: ${ev.description}`,
+      text: `Completed: ${ev.title || ev.description}${ev.title && ev.description ? ' — ' + ev.description : ''}`,
     };
     if (ev.contact_id) {
       const contacts = company.contacts.map(c => {
@@ -287,7 +292,8 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
     if (withFollowUp) {
       setNewEvent({
         date: '',
-        desc: `Follow-up after ${ev.description}`,
+        title: `Follow-up after ${ev.title || ev.description}`,
+        desc: '',
         target: ev.contact_id || 'company',
       });
       setShowEventForm(true);
@@ -499,7 +505,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
               preview={company.pain_points}
               expanded={isExpanded('pain')}
               onToggle={() => toggleTile('pain')}
-              minWidth={260}
+              width={TILE_WIDTH}
             >
               <textarea value={company.pain_points} onChange={e => set('pain_points', e.target.value)} rows={4}
                 placeholder="e.g. Unstructured project reporting across subsidiaries; inconsistent PM capability" />
@@ -509,7 +515,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
               preview={company.entry_angle}
               expanded={isExpanded('entry')}
               onToggle={() => toggleTile('entry')}
-              minWidth={260}
+              width={TILE_WIDTH}
             >
               <textarea value={company.entry_angle} onChange={e => set('entry_angle', e.target.value)} rows={4}
                 placeholder="e.g. PMO Director spoke at PM conference 2025; L&D head is 2nd-degree LinkedIn connection" />
@@ -540,7 +546,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
               preview={preview}
               expanded={isExpanded(`contact-${ct.id}`)}
               onToggle={() => toggleTile(`contact-${ct.id}`)}
-              minWidth={280}
+              width={TILE_WIDTH}
             >
             <div className="contact-card" style={{ margin: 0, padding: 0, border: 'none', background: 'transparent' }}>
               <div className="contact-card-header">
@@ -656,14 +662,22 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
               </div>
               <div className="field-row full">
                 <div className="field-group">
-                  <label>Description</label>
-                  <input value={newEvent.desc} onChange={e => setNewEvent({ ...newEvent, desc: e.target.value })}
+                  <label>Title</label>
+                  <input value={newEvent.title} onChange={e => setNewEvent({ ...newEvent, title: e.target.value })}
                     placeholder="e.g. Send proposal, Follow up call, Schedule demo..."
                     onKeyDown={e => { if (e.key === 'Enter') addPlannedEvent(); }} />
                 </div>
               </div>
+              <div className="field-row full">
+                <div className="field-group">
+                  <label>Description (optional)</label>
+                  <textarea value={newEvent.desc} onChange={e => setNewEvent({ ...newEvent, desc: e.target.value })}
+                    rows={3}
+                    placeholder="Additional details included in the calendar entry..." />
+                </div>
+              </div>
               <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                <button className="btn-primary btn-sm" onClick={addPlannedEvent} disabled={!newEvent.date || !newEvent.desc}>Add</button>
+                <button className="btn-primary btn-sm" onClick={addPlannedEvent} disabled={!newEvent.date || !newEvent.title}>Add</button>
                 <button className="btn-ghost btn-sm" onClick={() => setShowEventForm(false)}>Cancel</button>
               </div>
             </div>
@@ -680,13 +694,14 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
             const isOverdue = !ev.done && ev.event_date < todayDate;
             const isDueToday = !ev.done && ev.event_date === todayDate;
             const tileKey = `event-${ev.id}`;
-            const preview = `${ev.event_date} · ${ev.description}`;
+            const headline = ev.title || ev.description;
+            const preview = `${ev.event_date} · ${headline}`;
             return (
               <div key={ev.id}
                 ref={el => { eventRefs.current[ev.id] = el; }}
                 style={{
-                  flex: isExpanded(tileKey) ? '1 1 100%' : '1 1 260px',
-                  minWidth: 260, maxWidth: '100%',
+                  flex: isExpanded(tileKey) ? '1 1 100%' : `0 0 ${TILE_WIDTH}px`,
+                  width: isExpanded(tileKey) ? '100%' : TILE_WIDTH, maxWidth: '100%',
                   boxShadow: highlightedEventId === ev.id ? '0 0 0 3px var(--pbf-navy)' : undefined,
                   borderRadius: 'var(--radius)',
                   transition: 'box-shadow 0.3s',
@@ -696,7 +711,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                   preview={preview}
                   expanded={isExpanded(tileKey)}
                   onToggle={() => toggleTile(tileKey)}
-                  minWidth={260}
+                  width={TILE_WIDTH}
                   accentBg={ev.done ? 'var(--pbf-green-bg)' : isOverdue ? 'var(--pbf-red-bg)' : isDueToday ? 'var(--pbf-yellow-bg)' : 'var(--pbf-light)'}
                   accentBorder={ev.done ? 'var(--stage-won)' : isOverdue ? 'var(--pbf-red)' : isDueToday ? '#ecc94b' : 'var(--pbf-border)'}
                 >
@@ -706,8 +721,13 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                         fontSize: 13, fontWeight: 600, textDecoration: ev.done ? 'line-through' : 'none',
                         color: ev.done ? 'var(--stage-won)' : isOverdue ? 'var(--pbf-red)' : 'var(--pbf-text)',
                       }}>
-                        {ev.description}
+                        {headline}
                       </div>
+                      {ev.title && ev.description && (
+                        <div style={{ fontSize: 12, color: 'var(--pbf-text)', marginTop: 3, whiteSpace: 'pre-wrap' }}>
+                          {ev.description}
+                        </div>
+                      )}
                       <div style={{ fontSize: 11, color: 'var(--pbf-muted)', marginTop: 2 }}>
                         <span style={{ fontWeight: 600, color: isOverdue ? 'var(--pbf-red)' : isDueToday ? '#d69e2e' : 'var(--pbf-blue)' }}>
                           {ev.event_date}
@@ -719,7 +739,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                     </div>
                     <button className="btn-ghost btn-sm" style={{ fontSize: 13, padding: '0px 4px', flexShrink: 0 }}
                       title="Download .ics calendar event (9 AM, 1h, reminders 1h & 12h before)"
-                      onClick={() => downloadIcs(ev, `${ev.description} — ${ev.contact_id ? ev.ownerName + ' @ ' : ''}${company.name}`)}>&#128197;</button>
+                      onClick={() => downloadIcs(ev, `${headline} — ${ev.contact_id ? ev.ownerName + ' @ ' : ''}${company.name}`)}>&#128197;</button>
                     <button className="btn-danger btn-sm" style={{ fontSize: 10, padding: '0px 4px', flexShrink: 0 }}
                       onClick={() => removeEvent(ev)}>&#10005;</button>
                   </div>
@@ -791,7 +811,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
               preview={a.text}
               expanded={isExpanded(tileKey)}
               onToggle={() => toggleTile(tileKey)}
-              minWidth={260}
+              width={TILE_WIDTH}
             >
               <div className="activity-item" style={{ alignItems: 'flex-start', padding: 0 }}>
                 <div style={{ flex: 1 }}>

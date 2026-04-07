@@ -27,6 +27,7 @@ export interface PlannedEvent {
   company_id: string;
   contact_id: string | null;
   event_date: string;
+  title: string;
   description: string;
   done: boolean;
 }

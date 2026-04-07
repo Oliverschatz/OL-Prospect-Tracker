@@ -89,6 +89,7 @@ CREATE TABLE planned_events (
   company_id TEXT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   contact_id TEXT REFERENCES contacts(id) ON DELETE CASCADE,
   event_date DATE NOT NULL,
+  title TEXT NOT NULL DEFAULT '',
   description TEXT NOT NULL DEFAULT '',
   done BOOLEAN NOT NULL DEFAULT false
 );
