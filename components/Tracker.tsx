@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { STAGES } from '@/lib/constants';
 import { generateId, today, calcFitScore, fitColor, EMPTY_COMPANY } from '@/lib/helpers';
 import { loadAllCompanies, loadTemplates, createCompany, updateCompanyFields, deleteCompanyFromDb, saveAllTemplates, bulkImportCompanies, loadDummyCompanies, removeDummyCompanies } from '@/lib/db';
+import { DUMMY_TAG } from '@/lib/dummies';
 import { StageBadge, PipelineBar } from '@/components/ui';
 import { TemplateManagerModal } from '@/components/Modals';
 import CompanyDetail from '@/components/CompanyDetail';
@@ -357,12 +358,18 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
           <button className="btn-secondary btn-sm" onClick={handleRequestSupport} title="Email Oliver for help">
             &#9758; Request sales support
           </button>
-          <button className="btn-secondary btn-sm" onClick={handleLoadDummies} title="Add demo companies to play with">
-            Load dummies
-          </button>
-          <button className="btn-secondary btn-sm" onClick={handleRemoveDummies} title="Remove all demo companies">
-            Remove dummies
-          </button>
+          {(() => {
+            const dummiesLoaded = companies.some(c => Array.isArray(c.tags) && c.tags.includes(DUMMY_TAG));
+            return (
+              <button
+                className="btn-secondary btn-sm"
+                onClick={dummiesLoaded ? handleRemoveDummies : handleLoadDummies}
+                title={dummiesLoaded ? 'Remove demo companies' : 'Add demo companies to play with'}
+              >
+                {dummiesLoaded ? 'Remove dummies' : 'Load dummies'}
+              </button>
+            );
+          })()}
           <button className="btn-secondary btn-sm" onClick={handleOpenLocal}>
             Open Saved
           </button>
