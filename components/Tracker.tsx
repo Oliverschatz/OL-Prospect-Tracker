@@ -79,7 +79,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState('');
-  const [view, setView] = useState<'pipeline' | 'followups' | 'timeline'>('pipeline');
+  const [view, setView] = useState<'pipeline' | 'followups' | 'history'>('pipeline');
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [scrollToEventId, setScrollToEventId] = useState<string | null>(null);
@@ -421,8 +421,8 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
 
           {/* View tabs */}
           <div style={{ display: 'flex', borderBottom: '1px solid var(--pbf-border)', padding: '0 8px' }}>
-            {([['pipeline', 'Companies'], ['followups', 'Follow-ups'], ['timeline', 'Timeline']] as const).map(([k, label]) => (
-              <button key={k} onClick={() => { setView(k); if (k === 'timeline') setSelectedId(null); }}
+            {([['pipeline', 'Companies'], ['followups', 'Follow-ups'], ['history', 'History']] as const).map(([k, label]) => (
+              <button key={k} onClick={() => { setView(k); if (k === 'followups' || k === 'history') setSelectedId(null); }}
                 style={{
                   flex: 1, padding: '6px 0', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em',
                   background: 'none', border: 'none', cursor: 'pointer',
@@ -544,7 +544,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
               </div>
             )}
 
-            {view === 'timeline' && (
+            {view === 'history' && (
               <div style={{ padding: '0 4px' }}>
                 {globalTimeline.length === 0 && (
                   <div style={{ padding: 20, textAlign: 'center', color: 'var(--pbf-muted)', fontSize: 13 }}>No activities yet.</div>
@@ -574,9 +574,18 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
 
         {/* Main Content */}
         <div className="main-content">
-          {view === 'timeline' && !selected ? (
+          {view === 'followups' && !selected ? (
             <TimelineDiagram
               companies={companies}
+              filter="pending"
+              title="Follow-up Timeline"
+              onSelectCompany={(id, eventId) => { setSelectedId(id); setScrollToEventId(eventId || null); setView('pipeline'); }}
+            />
+          ) : view === 'history' && !selected ? (
+            <TimelineDiagram
+              companies={companies}
+              filter="history"
+              title="History"
               onSelectCompany={(id, eventId) => { setSelectedId(id); setScrollToEventId(eventId || null); setView('pipeline'); }}
             />
           ) : selected ? (

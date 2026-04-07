@@ -52,9 +52,11 @@ function statusDot(status: string): string {
   }
 }
 
-export default function TimelineDiagram({ companies, onSelectCompany }: {
+export default function TimelineDiagram({ companies, onSelectCompany, filter = 'pending', title = 'Follow-up Timeline' }: {
   companies: Company[];
   onSelectCompany: (id: string, eventId?: string) => void;
+  filter?: 'pending' | 'history';
+  title?: string;
 }) {
   const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -98,13 +100,29 @@ export default function TimelineDiagram({ companies, onSelectCompany }: {
     }
   }
 
-  entries.sort((a, b) => a.eventDate.localeCompare(b.eventDate));
+  // Apply filter:
+  //  - pending: not done (overdue + today + future)
+  //  - history: completed OR overdue (overdue appears in both views)
+  const filtered = filter === 'history'
+    ? entries.filter(e => e.done || e.eventDate < todayStr)
+    : entries.filter(e => !e.done);
+
+  filtered.sort((a, b) =>
+    filter === 'history' ? b.eventDate.localeCompare(a.eventDate) : a.eventDate.localeCompare(b.eventDate)
+  );
+  // Replace the entries variable below with filtered
+  entries.length = 0;
+  entries.push(...filtered);
 
   if (entries.length === 0) {
     return (
       <div className="empty-state">
-        <h3>Timeline</h3>
-        <p style={{ maxWidth: 360 }}>No events planned. Add planned events to your companies or contacts to see them here.</p>
+        <h3>{title}</h3>
+        <p style={{ maxWidth: 360 }}>
+          {filter === 'history'
+            ? 'No completed or overdue events yet.'
+            : 'No events planned. Add planned events to your companies or contacts to see them here.'}
+        </p>
       </div>
     );
   }
@@ -115,7 +133,7 @@ export default function TimelineDiagram({ companies, onSelectCompany }: {
     if (!dateGroups[e.eventDate]) dateGroups[e.eventDate] = [];
     dateGroups[e.eventDate].push(e);
   }
-  const sortedDates = Object.keys(dateGroups).sort();
+  const sortedDates = Object.keys(dateGroups).sort((a, b) => filter === 'history' ? b.localeCompare(a) : a.localeCompare(b));
 
   const fmtDateShort = (d: string) => {
     const dt = new Date(d + 'T00:00:00');
@@ -154,7 +172,7 @@ export default function TimelineDiagram({ companies, onSelectCompany }: {
   return (
     <div style={{ padding: '24px 20px' }}>
       <h2 style={{ fontFamily: "'Source Serif 4', serif", fontSize: 20, fontWeight: 700, marginBottom: 16 }}>
-        Follow-up Timeline
+        {title}
       </h2>
 
       {/* ─── Horizontal timeline bar ─── */}
