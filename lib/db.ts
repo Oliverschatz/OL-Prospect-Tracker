@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import type { Company, Contact, Activity, PlannedEvent, Template, FitScores } from './types';
 import { generateId, today } from './helpers';
 import { DUMMY_COMPANIES, DUMMY_TAG } from './dummies';
+import { DEFAULT_TEMPLATES } from './default-templates';
 
 // ─── Dummy/demo data ───
 
@@ -188,7 +189,22 @@ export async function loadAllCompanies(): Promise<Company[]> {
 export async function loadTemplates(): Promise<Template[]> {
   if (!supabase) return [];
   const { data } = await supabase.from('templates').select('*').order('sort_order');
-  return (data || []) as Template[];
+  const rows = (data || []) as Template[];
+  if (rows.length > 0) return rows;
+
+  // First-time tenant: seed default templates
+  const userId = await getUserId();
+  if (!userId) return [];
+  const seeded: Template[] = DEFAULT_TEMPLATES.map((t, i) => ({
+    id: generateId(),
+    name: t.name,
+    body: t.body,
+    sort_order: i,
+  }));
+  await supabase.from('templates').insert(
+    seeded.map(t => ({ ...t, user_id: userId }))
+  );
+  return seeded;
 }
 
 // ─── Company CRUD ───
