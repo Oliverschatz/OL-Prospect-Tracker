@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { STAGES, SECTORS, FIT_CRITERIA, COMPANY_ACTIVITIES, CONTACT_ACTIVITIES, COMPANY_STAGE_TRIGGERS, CONTACT_STAGE_TRIGGERS } from '@/lib/constants';
 import { today, generateId, autoAdvanceStage, calcFitScore, fitColor } from '@/lib/helpers';
 import { updateCompanyFields, upsertContact, deleteContactFromDb, createActivity, updateActivity, deleteActivityFromDb, upsertPlannedEvent, deletePlannedEvent } from '@/lib/db';
@@ -14,9 +14,66 @@ interface Props {
   onDelete: () => void;
   allCompanies: Company[];
   templates: Template[];
+  scrollToEventId?: string | null;
 }
 
-export default function CompanyDetail({ company, onChange, onDelete, allCompanies, templates }: Props) {
+// Build & download an .ics calendar event for a planned event
+function downloadIcs(ev: PlannedEvent, title: string) {
+  // 09:00 local-time start, 1h duration
+  const dt = ev.event_date.replace(/-/g, '');
+  const dtStart = `${dt}T090000`;
+  const dtEnd = `${dt}T100000`;
+  const dtStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const safe = (s: string) => s.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//OL Prospect Tracker//EN',
+    'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    `UID:${ev.id}@prospect-tracker.oliverlehmann.com`,
+    `DTSTAMP:${dtStamp}`,
+    `DTSTART:${dtStart}`,
+    `DTEND:${dtEnd}`,
+    `SUMMARY:${safe(title)}`,
+    `DESCRIPTION:${safe(ev.description)}`,
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Reminder',
+    'TRIGGER:-PT1H',
+    'END:VALARM',
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Reminder',
+    'TRIGGER:-PT12H',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `event-${ev.event_date}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export default function CompanyDetail({ company, onChange, onDelete, allCompanies, templates, scrollToEventId }: Props) {
+  const eventRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!scrollToEventId) return;
+    const el = eventRefs.current[scrollToEventId];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedEventId(scrollToEventId);
+      const t = setTimeout(() => setHighlightedEventId(null), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [scrollToEventId, company.id]);
+
   const [contactModal, setContactModal] = useState<Contact | 'new' | null>(null);
   const [activityModal, setActivityModal] = useState(false);
   const [contactActivityModal, setContactActivityModal] = useState<string | null>(null);
@@ -498,12 +555,16 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
             const isOverdue = !ev.done && ev.event_date < todayDate;
             const isDueToday = !ev.done && ev.event_date === todayDate;
             return (
-              <div key={ev.id} style={{
+              <div key={ev.id}
+                ref={el => { eventRefs.current[ev.id] = el; }}
+                style={{
                 display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 10px', marginBottom: 4,
                 borderRadius: 'var(--radius)',
                 background: ev.done ? 'var(--pbf-green-bg)' : isOverdue ? 'var(--pbf-red-bg)' : isDueToday ? 'var(--pbf-yellow-bg)' : 'var(--pbf-light)',
                 border: `1px solid ${ev.done ? 'var(--stage-won)' : isOverdue ? 'var(--pbf-red)' : isDueToday ? '#ecc94b' : 'var(--pbf-border)'}`,
                 opacity: ev.done ? 0.7 : 1,
+                boxShadow: highlightedEventId === ev.id ? '0 0 0 3px var(--pbf-navy)' : 'none',
+                transition: 'box-shadow 0.3s',
               }}>
                 <input type="checkbox" checked={ev.done} onChange={() => toggleEventDone(ev)}
                   style={{ marginTop: 3, cursor: 'pointer', accentColor: 'var(--stage-won)' }} />
@@ -524,6 +585,9 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                     {isDueToday && <span style={{ color: '#d69e2e', fontWeight: 600 }}> · TODAY</span>}
                   </div>
                 </div>
+                <button className="btn-ghost btn-sm" style={{ fontSize: 13, padding: '0px 4px', flexShrink: 0 }}
+                  title="Download .ics calendar event (9 AM, 1h, reminders 1h & 12h before)"
+                  onClick={() => downloadIcs(ev, `${ev.description} — ${ev.contact_id ? ev.ownerName + ' @ ' : ''}${company.name}`)}>&#128197;</button>
                 <button className="btn-danger btn-sm" style={{ fontSize: 10, padding: '0px 4px', flexShrink: 0 }}
                   onClick={() => removeEvent(ev)}>&#10005;</button>
               </div>

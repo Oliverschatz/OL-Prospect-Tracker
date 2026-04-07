@@ -54,7 +54,7 @@ function statusDot(status: string): string {
 
 export default function TimelineDiagram({ companies, onSelectCompany }: {
   companies: Company[];
-  onSelectCompany: (id: string) => void;
+  onSelectCompany: (id: string, eventId?: string) => void;
 }) {
   const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -201,7 +201,7 @@ export default function TimelineDiagram({ companies, onSelectCompany }: {
                 }}
                   onClick={() => {
                     const firstEntry = dateGroups[date][0];
-                    if (firstEntry) onSelectCompany(firstEntry.companyId);
+                    if (firstEntry) onSelectCompany(firstEntry.companyId, firstEntry.id);
                   }}
                 >
                   <div style={{
@@ -267,7 +267,7 @@ export default function TimelineDiagram({ companies, onSelectCompany }: {
               const status = getStatus(entry, todayStr);
               return (
                 <div key={entry.id}
-                  onClick={() => onSelectCompany(entry.companyId)}
+                  onClick={() => onSelectCompany(entry.companyId, entry.id)}
                   style={{
                     padding: '8px 14px', marginTop: 4,
                     background: statusBg(status), borderRadius: 'var(--radius)',

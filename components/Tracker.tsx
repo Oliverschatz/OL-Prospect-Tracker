@@ -82,6 +82,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
   const [view, setView] = useState<'pipeline' | 'followups' | 'timeline'>('pipeline');
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [scrollToEventId, setScrollToEventId] = useState<string | null>(null);
 
   // Load data on mount
   useEffect(() => {
@@ -576,7 +577,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
           {view === 'timeline' && !selected ? (
             <TimelineDiagram
               companies={companies}
-              onSelectCompany={(id) => { setSelectedId(id); setView('pipeline'); }}
+              onSelectCompany={(id, eventId) => { setSelectedId(id); setScrollToEventId(eventId || null); setView('pipeline'); }}
             />
           ) : selected ? (
             <CompanyDetail
@@ -585,6 +586,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
               onDelete={deleteCompany}
               allCompanies={companies}
               templates={templates}
+              scrollToEventId={scrollToEventId}
             />
           ) : (
             <div className="empty-state">
@@ -592,7 +594,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
               <p style={{ maxWidth: 360 }}>
                 Select a company from the sidebar or add a new one to start building your prospecting pipeline.
               </p>
-              <button className="btn-primary" onClick={addCompany} style={{ marginTop: 16 }}>+ Add First Company</button>
+              <button className="btn-primary" onClick={addCompany} style={{ marginTop: 16 }}>+ Add {companies.length > 0 ? 'Another' : 'First'} Company</button>
             </div>
           )}
         </div>
