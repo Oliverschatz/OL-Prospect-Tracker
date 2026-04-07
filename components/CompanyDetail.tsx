@@ -134,6 +134,7 @@ const tileRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8
 
 export default function CompanyDetail({ company, onChange, onDelete, allCompanies, templates, scrollToEventId }: Props) {
   const eventRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const eventFormRef = useRef<HTMLDivElement | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
   const [expandedTiles, setExpandedTiles] = useState<Record<string, boolean>>({});
   const toggleTile = (key: string) => setExpandedTiles(p => ({ ...p, [key]: !p[key] }));
@@ -328,6 +329,15 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
       onChange({ ...company, planned_events: (company.planned_events || []).map(e => e.id === ev.id ? updated : e), updated_at: today() });
     }
     upsertPlannedEvent(updated);
+  };
+
+  const startPlanEventFor = (targetId: 'company' | string) => {
+    setNewEvent({ date: '', title: '', desc: '', target: targetId });
+    setShowEventForm(true);
+    // Scroll the form into view after render
+    requestAnimationFrame(() => {
+      eventFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
   };
 
   const updateEventField = (ev: PlannedEvent, patch: Partial<PlannedEvent>) => {
@@ -619,6 +629,38 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                   {roleLabel(ct.role)}
                 </span>
               </div>
+              {isExpanded(`contact-${ct.id}`) && (
+                <div style={{ marginTop: 8, borderTop: '1px solid var(--pbf-border)', paddingTop: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--pbf-muted)' }}>
+                      Planned Events ({(ct.planned_events || []).length})
+                    </div>
+                    <button className="btn-primary btn-sm" style={{ fontSize: 10, padding: '1px 6px' }}
+                      onClick={() => startPlanEventFor(ct.id)}>+ Plan Event</button>
+                  </div>
+                  {(ct.planned_events || []).length === 0 && (
+                    <div style={{ fontSize: 11, color: 'var(--pbf-muted)', fontStyle: 'italic' }}>None planned.</div>
+                  )}
+                  {[...(ct.planned_events || [])].sort((a, b) => a.event_date.localeCompare(b.event_date)).map(ev => {
+                    const isOverdue = !ev.done && ev.event_date < todayDate;
+                    const isDueToday = !ev.done && ev.event_date === todayDate;
+                    return (
+                      <div key={ev.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 6, padding: '3px 6px', marginTop: 2,
+                        fontSize: 11, borderRadius: 'var(--radius)',
+                        background: ev.done ? 'var(--pbf-green-bg)' : isOverdue ? 'var(--pbf-red-bg)' : isDueToday ? 'var(--pbf-yellow-bg)' : 'var(--pbf-light)',
+                      }}>
+                        <span style={{ fontWeight: 600, color: isOverdue ? 'var(--pbf-red)' : isDueToday ? '#d69e2e' : 'var(--pbf-blue)' }}>
+                          {ev.event_date}
+                        </span>
+                        <span style={{ flex: 1, textDecoration: ev.done ? 'line-through' : 'none' }}>
+                          {ev.title || ev.description}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               {(ct.activities || []).length > 0 && isExpanded(`contact-${ct.id}`) && (
                 <div style={{ marginTop: 8, borderTop: '1px solid var(--pbf-border)', paddingTop: 6 }}>
                   {[...(ct.activities || [])].reverse().map(a => (
@@ -671,7 +713,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
         <div className="section-body">
           {/* Add event form */}
           {showEventForm && (
-            <div style={{ padding: 12, background: 'var(--pbf-yellow-bg)', borderRadius: 'var(--radius)', marginBottom: 12, border: '1px solid #ecc94b' }}>
+            <div ref={eventFormRef} style={{ padding: 12, background: 'var(--pbf-yellow-bg)', borderRadius: 'var(--radius)', marginBottom: 12, border: '1px solid #ecc94b' }}>
               <div className="field-row">
                 <div className="field-group">
                   <label>Date</label>
