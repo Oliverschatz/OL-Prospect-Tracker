@@ -45,16 +45,26 @@ export function autoAdvanceStage(
 export function fillTemplate(body: string, contact: Contact & { _anrede?: string }, company: Company): string {
   const lastName = (contact.name || '').split(' ').slice(-1)[0] || '';
   const firstName = (contact.name || '').split(' ').slice(0, -1).join(' ') || '';
+  const salutation = contact._anrede || 'Mr./Ms.';
   return body
-    .replace(/\[Anrede\]|\[H\/F\]/g, contact._anrede || 'Herr/Frau')
+    // English placeholders
+    .replace(/\[Salutation\]/g, salutation)
+    .replace(/\[LastName\]/g, lastName)
+    .replace(/\[FirstName\]/g, firstName)
+    .replace(/\[Name\]/g, contact.name || '')
+    .replace(/\[Title\]/g, contact.title || '')
+    .replace(/\[Company\]/g, company.name || '')
+    .replace(/\[Department\]/g, contact.department || '')
+    .replace(/\[Email\]/g, contact.email || '')
+    .replace(/\[LinkedIn\]/g, contact.linkedin || '')
+    // Legacy German placeholders (kept for backwards compatibility)
+    .replace(/\[Anrede\]|\[H\/F\]/g, salutation)
     .replace(/\[Nachname\]/g, lastName)
     .replace(/\[Vorname\]/g, firstName)
-    .replace(/\[Name\]/g, contact.name || '')
     .replace(/\[Titel\]/g, contact.title || '')
     .replace(/\[Unternehmen\]/g, company.name || '')
     .replace(/\[Abteilung\]/g, contact.department || '')
-    .replace(/\[E-Mail\]/g, contact.email || '')
-    .replace(/\[LinkedIn\]/g, contact.linkedin || '');
+    .replace(/\[E-Mail\]/g, contact.email || '');
 }
 
 export const EMPTY_COMPANY: Omit<Company, 'id' | 'created_at' | 'updated_at'> = {

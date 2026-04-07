@@ -204,7 +204,7 @@ export function TemplateManagerModal({
         </div>
         <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
           <p style={{ fontSize: 12, color: 'var(--pbf-muted)', marginBottom: 12 }}>
-            Placeholders: [Anrede], [Nachname], [Vorname], [Name], [Titel], [Unternehmen], [Abteilung], [E-Mail], [LinkedIn]
+            Placeholders: [Salutation], [LastName], [FirstName], [Name], [Title], [Company], [Department], [Email], [LinkedIn]
           </p>
           {list.map((t, idx) => (
             <div key={t.id} style={{ marginBottom: 10, padding: 10, background: 'var(--pbf-light)', borderRadius: 'var(--radius)', border: '1px solid var(--pbf-border)' }}>
@@ -266,7 +266,7 @@ export function UseTemplateModal({
   onClose: () => void;
 }) {
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [anrede, setAnrede] = useState('Herr');
+  const [anrede, setAnrede] = useState('Mr.');
   const [copied, setCopied] = useState(false);
 
   const contactWithAnrede = { ...contact, _anrede: anrede };
@@ -297,10 +297,10 @@ export function UseTemplateModal({
               </select>
             </div>
             <div className="field-group">
-              <label>Anrede</label>
+              <label>Salutation</label>
               <select value={anrede} onChange={e => setAnrede(e.target.value)}>
-                <option value="Herr">Herr</option>
-                <option value="Frau">Frau</option>
+                <option value="Mr.">Mr.</option>
+                <option value="Ms.">Ms.</option>
               </select>
             </div>
           </div>

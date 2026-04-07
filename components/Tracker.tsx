@@ -199,6 +199,26 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
     setStatusMsg(`Loaded ${data.length} companies from file`);
   };
 
+  const handleRequestSupport = async () => {
+    if (!supabase) { setStatusMsg('Not configured'); return; }
+    if (!confirm('Send an email to Oliver requesting sales support?')) return;
+    const message = prompt('Optional: add a short note about what you need help with:', '') || '';
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) { setStatusMsg('Not signed in'); return; }
+      const res = await fetch('/api/request-support', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message }),
+      });
+      if (!res.ok) throw new Error('Request failed');
+      setStatusMsg('Sales support request sent to Oliver');
+    } catch {
+      setStatusMsg('Failed to send support request');
+    }
+  };
+
   const handleSaveTemplates = async (newTemplates: Template[]) => {
     setTemplates(newTemplates);
     await saveAllTemplates(newTemplates);
@@ -310,6 +330,9 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
         <div className="header-actions">
           <button className="btn-secondary btn-sm" onClick={() => setTemplateManagerOpen(true)} title="Message templates">
             &#9993; Templates
+          </button>
+          <button className="btn-secondary btn-sm" onClick={handleRequestSupport} title="Email Oliver for help">
+            &#9758; Request sales support
           </button>
           <button className="btn-secondary btn-sm" onClick={handleOpenLocal}>
             Open Saved
