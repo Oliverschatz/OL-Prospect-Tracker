@@ -204,7 +204,7 @@ export function TemplateManagerModal({
         </div>
         <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
           <p style={{ fontSize: 12, color: 'var(--pbf-muted)', marginBottom: 12 }}>
-            Placeholders: [Salutation], [LastName], [FirstName], [Name], [Title], [Company], [Department], [Email], [LinkedIn]
+            Placeholders: [Salutation], [LastName], [FirstName], [Name], [Title], [Company], [Department], [Email], [LinkedIn], [AmbassadorName], [AmbassadorFirstName], [AmbassadorLastName]
           </p>
           {list.map((t, idx) => (
             <div key={t.id} style={{ marginBottom: 10, padding: 10, background: 'var(--pbf-light)', borderRadius: 'var(--radius)', border: '1px solid var(--pbf-border)' }}>
@@ -258,11 +258,13 @@ export function UseTemplateModal({
   templates,
   contact,
   company,
+  ambassador,
   onClose,
 }: {
   templates: Template[];
   contact: Contact;
   company: Company;
+  ambassador?: { name?: string };
   onClose: () => void;
 }) {
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -270,7 +272,7 @@ export function UseTemplateModal({
   const [copied, setCopied] = useState(false);
 
   const contactWithAnrede = { ...contact, _anrede: anrede };
-  const filled = templates.length > 0 ? fillTemplate(templates[selectedIdx].body, contactWithAnrede, company) : '';
+  const filled = templates.length > 0 ? fillTemplate(templates[selectedIdx].body, contactWithAnrede, company, ambassador) : '';
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(filled).then(() => {

@@ -15,6 +15,7 @@ interface Props {
   onDelete: () => void;
   allCompanies: Company[];
   templates: Template[];
+  ambassador?: { name?: string };
   scrollToEventId?: string | null;
 }
 
@@ -132,7 +133,7 @@ function Tile({ title, preview, expanded, onToggle, children, width = TILE_WIDTH
 
 const tileRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8 };
 
-export default function CompanyDetail({ company, onChange, onDelete, allCompanies, templates, scrollToEventId }: Props) {
+export default function CompanyDetail({ company, onChange, onDelete, allCompanies, templates, ambassador, scrollToEventId }: Props) {
   const eventRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const eventFormRef = useRef<HTMLDivElement | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
@@ -944,6 +945,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
           templates={templates}
           contact={useTemplateContact}
           company={company}
+          ambassador={ambassador}
           onClose={() => setUseTemplateContact(null)}
         />
       )}

@@ -602,6 +602,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
               onDelete={deleteCompany}
               allCompanies={companies}
               templates={templates}
+              ambassador={{ name: user.user_metadata?.full_name || user.email || '' }}
               scrollToEventId={scrollToEventId}
             />
           ) : (
