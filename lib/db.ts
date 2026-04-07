@@ -1,6 +1,127 @@
 import { supabase } from './supabase';
 import type { Company, Contact, Activity, PlannedEvent, Template, FitScores } from './types';
 import { generateId, today } from './helpers';
+import { DUMMY_COMPANIES, DUMMY_TAG } from './dummies';
+
+// ─── Dummy/demo data ───
+
+function offsetDate(offset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0, 10);
+}
+
+export async function loadDummyCompanies(): Promise<number> {
+  if (!supabase) return 0;
+  const userId = await getUserId();
+  if (!userId) return 0;
+  const todayStr = today();
+
+  let count = 0;
+  for (const dc of DUMMY_COMPANIES) {
+    const companyId = generateId();
+    await supabase.from('companies').insert({
+      id: companyId,
+      user_id: userId,
+      name: dc.name,
+      hq: dc.hq,
+      country: dc.country,
+      employees: dc.employees,
+      sector: dc.sector,
+      website: dc.website,
+      stage: dc.stage,
+      fit_scores: {},
+      pain_points: dc.pain_points,
+      entry_angle: dc.entry_angle,
+      notes: dc.notes,
+      parent_id: null,
+      tags: [...dc.tags, DUMMY_TAG],
+      created_at: todayStr,
+      updated_at: todayStr,
+    });
+
+    for (const a of dc.activities) {
+      await supabase.from('activities').insert({
+        id: generateId(),
+        user_id: userId,
+        company_id: companyId,
+        contact_id: null,
+        date: offsetDate(a.dayOffset),
+        text: a.text,
+      });
+    }
+    for (const e of dc.planned_events) {
+      await supabase.from('planned_events').insert({
+        id: generateId(),
+        user_id: userId,
+        company_id: companyId,
+        contact_id: null,
+        event_date: offsetDate(e.dayOffset),
+        title: e.title,
+        description: e.description,
+        done: false,
+      });
+    }
+
+    for (const ct of dc.contacts) {
+      const contactId = generateId();
+      await supabase.from('contacts').insert({
+        id: contactId,
+        user_id: userId,
+        company_id: companyId,
+        name: ct.name,
+        title: ct.title,
+        department: ct.department,
+        email: ct.email,
+        phone: ct.phone,
+        linkedin: ct.linkedin,
+        role: ct.role,
+        notes: ct.notes,
+      });
+
+      for (const a of ct.activities) {
+        await supabase.from('activities').insert({
+          id: generateId(),
+          user_id: userId,
+          company_id: companyId,
+          contact_id: contactId,
+          date: offsetDate(a.dayOffset),
+          text: a.text,
+        });
+      }
+      for (const e of ct.planned_events) {
+        await supabase.from('planned_events').insert({
+          id: generateId(),
+          user_id: userId,
+          company_id: companyId,
+          contact_id: contactId,
+          event_date: offsetDate(e.dayOffset),
+          title: e.title,
+          description: e.description,
+          done: false,
+        });
+      }
+    }
+    count++;
+  }
+  return count;
+}
+
+export async function removeDummyCompanies(): Promise<number> {
+  if (!supabase) return 0;
+  const userId = await getUserId();
+  if (!userId) return 0;
+  const { data } = await supabase
+    .from('companies')
+    .select('id, tags')
+    .eq('user_id', userId);
+  const ids = (data || [])
+    .filter((c: { tags?: unknown }) => Array.isArray(c.tags) && (c.tags as string[]).includes(DUMMY_TAG))
+    .map((c: { id: string }) => c.id);
+  if (ids.length === 0) return 0;
+  await supabase.from('companies').delete().in('id', ids);
+  return ids.length;
+}
 
 // ─── Get current user id ───
 

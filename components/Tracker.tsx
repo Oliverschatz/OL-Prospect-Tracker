@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { STAGES } from '@/lib/constants';
 import { generateId, today, calcFitScore, fitColor, EMPTY_COMPANY } from '@/lib/helpers';
-import { loadAllCompanies, loadTemplates, createCompany, updateCompanyFields, deleteCompanyFromDb, saveAllTemplates, bulkImportCompanies } from '@/lib/db';
+import { loadAllCompanies, loadTemplates, createCompany, updateCompanyFields, deleteCompanyFromDb, saveAllTemplates, bulkImportCompanies, loadDummyCompanies, removeDummyCompanies } from '@/lib/db';
 import { StageBadge, PipelineBar } from '@/components/ui';
 import { TemplateManagerModal } from '@/components/Modals';
 import CompanyDetail from '@/components/CompanyDetail';
@@ -199,6 +199,29 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
     setStatusMsg(`Loaded ${data.length} companies from file`);
   };
 
+  const handleLoadDummies = async () => {
+    try {
+      const n = await loadDummyCompanies();
+      const cos = await loadAllCompanies();
+      setCompanies(cos);
+      setStatusMsg(`Loaded ${n} demo companies`);
+    } catch {
+      setStatusMsg('Failed to load demo companies');
+    }
+  };
+
+  const handleRemoveDummies = async () => {
+    if (!confirm('Remove all demo companies and their data?')) return;
+    try {
+      const n = await removeDummyCompanies();
+      const cos = await loadAllCompanies();
+      setCompanies(cos);
+      setStatusMsg(n > 0 ? `Removed ${n} demo companies` : 'No demo companies to remove');
+    } catch {
+      setStatusMsg('Failed to remove demo companies');
+    }
+  };
+
   const handleRequestSupport = async () => {
     if (!supabase) { setStatusMsg('Not configured'); return; }
     if (!confirm('Send an email to Oliver requesting sales support?')) return;
@@ -333,6 +356,12 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
           </button>
           <button className="btn-secondary btn-sm" onClick={handleRequestSupport} title="Email Oliver for help">
             &#9758; Request sales support
+          </button>
+          <button className="btn-secondary btn-sm" onClick={handleLoadDummies} title="Add demo companies to play with">
+            Load dummies
+          </button>
+          <button className="btn-secondary btn-sm" onClick={handleRemoveDummies} title="Remove all demo companies">
+            Remove dummies
           </button>
           <button className="btn-secondary btn-sm" onClick={handleOpenLocal}>
             Open Saved
