@@ -18,6 +18,23 @@ interface Props {
   scrollToEventId?: string | null;
 }
 
+// Build a Google Calendar "event template" URL — opens a pre-filled event
+// in the user's browser. No OAuth required; the user just clicks "Save".
+// Google Calendar URLs cannot carry custom reminders; the user's default
+// reminder applies. For full 1 h + 12 h reminders, use the .ics download.
+function googleCalendarUrl(ev: PlannedEvent, title: string): string {
+  const dt = ev.event_date.replace(/-/g, '');
+  // 09:00–10:00 local; Google interprets floating times in the user's tz
+  const dates = `${dt}T090000/${dt}T100000`;
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates,
+    details: ev.description || '',
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 // Build & download an .ics calendar event for a planned event
 function downloadIcs(ev: PlannedEvent, title: string) {
   // 09:00 local-time start, 1h duration
@@ -737,8 +754,17 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                         {isDueToday && <span style={{ color: '#d69e2e', fontWeight: 600 }}> · TODAY</span>}
                       </div>
                     </div>
+                    <a
+                      href={googleCalendarUrl(ev, `${headline} — ${ev.contact_id ? ev.ownerName + ' @ ' : ''}${company.name}`)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-ghost btn-sm"
+                      style={{ fontSize: 11, padding: '1px 5px', flexShrink: 0, textDecoration: 'none', fontWeight: 700, color: '#4285F4' }}
+                      title="Add to Google Calendar (opens pre-filled, just click Save)"
+                      onClick={e => e.stopPropagation()}
+                    >G&#128197;</a>
                     <button className="btn-ghost btn-sm" style={{ fontSize: 13, padding: '0px 4px', flexShrink: 0 }}
-                      title="Download .ics calendar event (9 AM, 1h, reminders 1h & 12h before)"
+                      title="Download .ics file (Outlook, Apple Calendar, etc. — 9 AM, 1h, reminders 1h & 12h before)"
                       onClick={() => downloadIcs(ev, `${headline} — ${ev.contact_id ? ev.ownerName + ' @ ' : ''}${company.name}`)}>&#128197;</button>
                     <button className="btn-danger btn-sm" style={{ fontSize: 10, padding: '0px 4px', flexShrink: 0 }}
                       onClick={() => removeEvent(ev)}>&#10005;</button>
