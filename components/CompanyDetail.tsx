@@ -253,6 +253,47 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
     setShowEventForm(false);
   };
 
+  const completeEvent = (ev: PlannedEvent, withFollowUp: boolean) => {
+    // 1. Create an activity log entry
+    const activity: Activity = {
+      id: generateId(),
+      date: today(),
+      text: `Completed: ${ev.description}`,
+    };
+    if (ev.contact_id) {
+      const contacts = company.contacts.map(c => {
+        if (c.id !== ev.contact_id) return c;
+        return {
+          ...c,
+          activities: [...(c.activities || []), activity],
+          planned_events: (c.planned_events || []).filter(e => e.id !== ev.id),
+        };
+      });
+      onChange({ ...company, contacts, updated_at: today() });
+      createActivity(company.id, ev.contact_id, activity);
+    } else {
+      onChange({
+        ...company,
+        activities: [...company.activities, activity],
+        planned_events: (company.planned_events || []).filter(e => e.id !== ev.id),
+        updated_at: today(),
+      });
+      createActivity(company.id, null, activity);
+    }
+    // 2. Remove planned event from DB
+    deletePlannedEvent(ev.id);
+
+    // 3. If follow-up requested, pre-fill and open the new-event form
+    if (withFollowUp) {
+      setNewEvent({
+        date: '',
+        desc: `Follow-up after ${ev.description}`,
+        target: ev.contact_id || 'company',
+      });
+      setShowEventForm(true);
+    }
+  };
+
   const toggleEventDone = (ev: PlannedEvent) => {
     const updated = { ...ev, done: !ev.done };
     if (ev.contact_id) {
@@ -660,8 +701,6 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                   accentBorder={ev.done ? 'var(--stage-won)' : isOverdue ? 'var(--pbf-red)' : isDueToday ? '#ecc94b' : 'var(--pbf-border)'}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, opacity: ev.done ? 0.7 : 1 }}>
-                    <input type="checkbox" checked={ev.done} onChange={() => toggleEventDone(ev)}
-                      style={{ marginTop: 3, cursor: 'pointer', accentColor: 'var(--stage-won)' }} />
                     <div style={{ flex: 1 }}>
                       <div style={{
                         fontSize: 13, fontWeight: 600, textDecoration: ev.done ? 'line-through' : 'none',
@@ -684,6 +723,20 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                     <button className="btn-danger btn-sm" style={{ fontSize: 10, padding: '0px 4px', flexShrink: 0 }}
                       onClick={() => removeEvent(ev)}>&#10005;</button>
                   </div>
+                  {!ev.done && (
+                    <div style={{ marginTop: 8, padding: '6px 8px', borderTop: '1px dashed var(--pbf-border)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={false} onChange={() => completeEvent(ev, false)}
+                          style={{ cursor: 'pointer', accentColor: 'var(--stage-won)' }} />
+                        Completed
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={false} onChange={() => completeEvent(ev, true)}
+                          style={{ cursor: 'pointer', accentColor: 'var(--stage-won)' }} />
+                        Completed, plan follow-up
+                      </label>
+                    </div>
+                  )}
                 </Tile>
               </div>
             );
