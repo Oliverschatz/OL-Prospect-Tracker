@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
 import { STAGES, SECTORS, FIT_CRITERIA, COMPANY_ACTIVITIES, CONTACT_ACTIVITIES, COMPANY_STAGE_TRIGGERS, CONTACT_STAGE_TRIGGERS } from '@/lib/constants';
 import { today, generateId, autoAdvanceStage, calcFitScore, fitColor } from '@/lib/helpers';
 import { updateCompanyFields, upsertContact, deleteContactFromDb, createActivity, updateActivity, deleteActivityFromDb, upsertPlannedEvent, deletePlannedEvent } from '@/lib/db';
@@ -59,19 +60,79 @@ function downloadIcs(ev: PlannedEvent, title: string) {
   URL.revokeObjectURL(url);
 }
 
+// Collapsible tile wrapper. Collapsed: title + single-line preview. Expanded: full children.
+function Tile({ title, preview, expanded, onToggle, children, minWidth = 240, accentBg, accentBorder, grow = true }: {
+  title: string;
+  preview?: string;
+  expanded: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+  minWidth?: number;
+  accentBg?: string;
+  accentBorder?: string;
+  grow?: boolean;
+}) {
+  return (
+    <div
+      onClick={!expanded ? onToggle : undefined}
+      style={{
+        flex: expanded ? '1 1 100%' : (grow ? `1 1 ${minWidth}px` : `0 0 ${minWidth}px`),
+        minWidth,
+        maxWidth: '100%',
+        background: accentBg || 'var(--pbf-white)',
+        border: `1px solid ${accentBorder || 'var(--pbf-border)'}`,
+        borderRadius: 'var(--radius)',
+        padding: '8px 10px',
+        cursor: expanded ? 'default' : 'pointer',
+        transition: 'flex-basis 0.2s, box-shadow 0.15s',
+        boxShadow: expanded ? 'var(--shadow-md)' : 'none',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--pbf-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {title}
+        </div>
+        <button
+          className="btn-ghost btn-sm"
+          style={{ fontSize: 10, padding: '0px 4px', flexShrink: 0 }}
+          onClick={e => { e.stopPropagation(); onToggle(); }}
+          title={expanded ? 'Collapse' : 'Expand'}
+        >
+          {expanded ? '\u2212' : '+'}
+        </button>
+      </div>
+      {!expanded && preview !== undefined && (
+        <div style={{ fontSize: 12, color: 'var(--pbf-text)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {preview || <span style={{ color: 'var(--pbf-muted)', fontStyle: 'italic' }}>— empty —</span>}
+        </div>
+      )}
+      {expanded && <div style={{ marginTop: 8 }} onClick={e => e.stopPropagation()}>{children}</div>}
+    </div>
+  );
+}
+
+const tileRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8 };
+
 export default function CompanyDetail({ company, onChange, onDelete, allCompanies, templates, scrollToEventId }: Props) {
   const eventRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
+  const [expandedTiles, setExpandedTiles] = useState<Record<string, boolean>>({});
+  const toggleTile = (key: string) => setExpandedTiles(p => ({ ...p, [key]: !p[key] }));
+  const isExpanded = (key: string) => !!expandedTiles[key];
 
   useEffect(() => {
     if (!scrollToEventId) return;
-    const el = eventRefs.current[scrollToEventId];
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setHighlightedEventId(scrollToEventId);
-      const t = setTimeout(() => setHighlightedEventId(null), 2500);
-      return () => clearTimeout(t);
-    }
+    setExpandedTiles(p => ({ ...p, [`event-${scrollToEventId}`]: true }));
+    // Scroll after the tile has had a chance to render in expanded state
+    const frame = requestAnimationFrame(() => {
+      const el = eventRefs.current[scrollToEventId];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setHighlightedEventId(scrollToEventId);
+      }
+    });
+    const t = setTimeout(() => setHighlightedEventId(null), 2500);
+    return () => { cancelAnimationFrame(frame); clearTimeout(t); };
   }, [scrollToEventId, company.id]);
 
   const [contactModal, setContactModal] = useState<Contact | 'new' | null>(null);
@@ -391,19 +452,27 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
       <div className="section">
         <div className="section-header"><h3>Pain Points &amp; Entry Angle</h3></div>
         <div className="section-body">
-          <div className="field-row full">
-            <div className="field-group">
-              <label>Pain Points (why they need PBP)</label>
-              <textarea value={company.pain_points} onChange={e => set('pain_points', e.target.value)} rows={3}
+          <div style={tileRow}>
+            <Tile
+              title="Pain Points"
+              preview={company.pain_points}
+              expanded={isExpanded('pain')}
+              onToggle={() => toggleTile('pain')}
+              minWidth={260}
+            >
+              <textarea value={company.pain_points} onChange={e => set('pain_points', e.target.value)} rows={4}
                 placeholder="e.g. Unstructured project reporting across subsidiaries; inconsistent PM capability" />
-            </div>
-          </div>
-          <div className="field-row full">
-            <div className="field-group">
-              <label>Entry Angle (how to get in)</label>
-              <textarea value={company.entry_angle} onChange={e => set('entry_angle', e.target.value)} rows={3}
+            </Tile>
+            <Tile
+              title="Entry Angle"
+              preview={company.entry_angle}
+              expanded={isExpanded('entry')}
+              onToggle={() => toggleTile('entry')}
+              minWidth={260}
+            >
+              <textarea value={company.entry_angle} onChange={e => set('entry_angle', e.target.value)} rows={4}
                 placeholder="e.g. PMO Director spoke at PM conference 2025; L&D head is 2nd-degree LinkedIn connection" />
-            </div>
+            </Tile>
           </div>
         </div>
       </div>
@@ -420,8 +489,19 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
               No contacts yet. Research and add decision makers.
             </div>
           )}
-          {company.contacts.map(ct => (
-            <div key={ct.id} className="contact-card">
+          <div style={tileRow}>
+          {company.contacts.map(ct => {
+            const preview = [ct.title, ct.department, ct.email].filter(Boolean).join(' · ');
+            return (
+            <Tile
+              key={ct.id}
+              title={ct.name || 'Unnamed'}
+              preview={preview}
+              expanded={isExpanded(`contact-${ct.id}`)}
+              onToggle={() => toggleTile(`contact-${ct.id}`)}
+              minWidth={280}
+            >
+            <div className="contact-card" style={{ margin: 0, padding: 0, border: 'none', background: 'transparent' }}>
               <div className="contact-card-header">
                 <div>
                   <div className="contact-name">{ct.name || 'Unnamed'}</div>
@@ -465,7 +545,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                   </span>
                 )}
               </div>
-              {(ct.activities || []).length > 0 && (
+              {(ct.activities || []).length > 0 && isExpanded(`contact-${ct.id}`) && (
                 <div style={{ marginTop: 8, borderTop: '1px solid var(--pbf-border)', paddingTop: 6 }}>
                   {[...(ct.activities || [])].reverse().map(a => (
                     <div key={a.id} className="activity-item" style={{ padding: '4px 0', alignItems: 'flex-start' }}>
@@ -501,7 +581,10 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                 </div>
               )}
             </div>
-          ))}
+            </Tile>
+            );
+          })}
+          </div>
         </div>
       </div>
 
@@ -551,48 +634,61 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
             </div>
           )}
 
+          <div style={tileRow}>
           {allEvents.map(ev => {
             const isOverdue = !ev.done && ev.event_date < todayDate;
             const isDueToday = !ev.done && ev.event_date === todayDate;
+            const tileKey = `event-${ev.id}`;
+            const preview = `${ev.event_date} · ${ev.description}`;
             return (
               <div key={ev.id}
                 ref={el => { eventRefs.current[ev.id] = el; }}
                 style={{
-                display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 10px', marginBottom: 4,
-                borderRadius: 'var(--radius)',
-                background: ev.done ? 'var(--pbf-green-bg)' : isOverdue ? 'var(--pbf-red-bg)' : isDueToday ? 'var(--pbf-yellow-bg)' : 'var(--pbf-light)',
-                border: `1px solid ${ev.done ? 'var(--stage-won)' : isOverdue ? 'var(--pbf-red)' : isDueToday ? '#ecc94b' : 'var(--pbf-border)'}`,
-                opacity: ev.done ? 0.7 : 1,
-                boxShadow: highlightedEventId === ev.id ? '0 0 0 3px var(--pbf-navy)' : 'none',
-                transition: 'box-shadow 0.3s',
-              }}>
-                <input type="checkbox" checked={ev.done} onChange={() => toggleEventDone(ev)}
-                  style={{ marginTop: 3, cursor: 'pointer', accentColor: 'var(--stage-won)' }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    fontSize: 13, fontWeight: 600, textDecoration: ev.done ? 'line-through' : 'none',
-                    color: ev.done ? 'var(--stage-won)' : isOverdue ? 'var(--pbf-red)' : 'var(--pbf-text)',
-                  }}>
-                    {ev.description}
+                  flex: isExpanded(tileKey) ? '1 1 100%' : '1 1 260px',
+                  minWidth: 260, maxWidth: '100%',
+                  boxShadow: highlightedEventId === ev.id ? '0 0 0 3px var(--pbf-navy)' : undefined,
+                  borderRadius: 'var(--radius)',
+                  transition: 'box-shadow 0.3s',
+                }}>
+                <Tile
+                  title={`${ev.contact_id ? ev.ownerName : 'Company'}${isOverdue ? ' · OVERDUE' : isDueToday ? ' · TODAY' : ''}`}
+                  preview={preview}
+                  expanded={isExpanded(tileKey)}
+                  onToggle={() => toggleTile(tileKey)}
+                  minWidth={260}
+                  accentBg={ev.done ? 'var(--pbf-green-bg)' : isOverdue ? 'var(--pbf-red-bg)' : isDueToday ? 'var(--pbf-yellow-bg)' : 'var(--pbf-light)'}
+                  accentBorder={ev.done ? 'var(--stage-won)' : isOverdue ? 'var(--pbf-red)' : isDueToday ? '#ecc94b' : 'var(--pbf-border)'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, opacity: ev.done ? 0.7 : 1 }}>
+                    <input type="checkbox" checked={ev.done} onChange={() => toggleEventDone(ev)}
+                      style={{ marginTop: 3, cursor: 'pointer', accentColor: 'var(--stage-won)' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        fontSize: 13, fontWeight: 600, textDecoration: ev.done ? 'line-through' : 'none',
+                        color: ev.done ? 'var(--stage-won)' : isOverdue ? 'var(--pbf-red)' : 'var(--pbf-text)',
+                      }}>
+                        {ev.description}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--pbf-muted)', marginTop: 2 }}>
+                        <span style={{ fontWeight: 600, color: isOverdue ? 'var(--pbf-red)' : isDueToday ? '#d69e2e' : 'var(--pbf-blue)' }}>
+                          {ev.event_date}
+                        </span>
+                        {ev.contact_id ? <span> · {ev.ownerName}</span> : <span> · Company</span>}
+                        {isOverdue && <span style={{ color: 'var(--pbf-red)', fontWeight: 600 }}> · OVERDUE</span>}
+                        {isDueToday && <span style={{ color: '#d69e2e', fontWeight: 600 }}> · TODAY</span>}
+                      </div>
+                    </div>
+                    <button className="btn-ghost btn-sm" style={{ fontSize: 13, padding: '0px 4px', flexShrink: 0 }}
+                      title="Download .ics calendar event (9 AM, 1h, reminders 1h & 12h before)"
+                      onClick={() => downloadIcs(ev, `${ev.description} — ${ev.contact_id ? ev.ownerName + ' @ ' : ''}${company.name}`)}>&#128197;</button>
+                    <button className="btn-danger btn-sm" style={{ fontSize: 10, padding: '0px 4px', flexShrink: 0 }}
+                      onClick={() => removeEvent(ev)}>&#10005;</button>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--pbf-muted)', marginTop: 2 }}>
-                    <span style={{ fontWeight: 600, color: isOverdue ? 'var(--pbf-red)' : isDueToday ? '#d69e2e' : 'var(--pbf-blue)' }}>
-                      {ev.event_date}
-                    </span>
-                    {ev.contact_id && <span> · {ev.ownerName}</span>}
-                    {!ev.contact_id && <span> · Company</span>}
-                    {isOverdue && <span style={{ color: 'var(--pbf-red)', fontWeight: 600 }}> · OVERDUE</span>}
-                    {isDueToday && <span style={{ color: '#d69e2e', fontWeight: 600 }}> · TODAY</span>}
-                  </div>
-                </div>
-                <button className="btn-ghost btn-sm" style={{ fontSize: 13, padding: '0px 4px', flexShrink: 0 }}
-                  title="Download .ics calendar event (9 AM, 1h, reminders 1h & 12h before)"
-                  onClick={() => downloadIcs(ev, `${ev.description} — ${ev.contact_id ? ev.ownerName + ' @ ' : ''}${company.name}`)}>&#128197;</button>
-                <button className="btn-danger btn-sm" style={{ fontSize: 10, padding: '0px 4px', flexShrink: 0 }}
-                  onClick={() => removeEvent(ev)}>&#10005;</button>
+                </Tile>
               </div>
             );
           })}
+          </div>
         </div>
       </div>
 
@@ -631,40 +727,54 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
               No activities logged yet.
             </div>
           )}
-          {allActivities.map(a => (
-            <div key={a.id} className="activity-item" style={{ alignItems: 'flex-start' }}>
-              <div className="activity-date">{a.date}</div>
-              <div style={{ flex: 1 }}>
-                {editingActivity && editingActivity.id === a.id ? (
-                  <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end' }}>
-                    <textarea
-                      value={editingActivity.text}
-                      onChange={e => setEditingActivity({ ...editingActivity, text: e.target.value })}
-                      style={{ flex: 1, fontSize: 13, padding: '4px 6px', minHeight: 36, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.4 }}
-                      autoFocus
-                    />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <button className="btn-primary btn-sm" onClick={() => editActivityHandler(a.id, editingActivity.text, a.source)}>&#10003;</button>
-                      <button className="btn-ghost btn-sm" onClick={() => setEditingActivity(null)}>&#10005;</button>
+          <div style={tileRow}>
+          {allActivities.map(a => {
+            const tileKey = `activity-${a.id}`;
+            const titleStr = `${a.date}${a.contactName ? ' · ' + a.contactName : ''}`;
+            return (
+            <Tile
+              key={a.id}
+              title={titleStr}
+              preview={a.text}
+              expanded={isExpanded(tileKey)}
+              onToggle={() => toggleTile(tileKey)}
+              minWidth={260}
+            >
+              <div className="activity-item" style={{ alignItems: 'flex-start', padding: 0 }}>
+                <div style={{ flex: 1 }}>
+                  {editingActivity && editingActivity.id === a.id ? (
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end' }}>
+                      <textarea
+                        value={editingActivity.text}
+                        onChange={e => setEditingActivity({ ...editingActivity, text: e.target.value })}
+                        style={{ flex: 1, fontSize: 13, padding: '4px 6px', minHeight: 36, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.4 }}
+                        autoFocus
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <button className="btn-primary btn-sm" onClick={() => editActivityHandler(a.id, editingActivity.text, a.source)}>&#10003;</button>
+                        <button className="btn-ghost btn-sm" onClick={() => setEditingActivity(null)}>&#10005;</button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="activity-text">
-                    {a.contactName && <span style={{ fontWeight: 600, color: 'var(--pbf-blue)', marginRight: 6 }}>{a.contactName}:</span>}
-                    {a.text}
+                  ) : (
+                    <div className="activity-text" style={{ whiteSpace: 'pre-wrap' }}>
+                      {a.contactName && <span style={{ fontWeight: 600, color: 'var(--pbf-blue)', marginRight: 6 }}>{a.contactName}:</span>}
+                      {a.text}
+                    </div>
+                  )}
+                </div>
+                {(!editingActivity || editingActivity.id !== a.id) && (
+                  <div style={{ display: 'flex', gap: 2, marginLeft: 4, flexShrink: 0 }}>
+                    <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: '1px 4px' }}
+                      onClick={() => setEditingActivity({ id: a.id, text: a.text, source: a.source })}>&#9998;</button>
+                    <button className="btn-danger btn-sm" style={{ fontSize: 11, padding: '1px 4px' }}
+                      onClick={() => deleteActivityHandler(a.id)}>&#10005;</button>
                   </div>
                 )}
               </div>
-              {(!editingActivity || editingActivity.id !== a.id) && (
-                <div style={{ display: 'flex', gap: 2, marginLeft: 4, flexShrink: 0 }}>
-                  <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: '1px 4px' }}
-                    onClick={() => setEditingActivity({ id: a.id, text: a.text, source: a.source })}>&#9998;</button>
-                  <button className="btn-danger btn-sm" style={{ fontSize: 11, padding: '1px 4px' }}
-                    onClick={() => deleteActivityHandler(a.id)}>&#10005;</button>
-                </div>
-              )}
-            </div>
-          ))}
+            </Tile>
+            );
+          })}
+          </div>
         </div>
       </div>
 
