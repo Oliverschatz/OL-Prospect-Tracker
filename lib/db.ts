@@ -75,12 +75,12 @@ export async function loadTemplates(): Promise<Template[]> {
 export async function createCompany(company: Company): Promise<void> {
   if (!supabase) return;
   const userId = await getUserId();
-  const { contacts, activities, ...row } = company;
+  const { contacts, activities, planned_events, ...row } = company;
+  void contacts; void activities; void planned_events;
   await supabase.from('companies').insert({
     ...row,
     user_id: userId,
     parent_id: row.parent_id || null,
-    follow_up_date: row.follow_up_date || null,
   });
 }
 
@@ -91,7 +91,6 @@ export async function updateCompanyFields(
   if (!supabase) return;
   const row: Record<string, unknown> = { ...fields, updated_at: today() };
   if ('parent_id' in row) row.parent_id = row.parent_id || null;
-  if ('follow_up_date' in row) row.follow_up_date = row.follow_up_date || null;
   await supabase.from('companies').update(row).eq('id', id);
 }
 
@@ -105,8 +104,9 @@ export async function deleteCompanyFromDb(id: string): Promise<void> {
 export async function upsertContact(companyId: string, contact: Contact): Promise<void> {
   if (!supabase) return;
   const userId = await getUserId();
-  const { activities, ...row } = contact;
-  const dbRow = { ...row, company_id: companyId, user_id: userId, follow_up_date: row.follow_up_date || null };
+  const { activities, planned_events, ...row } = contact;
+  void activities; void planned_events;
+  const dbRow = { ...row, company_id: companyId, user_id: userId };
   await supabase.from('contacts').upsert(dbRow);
 }
 
@@ -178,16 +178,17 @@ export async function bulkImportCompanies(companies: Company[]): Promise<void> {
   const userId = await getUserId();
 
   for (const company of companies) {
-    const { contacts, activities, ...row } = company;
+    const { contacts, activities, planned_events, ...row } = company;
+    void activities; void planned_events;
     await supabase.from('companies').upsert({
       ...row,
       user_id: userId,
       parent_id: row.parent_id || null,
-      follow_up_date: row.follow_up_date || null,
     });
 
     for (const contact of contacts) {
-      const { activities: ctActivities, ...ctRow } = contact;
+      const { activities: ctActivities, planned_events: ctEvents, ...ctRow } = contact;
+      void ctEvents;
       await supabase.from('contacts').upsert({ ...ctRow, company_id: company.id, user_id: userId });
       for (const activity of ctActivities) {
         await supabase.from('activities').upsert({

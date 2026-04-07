@@ -47,8 +47,6 @@ CREATE TABLE companies (
   pain_points TEXT NOT NULL DEFAULT '',
   entry_angle TEXT NOT NULL DEFAULT '',
   notes TEXT NOT NULL DEFAULT '',
-  next_action TEXT NOT NULL DEFAULT '',
-  follow_up_date DATE,
   parent_id TEXT REFERENCES companies(id) ON DELETE SET NULL,
   created_at DATE NOT NULL DEFAULT CURRENT_DATE,
   updated_at DATE NOT NULL DEFAULT CURRENT_DATE
@@ -67,9 +65,7 @@ CREATE TABLE contacts (
   linkedin TEXT NOT NULL DEFAULT '',
   role TEXT NOT NULL DEFAULT 'target'
     CHECK (role IN ('target', 'champion', 'influencer', 'gatekeeper', 'referral')),
-  notes TEXT NOT NULL DEFAULT '',
-  follow_up_date DATE,
-  next_action TEXT NOT NULL DEFAULT ''
+  notes TEXT NOT NULL DEFAULT ''
 );
 
 -- Activities table (company-level when contact_id is NULL, contact-level otherwise)

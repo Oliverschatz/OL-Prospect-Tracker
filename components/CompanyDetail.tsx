@@ -618,15 +618,6 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                 <span className="stage-badge" style={{ background: 'var(--pbf-light)', color: 'var(--pbf-muted)', fontSize: 10 }}>
                   {roleLabel(ct.role)}
                 </span>
-                {ct.follow_up_date && (
-                  <span style={{
-                    fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 8,
-                    background: ct.follow_up_date < today() ? 'var(--pbf-red-bg)' : ct.follow_up_date === today() ? 'var(--pbf-yellow-bg)' : 'var(--pbf-blue-bg)',
-                    color: ct.follow_up_date < today() ? 'var(--pbf-red)' : ct.follow_up_date === today() ? '#b7791f' : 'var(--pbf-blue)',
-                  }}>
-                    &#128197; {ct.follow_up_date}{ct.next_action ? ` · ${ct.next_action}` : ''}
-                  </span>
-                )}
               </div>
               {(ct.activities || []).length > 0 && isExpanded(`contact-${ct.id}`) && (
                 <div style={{ marginTop: 8, borderTop: '1px solid var(--pbf-border)', paddingTop: 6 }}>
@@ -812,29 +803,6 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
             );
           })}
           </div>
-        </div>
-      </div>
-
-      {/* Legacy Next Action (kept for backwards compat) */}
-      <div className="section">
-        <div className="section-header"><h3>Quick Follow-up</h3></div>
-        <div className="section-body">
-          <div className="field-row">
-            <div className="field-group">
-              <label>Next Action</label>
-              <input value={company.next_action || ''} onChange={e => set('next_action', e.target.value)}
-                placeholder="e.g. Follow up if no LinkedIn response within 7 days" />
-            </div>
-            <div className="field-group">
-              <label>Follow-up Date</label>
-              <input type="date" value={company.follow_up_date || ''} onChange={e => set('follow_up_date', e.target.value)} />
-            </div>
-          </div>
-          {company.follow_up_date && company.follow_up_date <= today() && (
-            <div style={{ marginTop: 6, padding: '6px 10px', borderRadius: 'var(--radius)', background: 'var(--pbf-red-bg)', color: 'var(--pbf-red)', fontSize: 13, fontWeight: 600 }}>
-              &#9888; Follow-up is due{company.follow_up_date < today() ? ' (overdue)' : ' today'}
-            </div>
-          )}
         </div>
       </div>
 

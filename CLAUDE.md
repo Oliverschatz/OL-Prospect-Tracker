@@ -23,9 +23,10 @@ Fonts: Source Sans 3 (body), Source Serif 4 (headings).
 - All data scoped by user_id via RLS policies
 
 ## Database
-- `companies` table: user_id, name, hq, country, employees, sector, website, stage, fit_scores (JSONB), pain_points, entry_angle, notes, next_action, follow_up_date, parent_id
+- `companies` table: user_id, name, hq, country, employees, sector, website, stage, fit_scores (JSONB), pain_points, entry_angle, notes, parent_id
 - `contacts` table: user_id, company_id, name, title, department, email, phone, linkedin, role, notes
 - `activities` table: user_id, company_id, contact_id (null = company-level), date, text
+- `planned_events` table: user_id, company_id, contact_id (null = company-level), event_date, title, description, done
 - `templates` table: user_id, name, body, sort_order
 - RLS enabled: each user only sees their own data
 - Schema in `supabase/schema.sql`

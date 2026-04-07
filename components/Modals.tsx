@@ -26,8 +26,6 @@ export function ContactModal({
       linkedin: '',
       role: 'target',
       notes: '',
-      follow_up_date: '',
-      next_action: '',
       activities: [],
       planned_events: [],
     }
@@ -82,16 +80,6 @@ export function ContactModal({
             <div className="field-group">
               <label>LinkedIn URL</label>
               <input value={form.linkedin} onChange={e => set('linkedin', e.target.value)} />
-            </div>
-          </div>
-          <div className="field-row">
-            <div className="field-group">
-              <label>Next Action</label>
-              <input value={form.next_action} onChange={e => set('next_action', e.target.value)} placeholder="e.g. Send proposal draft" />
-            </div>
-            <div className="field-group">
-              <label>Follow-up Date</label>
-              <input type="date" value={form.follow_up_date} onChange={e => set('follow_up_date', e.target.value)} />
             </div>
           </div>
           <div className="field-row full">

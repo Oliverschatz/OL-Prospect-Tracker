@@ -69,8 +69,6 @@ export const EMPTY_COMPANY: Omit<Company, 'id' | 'created_at' | 'updated_at'> = 
   pain_points: '',
   entry_angle: '',
   notes: '',
-  next_action: '',
-  follow_up_date: '',
   parent_id: '',
   tags: [],
   contacts: [],
@@ -87,8 +85,6 @@ export const EMPTY_CONTACT: Omit<Contact, 'id'> = {
   linkedin: '',
   role: 'target',
   notes: '',
-  follow_up_date: '',
-  next_action: '',
   activities: [],
   planned_events: [],
 };

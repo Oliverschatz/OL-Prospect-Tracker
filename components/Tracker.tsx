@@ -204,7 +204,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
     await saveAllTemplates(newTemplates);
   };
 
-  // ─── Follow-up data (planned events + legacy follow_up_date fields) ───
+  // ─── Follow-up data (from planned events) ───
   const todayStr = today();
 
   type FollowUpItem = { id: string; label: string; sublabel?: string; follow_up_date: string; next_action: string; companyId: string; type: 'company' | 'contact'; done?: boolean };
@@ -212,35 +212,19 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
   const allFollowUps: FollowUpItem[] = [];
 
   for (const co of companies) {
-    // Planned events (company-level)
     for (const ev of co.planned_events || []) {
       allFollowUps.push({
-        id: ev.id, label: co.name, follow_up_date: ev.event_date, next_action: ev.description,
+        id: ev.id, label: co.name,
+        follow_up_date: ev.event_date, next_action: ev.title || ev.description,
         companyId: co.id, type: 'company', done: ev.done,
       });
     }
-    // Legacy company follow_up_date (only if no planned events)
-    if ((co.planned_events || []).length === 0 && co.follow_up_date) {
-      allFollowUps.push({
-        id: `legacy-${co.id}`, label: co.name, follow_up_date: co.follow_up_date, next_action: co.next_action,
-        companyId: co.id, type: 'company',
-      });
-    }
-    // Planned events (contact-level)
     for (const ct of co.contacts) {
       for (const ev of ct.planned_events || []) {
         allFollowUps.push({
           id: ev.id, label: ct.name || 'Contact', sublabel: co.name,
-          follow_up_date: ev.event_date, next_action: ev.description,
+          follow_up_date: ev.event_date, next_action: ev.title || ev.description,
           companyId: co.id, type: 'contact', done: ev.done,
-        });
-      }
-      // Legacy contact follow_up_date
-      if ((ct.planned_events || []).length === 0 && ct.follow_up_date) {
-        allFollowUps.push({
-          id: `legacy-ct-${ct.id}`, label: ct.name || 'Contact', sublabel: co.name,
-          follow_up_date: ct.follow_up_date, next_action: ct.next_action,
-          companyId: co.id, type: 'contact',
         });
       }
     }
@@ -306,7 +290,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
           {(c.tags || []).length > 0 && (
             <span style={{ marginLeft: 4 }}>{(c.tags || []).map(t => <span key={t} style={{ background: 'var(--pbf-yellow-bg)', color: 'var(--pbf-accent)', fontSize: 9, padding: '1px 4px', borderRadius: 2, marginLeft: 2 }}>{t}</span>)}</span>
           )}
-          {c.follow_up_date && c.follow_up_date <= todayStr && (
+          {(c.planned_events || []).some(e => !e.done && e.event_date <= todayStr) && (
             <span style={{ color: 'var(--pbf-red)', fontWeight: 600, marginLeft: 4 }}>&#9888;</span>
           )}
         </div>

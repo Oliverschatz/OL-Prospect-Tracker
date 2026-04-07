@@ -44,8 +44,6 @@ export interface Contact {
   linkedin: string;
   role: 'target' | 'champion' | 'influencer' | 'gatekeeper' | 'referral';
   notes: string;
-  follow_up_date: string;
-  next_action: string;
   activities: Activity[];
   planned_events: PlannedEvent[];
 }
@@ -64,8 +62,6 @@ export interface Company {
   pain_points: string;
   entry_angle: string;
   notes: string;
-  next_action: string;
-  follow_up_date: string;
   parent_id: string;
   tags: string[];
   created_at: string;

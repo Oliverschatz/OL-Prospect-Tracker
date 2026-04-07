@@ -60,41 +60,23 @@ export default function TimelineDiagram({ companies, onSelectCompany, filter = '
 }) {
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  // Build entries from planned_events + legacy follow_up_date fields
+  // Build entries from planned_events
   const entries: TimelineEntry[] = [];
 
   for (const co of companies) {
-    // Company-level planned events
     for (const ev of co.planned_events || []) {
       entries.push({
         id: ev.id, label: co.name, companyId: co.id,
-        eventDate: ev.event_date, description: ev.description, stage: co.stage,
+        eventDate: ev.event_date, description: ev.title || ev.description, stage: co.stage,
         done: ev.done, type: 'company',
       });
     }
-    // Legacy company follow_up_date (only if no planned events exist)
-    if ((co.planned_events || []).length === 0 && co.follow_up_date) {
-      entries.push({
-        id: `legacy-co-${co.id}`, label: co.name, companyId: co.id,
-        eventDate: co.follow_up_date, description: co.next_action || '', stage: co.stage,
-        done: co.stage === 'won' || co.stage === 'lost', type: 'company',
-      });
-    }
-    // Contact-level planned events
     for (const ct of co.contacts) {
       for (const ev of ct.planned_events || []) {
         entries.push({
           id: ev.id, label: ct.name || 'Contact', sublabel: co.name, companyId: co.id,
-          eventDate: ev.event_date, description: ev.description, stage: co.stage,
+          eventDate: ev.event_date, description: ev.title || ev.description, stage: co.stage,
           done: ev.done, type: 'contact',
-        });
-      }
-      // Legacy contact follow_up_date
-      if ((ct.planned_events || []).length === 0 && ct.follow_up_date) {
-        entries.push({
-          id: `legacy-ct-${ct.id}`, label: ct.name || 'Contact', sublabel: co.name, companyId: co.id,
-          eventDate: ct.follow_up_date, description: ct.next_action || '', stage: co.stage,
-          done: false, type: 'contact',
         });
       }
     }
