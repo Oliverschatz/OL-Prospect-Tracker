@@ -330,6 +330,25 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
     upsertPlannedEvent(updated);
   };
 
+  const updateEventField = (ev: PlannedEvent, patch: Partial<PlannedEvent>) => {
+    const updated = { ...ev, ...patch };
+    if (ev.contact_id) {
+      const contacts = company.contacts.map(c =>
+        c.id === ev.contact_id
+          ? { ...c, planned_events: (c.planned_events || []).map(e => e.id === ev.id ? updated : e) }
+          : c
+      );
+      onChange({ ...company, contacts, updated_at: today() });
+    } else {
+      onChange({
+        ...company,
+        planned_events: (company.planned_events || []).map(e => e.id === ev.id ? updated : e),
+        updated_at: today(),
+      });
+    }
+    upsertPlannedEvent(updated);
+  };
+
   const removeEvent = (ev: PlannedEvent) => {
     if (ev.contact_id) {
       const contacts = company.contacts.map(c =>
@@ -733,22 +752,27 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                   accentBorder={ev.done ? 'var(--stage-won)' : isOverdue ? 'var(--pbf-red)' : isDueToday ? '#ecc94b' : 'var(--pbf-border)'}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, opacity: ev.done ? 0.7 : 1 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{
-                        fontSize: 13, fontWeight: 600, textDecoration: ev.done ? 'line-through' : 'none',
-                        color: ev.done ? 'var(--stage-won)' : isOverdue ? 'var(--pbf-red)' : 'var(--pbf-text)',
-                      }}>
-                        {headline}
-                      </div>
-                      {ev.title && ev.description && (
-                        <div style={{ fontSize: 12, color: 'var(--pbf-text)', marginTop: 3, whiteSpace: 'pre-wrap' }}>
-                          {ev.description}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 11, color: 'var(--pbf-muted)', marginTop: 2 }}>
-                        <span style={{ fontWeight: 600, color: isOverdue ? 'var(--pbf-red)' : isDueToday ? '#d69e2e' : 'var(--pbf-blue)' }}>
-                          {ev.event_date}
-                        </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <input
+                        value={ev.title || ''}
+                        onChange={e => updateEventField(ev, { title: e.target.value })}
+                        placeholder="Title"
+                        style={{ fontSize: 13, fontWeight: 600, padding: '4px 6px' }}
+                      />
+                      <textarea
+                        value={ev.description || ''}
+                        onChange={e => updateEventField(ev, { description: e.target.value })}
+                        placeholder="Description (optional — also written into calendar entry)"
+                        rows={3}
+                        style={{ fontSize: 12, padding: '4px 6px', marginTop: 4, resize: 'vertical' }}
+                      />
+                      <div style={{ fontSize: 11, color: 'var(--pbf-muted)', marginTop: 4 }}>
+                        <input
+                          type="date"
+                          value={ev.event_date}
+                          onChange={e => updateEventField(ev, { event_date: e.target.value })}
+                          style={{ width: 'auto', fontSize: 11, padding: '2px 6px', display: 'inline-block' }}
+                        />
                         {ev.contact_id ? <span> · {ev.ownerName}</span> : <span> · Company</span>}
                         {isOverdue && <span style={{ color: 'var(--pbf-red)', fontWeight: 600 }}> · OVERDUE</span>}
                         {isDueToday && <span style={{ color: '#d69e2e', fontWeight: 600 }}> · TODAY</span>}
@@ -773,13 +797,13 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                     <div style={{ marginTop: 8, padding: '6px 8px', borderTop: '1px dashed var(--pbf-border)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
                         <input type="checkbox" checked={false} onChange={() => completeEvent(ev, false)}
-                          style={{ cursor: 'pointer', accentColor: 'var(--stage-won)' }} />
-                        Completed
+                          style={{ width: 'auto', flex: '0 0 auto', margin: 0, cursor: 'pointer', accentColor: 'var(--stage-won)' }} />
+                        <span>Completed</span>
                       </label>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
                         <input type="checkbox" checked={false} onChange={() => completeEvent(ev, true)}
-                          style={{ cursor: 'pointer', accentColor: 'var(--stage-won)' }} />
-                        Completed, plan follow-up
+                          style={{ width: 'auto', flex: '0 0 auto', margin: 0, cursor: 'pointer', accentColor: 'var(--stage-won)' }} />
+                        <span>Completed, plan follow-up</span>
                       </label>
                     </div>
                   )}
