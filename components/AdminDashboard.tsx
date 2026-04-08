@@ -273,10 +273,14 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
   // ─── Shared templates CRUD ───
   const saveSharedTemplate = async (t: SharedTemplate, isNew: boolean): Promise<boolean> => {
     const token = await getToken();
+    // New templates get placed at the end of the existing order.
+    const payload = isNew
+      ? { ...t, sort_order: sharedTemplates.length }
+      : t;
     const res = await fetch('/api/admin/shared-templates', {
       method: isNew ? 'POST' : 'PUT',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(t),
+      body: JSON.stringify(payload),
     });
     if (res.ok) { fetchData(); return true; }
     const err = await res.json().catch(() => ({ error: 'unknown' }));
@@ -295,6 +299,29 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
       alert(`Could not delete template: ${err.error}`);
     }
     fetchData();
+  };
+  const reorderSharedTemplates = async (orderedIds: string[]): Promise<void> => {
+    const token = await getToken();
+    // Optimistic reorder so the UI updates instantly.
+    setSharedTemplates(prev => {
+      const byId = new Map(prev.map(t => [t.id, t]));
+      return orderedIds
+        .map((id, i) => {
+          const t = byId.get(id);
+          return t ? { ...t, sort_order: i } : null;
+        })
+        .filter((t): t is SharedTemplate => t !== null);
+    });
+    const res = await fetch('/api/admin/shared-templates', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: orderedIds }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'unknown' }));
+      alert(`Could not reorder templates: ${err.error}`);
+      fetchData();
+    }
   };
 
   const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('de-DE') : '—';
@@ -557,6 +584,7 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
               templates={sharedTemplates}
               onSave={saveSharedTemplate}
               onDelete={deleteSharedTemplate}
+              onReorder={reorderSharedTemplates}
             />
           </>
         )}
@@ -722,14 +750,24 @@ function SharedTemplatesEditor({
   templates,
   onSave,
   onDelete,
+  onReorder,
 }: {
   templates: SharedTemplate[];
   onSave: (t: SharedTemplate, isNew: boolean) => Promise<boolean>;
   onDelete: (id: string) => Promise<void>;
+  onReorder: (orderedIds: string[]) => Promise<void>;
 }) {
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const [form, setForm] = useState<SharedTemplate>({
     id: '', name: '', body: '', sort_order: 0, updated_at: '',
+  });
+
+  // Defensive local sort. The API already orders by sort_order, but if two
+  // rows share the same sort_order (legacy data), fall back to name so the
+  // list is deterministic.
+  const sorted = [...templates].sort((a, b) => {
+    if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+    return a.name.localeCompare(b.name);
   });
 
   const startEdit = (t: SharedTemplate) => {
@@ -749,6 +787,14 @@ function SharedTemplatesEditor({
     if (ok) setEditing(null);
   };
 
+  const move = (idx: number, dir: -1 | 1) => {
+    const target = idx + dir;
+    if (target < 0 || target >= sorted.length) return;
+    const newOrder = sorted.map(t => t.id);
+    [newOrder[idx], newOrder[target]] = [newOrder[target], newOrder[idx]];
+    void onReorder(newOrder);
+  };
+
   return (
     <div className="section">
       <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -762,17 +808,39 @@ function SharedTemplatesEditor({
           <br />
           <span style={{ fontSize: 11 }}>
             <code>[Code]</code> is replaced with each ambassador&apos;s personal code at send time.
+            Reorder templates with the ↑ / ↓ arrows; the order applies to every ambassador.
           </span>
         </p>
 
-        {templates.map(t => (
+        {sorted.map((t, idx) => (
           <div key={t.id} style={{ marginBottom: 10, padding: 12, background: 'var(--pbf-light)', borderRadius: 'var(--radius)', border: '1px solid var(--pbf-border)' }}>
             {editing === t.id ? (
               <SharedTemplateForm form={form} setForm={setForm} onSave={save} onCancel={() => setEditing(null)} isNew={false} />
             ) : (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{t.name} <span style={{ fontSize: 11, color: 'var(--pbf-muted)', fontWeight: 500 }}>— sort: {t.sort_order}</span></div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <button
+                        className="btn-ghost btn-sm"
+                        onClick={() => move(idx, -1)}
+                        disabled={idx === 0}
+                        title="Move up"
+                        style={{ padding: '0 6px', lineHeight: 1, minWidth: 'auto' }}
+                      >↑</button>
+                      <button
+                        className="btn-ghost btn-sm"
+                        onClick={() => move(idx, 1)}
+                        disabled={idx === sorted.length - 1}
+                        title="Move down"
+                        style={{ padding: '0 6px', lineHeight: 1, minWidth: 'auto' }}
+                      >↓</button>
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>
+                      <span style={{ color: 'var(--pbf-muted)', fontWeight: 500, marginRight: 6 }}>{idx + 1}.</span>
+                      {t.name}
+                    </div>
+                  </div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button className="btn-ghost btn-sm" onClick={() => startEdit(t)} title="Edit this template">Edit</button>
                     <button className="btn-danger btn-sm" onClick={() => onDelete(t.id)} title="Delete this template">Delete</button>
@@ -809,15 +877,9 @@ function SharedTemplateForm({
 }) {
   return (
     <div>
-      <div className="field-row">
-        <div className="field-group">
-          <label>Name</label>
-          <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-        </div>
-        <div className="field-group" style={{ flex: '0 0 120px' }}>
-          <label>Sort Order</label>
-          <input type="number" value={form.sort_order} onChange={e => setForm({ ...form, sort_order: parseInt(e.target.value || '0') })} />
-        </div>
+      <div className="field-group" style={{ marginBottom: 8 }}>
+        <label>Name</label>
+        <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
       </div>
       <div className="field-group" style={{ marginBottom: 8 }}>
         <label>Body</label>

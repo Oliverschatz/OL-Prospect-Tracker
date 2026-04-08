@@ -175,6 +175,17 @@ export function TemplateManagerModal({
   const sharedList = templates.filter(t => t.readonly);
   const [editing, setEditing] = useState<number | 'new' | null>(null);
   const [form, setForm] = useState({ name: '', body: '' });
+  // Accordion state — all templates start collapsed; user expands the ones
+  // they want to read. Keyed by template id so toggling is stable across
+  // reorders.
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const startEdit = (idx: number) => {
     setEditing(idx);
@@ -222,39 +233,82 @@ export function TemplateManagerModal({
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--pbf-muted)', marginBottom: 6 }}>
                 Shared Templates (managed by admin)
               </div>
-              {sharedList.map(t => (
-                <div key={t.id} style={{ marginBottom: 8, padding: 10, background: '#f2f5fa', borderRadius: 'var(--radius)', border: '1px solid var(--pbf-border)', opacity: 0.92 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{t.name} <span style={{ fontSize: 10, color: 'var(--pbf-muted)', fontWeight: 500 }}>— read-only</span></div>
-                  <pre style={{ fontSize: 12, color: 'var(--pbf-text)', whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.4 }}>{t.body}</pre>
-                </div>
-              ))}
+              {sharedList.map(t => {
+                const isOpen = expanded.has(t.id);
+                return (
+                  <div key={t.id} style={{ marginBottom: 6, background: '#f2f5fa', borderRadius: 'var(--radius)', border: '1px solid var(--pbf-border)', opacity: 0.92 }}>
+                    <button
+                      type="button"
+                      onClick={() => toggleExpanded(t.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        width: '100%', padding: '8px 10px', background: 'none', border: 'none',
+                        cursor: 'pointer', textAlign: 'left', fontWeight: 600, fontSize: 13,
+                        color: 'var(--pbf-text)',
+                      }}
+                      aria-expanded={isOpen}
+                    >
+                      <span>
+                        <span style={{ display: 'inline-block', width: 14, color: 'var(--pbf-muted)' }}>{isOpen ? '▾' : '▸'}</span>
+                        {t.name}
+                        <span style={{ fontSize: 10, color: 'var(--pbf-muted)', fontWeight: 500, marginLeft: 6 }}>— read-only</span>
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <pre style={{ fontSize: 12, color: 'var(--pbf-text)', whiteSpace: 'pre-wrap', margin: 0, padding: '0 10px 10px', lineHeight: 1.4 }}>{t.body}</pre>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
-          {list.map((t, idx) => (
-            <div key={t.id} style={{ marginBottom: 10, padding: 10, background: 'var(--pbf-light)', borderRadius: 'var(--radius)', border: '1px solid var(--pbf-border)' }}>
-              {editing === idx ? (
-                <div>
-                  <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Template name" style={{ marginBottom: 6, fontWeight: 600 }} />
-                  <textarea value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} rows={6} style={{ fontFamily: 'inherit', fontSize: 13, lineHeight: 1.5 }} />
-                  <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
-                    <button className="btn-primary btn-sm" onClick={save}>Save</button>
-                    <button className="btn-ghost btn-sm" onClick={() => setEditing(null)}>Cancel</button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <span style={{ fontWeight: 600, fontSize: 13 }}>{t.name}</span>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <button className="btn-ghost btn-sm" onClick={() => startEdit(idx)}>&#9998;</button>
-                      <button className="btn-danger btn-sm" onClick={() => remove(idx)}>&#10005;</button>
+          {list.length > 0 && (
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--pbf-muted)', marginBottom: 6 }}>
+              My Templates
+            </div>
+          )}
+          {list.map((t, idx) => {
+            const isOpen = expanded.has(t.id);
+            return (
+              <div key={t.id} style={{ marginBottom: 6, background: 'var(--pbf-light)', borderRadius: 'var(--radius)', border: '1px solid var(--pbf-border)' }}>
+                {editing === idx ? (
+                  <div style={{ padding: 10 }}>
+                    <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Template name" style={{ marginBottom: 6, fontWeight: 600 }} />
+                    <textarea value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} rows={6} style={{ fontFamily: 'inherit', fontSize: 13, lineHeight: 1.5 }} />
+                    <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+                      <button className="btn-primary btn-sm" onClick={save}>Save</button>
+                      <button className="btn-ghost btn-sm" onClick={() => setEditing(null)}>Cancel</button>
                     </div>
                   </div>
-                  <pre style={{ fontSize: 12, color: 'var(--pbf-text)', whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.4 }}>{t.body}</pre>
-                </div>
-              )}
-            </div>
-          ))}
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px 4px 10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(t.id)}
+                        style={{
+                          flex: 1, display: 'flex', alignItems: 'center', gap: 4,
+                          background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                          fontWeight: 600, fontSize: 13, color: 'var(--pbf-text)', padding: '4px 0',
+                        }}
+                        aria-expanded={isOpen}
+                      >
+                        <span style={{ display: 'inline-block', width: 14, color: 'var(--pbf-muted)' }}>{isOpen ? '▾' : '▸'}</span>
+                        {t.name}
+                      </button>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button className="btn-ghost btn-sm" onClick={() => startEdit(idx)} title="Edit this template">Edit</button>
+                        <button className="btn-danger btn-sm" onClick={() => remove(idx)} title="Delete this template">Delete</button>
+                      </div>
+                    </div>
+                    {isOpen && (
+                      <pre style={{ fontSize: 12, color: 'var(--pbf-text)', whiteSpace: 'pre-wrap', margin: 0, padding: '0 10px 10px', lineHeight: 1.4 }}>{t.body}</pre>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
           {editing === 'new' && (
             <div style={{ marginBottom: 10, padding: 10, background: 'var(--pbf-yellow-bg)', borderRadius: 'var(--radius)', border: '1px solid var(--pbf-border)' }}>
               <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Template name" style={{ marginBottom: 6, fontWeight: 600 }} />
