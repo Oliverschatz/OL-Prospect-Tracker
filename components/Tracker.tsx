@@ -10,6 +10,7 @@ import { TemplateManagerModal } from '@/components/Modals';
 import CompanyDetail from '@/components/CompanyDetail';
 import TimelineDiagram from '@/components/TimelineDiagram';
 import Reports from '@/components/Reports';
+import Tutorial, { type TutorialHooks } from '@/components/Tutorial';
 import type { Company, Template } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -86,6 +87,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [scrollToEventId, setScrollToEventId] = useState<string | null>(null);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   // Load data on mount
   useEffect(() => {
@@ -300,7 +302,10 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
   };
 
   const handleSaveTemplates = async (newTemplates: Template[]) => {
-    setTemplates(newTemplates);
+    // The modal only edits personal templates. Keep any shared (read-only) ones
+    // that are already loaded so they remain visible to the user.
+    const shared = templates.filter(t => t.readonly);
+    setTemplates([...shared, ...newTemplates]);
     await saveAllTemplates(newTemplates);
   };
 
@@ -507,6 +512,35 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
           templates={templates}
           onSave={handleSaveTemplates}
           onClose={() => setTemplateManagerOpen(false)}
+        />
+      )}
+
+      {/* Tutorial */}
+      {tutorialOpen && (
+        <Tutorial
+          hooks={{
+            onLoadDummies: async () => { await handleLoadDummies(); },
+            onRemoveDummies: async () => {
+              // Silent removal at the end of the tour — don't re-prompt the user.
+              try {
+                const n = await removeDummyCompanies();
+                const cos = await loadAllCompanies();
+                setCompanies(cos);
+                setStatusMsg(n > 0 ? `Removed ${n} demo companies` : '');
+              } catch {
+                setStatusMsg('Failed to remove demo companies');
+              }
+            },
+            setView: (v) => setView(v),
+            selectCompanyByName: (name) => {
+              const co = companies.find(c => c.name === name);
+              if (co) setSelectedId(co.id);
+            },
+            clearSelection: () => setSelectedId(null),
+            openTemplateManager: () => setTemplateManagerOpen(true),
+            closeTemplateManager: () => setTemplateManagerOpen(false),
+          } as TutorialHooks}
+          onClose={() => setTutorialOpen(false)}
         />
       )}
 
@@ -730,11 +764,23 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
             />
           ) : (
             <div className="empty-state">
+              <img
+                src="https://oliverlehmann.com/wp-content/uploads/BA-Logo-transp.-300.png"
+                alt="Brand Ambassador"
+                style={{ width: 180, height: 'auto', marginBottom: 18 }}
+              />
               <h3>Prospect Tracker</h3>
               <p style={{ maxWidth: 360 }}>
                 Select a company from the sidebar or add a new one to start building your prospecting pipeline.
               </p>
-              <button className="btn-primary" onClick={addCompany} style={{ marginTop: 16 }}>+ Add {companies.length > 0 ? 'Another' : 'First'} Company</button>
+              <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button className="btn-primary" onClick={addCompany}>
+                  + Add {companies.length > 0 ? 'Another' : 'New'} Company
+                </button>
+                <button className="btn-secondary" onClick={() => setTutorialOpen(true)}>
+                  Show me the tutorial
+                </button>
+              </div>
             </div>
           )}
         </div>

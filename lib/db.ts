@@ -214,23 +214,38 @@ export async function bulkAddTag(ids: string[], tag: string): Promise<void> {
 
 export async function loadTemplates(): Promise<Template[]> {
   if (!supabase) return [];
-  const { data } = await supabase.from('templates').select('*').order('sort_order');
-  const rows = (data || []) as Template[];
-  if (rows.length > 0) return rows;
 
-  // First-time tenant: seed default templates
-  const userId = await getUserId();
-  if (!userId) return [];
-  const seeded: Template[] = DEFAULT_TEMPLATES.map((t, i) => ({
-    id: generateId(),
-    name: t.name,
-    body: t.body,
-    sort_order: i,
+  // Load the user's own templates (seed defaults if empty)
+  const { data: ownData } = await supabase.from('templates').select('*').order('sort_order');
+  let own = (ownData || []) as Template[];
+  if (own.length === 0) {
+    const userId = await getUserId();
+    if (userId) {
+      const seeded: Template[] = DEFAULT_TEMPLATES.map((t, i) => ({
+        id: generateId(),
+        name: t.name,
+        body: t.body,
+        sort_order: i,
+      }));
+      await supabase.from('templates').insert(
+        seeded.map(t => ({ ...t, user_id: userId }))
+      );
+      own = seeded;
+    }
+  }
+
+  // Load shared (admin-managed) templates — readable to any authenticated user via RLS
+  const { data: sharedData } = await supabase
+    .from('shared_templates')
+    .select('id, name, body, sort_order')
+    .order('sort_order');
+  const shared: Template[] = ((sharedData || []) as Template[]).map((t) => ({
+    ...t,
+    readonly: true,
   }));
-  await supabase.from('templates').insert(
-    seeded.map(t => ({ ...t, user_id: userId }))
-  );
-  return seeded;
+
+  // Shared templates first, then personal templates
+  return [...shared, ...own];
 }
 
 // ─── Company CRUD ───
@@ -325,11 +340,19 @@ export async function deletePlannedEvent(id: string): Promise<void> {
 export async function saveAllTemplates(templates: Template[]): Promise<void> {
   if (!supabase) return;
   const userId = await getUserId();
+  // Never persist shared/admin-managed templates into the user's table.
+  const own = templates.filter(t => !t.readonly);
   // Delete all user's templates, then insert fresh
   await supabase.from('templates').delete().neq('id', '');
-  if (templates.length > 0) {
+  if (own.length > 0) {
     await supabase.from('templates').insert(
-      templates.map((t, i) => ({ ...t, user_id: userId, sort_order: i }))
+      own.map((t, i) => ({
+        id: t.id,
+        name: t.name,
+        body: t.body,
+        user_id: userId,
+        sort_order: i,
+      }))
     );
   }
 }

@@ -170,7 +170,9 @@ export function TemplateManagerModal({
   onSave: (templates: Template[]) => void;
   onClose: () => void;
 }) {
-  const [list, setList] = useState([...templates]);
+  // Only personal templates are editable here. Shared templates are admin-managed.
+  const [list, setList] = useState(templates.filter(t => !t.readonly));
+  const sharedList = templates.filter(t => t.readonly);
   const [editing, setEditing] = useState<number | 'new' | null>(null);
   const [form, setForm] = useState({ name: '', body: '' });
 
@@ -215,6 +217,19 @@ export function TemplateManagerModal({
           <p style={{ fontSize: 12, color: 'var(--pbf-muted)', marginBottom: 12 }}>
             Placeholders: [Salutation], [LastName], [FirstName], [Name], [Title], [Company], [Department], [Email], [LinkedIn], [AmbassadorName], [AmbassadorFirstName], [AmbassadorLastName]
           </p>
+          {sharedList.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--pbf-muted)', marginBottom: 6 }}>
+                Shared Templates (managed by admin)
+              </div>
+              {sharedList.map(t => (
+                <div key={t.id} style={{ marginBottom: 8, padding: 10, background: '#f2f5fa', borderRadius: 'var(--radius)', border: '1px solid var(--pbf-border)', opacity: 0.92 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{t.name} <span style={{ fontSize: 10, color: 'var(--pbf-muted)', fontWeight: 500 }}>— read-only</span></div>
+                  <pre style={{ fontSize: 12, color: 'var(--pbf-text)', whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.4 }}>{t.body}</pre>
+                </div>
+              ))}
+            </div>
+          )}
           {list.map((t, idx) => (
             <div key={t.id} style={{ marginBottom: 10, padding: 10, background: 'var(--pbf-light)', borderRadius: 'var(--radius)', border: '1px solid var(--pbf-border)' }}>
               {editing === idx ? (

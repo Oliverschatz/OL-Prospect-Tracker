@@ -87,4 +87,5 @@ export interface Template {
   name: string;
   body: string;
   sort_order: number;
+  readonly?: boolean; // true for shared (admin-managed) templates
 }
