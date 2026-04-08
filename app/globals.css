@@ -63,6 +63,14 @@ body {
   color: var(--pbf-accent);
   font-weight: 400;
 }
+.app-logo {
+  height: 40px;
+  width: auto;
+  background: white;
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  display: block;
+}
 .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 /* ---- Buttons ---- */
