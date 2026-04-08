@@ -425,7 +425,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="https://oliverlehmann.com/wp-content/uploads/2023/05/cropped-logo-ol.png" alt="Oliver F. Lehmann — Project Business Training" className="app-logo" />
         <div className="header-actions">
-          <button className="btn-secondary btn-sm" onClick={() => setTemplateManagerOpen(true)} title="Message templates">
+          <button data-tutorial="templates-btn" className="btn-secondary btn-sm" onClick={() => setTemplateManagerOpen(true)} title="Message templates">
             &#9993; Templates
           </button>
           <button className="btn-secondary btn-sm" onClick={handleRequestSupport} title="Email Oliver for help">
@@ -546,7 +546,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
 
       {/* Body: sidebar + main */}
       <div className="app-body">
-        <div className="sidebar">
+        <div className="sidebar" data-tutorial="sidebar">
           <div className="sidebar-header">
             <h2>Pipeline</h2>
             <div style={{ display: 'flex', gap: 4 }}>
@@ -565,7 +565,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
           <PipelineBar companies={companies} />
 
           {/* View tabs */}
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--pbf-border)', padding: '0 8px' }}>
+          <div data-tutorial="view-tabs" style={{ display: 'flex', borderBottom: '1px solid var(--pbf-border)', padding: '0 8px' }}>
             {([['pipeline', 'Companies'], ['followups', 'Follow-ups'], ['history', 'History'], ['reports', 'Reports']] as const).map(([k, label]) => (
               <button key={k} onClick={() => { setView(k); if (k !== 'pipeline') setSelectedId(null); }}
                 style={{
@@ -596,12 +596,12 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
             </div>
           )}
 
-          <div style={{ padding: '0 12px 8px', marginTop: 8 }}>
+          <div data-tutorial="search" style={{ padding: '0 12px 8px', marginTop: 8 }}>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search companies, contacts..." style={{ fontSize: 12, padding: '5px 8px' }} />
           </div>
 
           {/* View content */}
-          <div className="company-list">
+          <div className="company-list" data-tutorial="company-list">
             {view === 'pipeline' && (
               <>
                 {filtered.length === 0 && (
@@ -732,7 +732,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
         </div>
 
         {/* Main Content */}
-        <div className="main-content">
+        <div className="main-content" data-tutorial="main-content">
           {view === 'reports' ? (
             <Reports
               companies={companies}
@@ -777,7 +777,19 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
                 <button className="btn-primary" onClick={addCompany}>
                   + Add {companies.length > 0 ? 'Another' : 'New'} Company
                 </button>
-                <button className="btn-secondary" onClick={() => setTutorialOpen(true)}>
+                <button
+                  onClick={() => setTutorialOpen(true)}
+                  style={{
+                    background: 'white',
+                    color: 'var(--pbf-navy)',
+                    border: '1.5px solid var(--pbf-navy)',
+                    padding: '7px 18px',
+                    fontWeight: 600,
+                    fontSize: 13,
+                    borderRadius: 'var(--radius)',
+                    cursor: 'pointer',
+                  }}
+                >
                   Show me the tutorial
                 </button>
               </div>

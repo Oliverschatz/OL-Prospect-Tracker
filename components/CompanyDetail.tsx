@@ -663,7 +663,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
       </div>
 
       {/* Contacts */}
-      <div className="section">
+      <div className="section" data-tutorial="contacts-section">
         <div className="section-header">
           <h3>Contacts ({company.contacts.length})</h3>
           <button className="btn-primary btn-sm" onClick={() => setContactModal('new')}>+ Add</button>
@@ -798,7 +798,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
       </div>
 
       {/* Planned Events */}
-      <div className="section">
+      <div className="section" data-tutorial="planned-events-section">
         <div className="section-header">
           <h3>Planned Events ({allEvents.length})</h3>
           <button className="btn-primary btn-sm" onClick={() => setShowEventForm(!showEventForm)}>+ Plan Event</button>
