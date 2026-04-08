@@ -36,11 +36,19 @@ export async function GET(req: NextRequest) {
   const { data: { users }, error } = await admin.auth.admin.listUsers();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // Fetch each user's ambassador_code from profiles in one shot.
+  const { data: profiles } = await admin.from('profiles').select('id, ambassador_code');
+  const codeById = new Map<string, string | null>();
+  for (const p of (profiles || []) as { id: string; ambassador_code: string | null }[]) {
+    codeById.set(p.id, p.ambassador_code ?? null);
+  }
+
   // Return safe subset — no sensitive data
   const safeUsers = users.map(u => ({
     id: u.id,
     email: u.email,
     full_name: u.user_metadata?.full_name || '',
+    ambassador_code: codeById.get(u.id) ?? null,
     created_at: u.created_at,
     last_sign_in_at: u.last_sign_in_at,
     banned: u.banned_until ? true : false,

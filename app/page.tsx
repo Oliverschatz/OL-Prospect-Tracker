@@ -256,14 +256,19 @@ function SettingsPanel({ user, isAdmin, onBack, onAdmin, onLogout }: {
   const [dailyEmail, setDailyEmail] = useState(true);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [prefsSaving, setPrefsSaving] = useState(false);
+  const [ambassadorCode, setAmbassadorCode] = useState('');
+  const [codeSaving, setCodeSaving] = useState(false);
+  const [codeMsg, setCodeMsg] = useState('');
+  const [codeError, setCodeError] = useState('');
 
   // Load preferences from profiles table
   useEffect(() => {
     if (!supabase) return;
-    supabase.from('profiles').select('timezone, daily_email').eq('id', user.id).single().then(({ data }) => {
+    supabase.from('profiles').select('timezone, daily_email, ambassador_code').eq('id', user.id).single().then(({ data }) => {
       if (data) {
         setTimezone(data.timezone || 'Europe/Berlin');
         setDailyEmail(data.daily_email !== false);
+        setAmbassadorCode(data.ambassador_code || '');
       }
       setPrefsLoaded(true);
     });
@@ -276,6 +281,31 @@ function SettingsPanel({ user, isAdmin, onBack, onAdmin, onLogout }: {
     setPrefsSaving(false);
     setSuccess('Preferences saved!');
     setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const saveAmbassadorCode = async () => {
+    if (!supabase) return;
+    setCodeError('');
+    setCodeMsg('');
+    const trimmed = ambassadorCode.trim();
+    const next = trimmed === '' ? null : trimmed;
+    setCodeSaving(true);
+    const { error: dbErr } = await supabase
+      .from('profiles')
+      .update({ ambassador_code: next })
+      .eq('id', user.id);
+    setCodeSaving(false);
+    if (dbErr) {
+      if (dbErr.code === '23505') {
+        setCodeError('That code is already in use by another ambassador — please choose another.');
+      } else {
+        setCodeError(dbErr.message || 'Could not save your code. Please try again.');
+      }
+      return;
+    }
+    setAmbassadorCode(trimmed);
+    setCodeMsg('Saved!');
+    setTimeout(() => setCodeMsg(''), 3000);
   };
 
   const handleChange = async () => {
@@ -320,6 +350,31 @@ function SettingsPanel({ user, isAdmin, onBack, onAdmin, onLogout }: {
               <div className="field-group">
                 <label>Name</label>
                 <input value={user.user_metadata?.full_name || ''} disabled style={{ background: 'var(--pbf-light)' }} />
+              </div>
+            </div>
+            <div className="field-row full">
+              <div className="field-group">
+                <label>Your Ambassador Code</label>
+                <p style={{ fontSize: 12, color: 'var(--pbf-muted)', marginTop: 0, marginBottom: 6 }}>
+                  Share this with your customers. When they enter it at checkout, they get a discount and you earn a commission. You can change it any time.
+                </p>
+                <input
+                  value={ambassadorCode}
+                  onChange={e => setAmbassadorCode(e.target.value)}
+                  placeholder="e.g. PBP42"
+                  disabled={!prefsLoaded || codeSaving}
+                  style={{ fontFamily: 'ui-monospace, monospace' }}
+                />
+                {codeError && <p style={{ color: 'var(--pbf-red)', fontSize: 13, marginTop: 6, marginBottom: 0 }}>{codeError}</p>}
+                {codeMsg && <p style={{ color: 'var(--pbf-green)', fontSize: 13, marginTop: 6, marginBottom: 0 }}>{codeMsg}</p>}
+                <button
+                  className="btn-primary btn-sm"
+                  onClick={saveAmbassadorCode}
+                  disabled={!prefsLoaded || codeSaving}
+                  style={{ marginTop: 8, alignSelf: 'flex-start' }}
+                >
+                  {codeSaving ? 'Saving...' : 'Save Code'}
+                </button>
               </div>
             </div>
           </div>

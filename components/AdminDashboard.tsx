@@ -29,6 +29,7 @@ interface UserRow {
   id: string;
   email: string;
   full_name: string;
+  ambassador_code: string | null;
   created_at: string;
   last_sign_in_at: string | null;
   banned: boolean;
@@ -462,6 +463,7 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
                   <thead>
                     <tr style={{ borderBottom: '2px solid var(--pbf-border)', textAlign: 'left' }}>
                       <th style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--pbf-muted)', fontSize: 11, textTransform: 'uppercase' }}>User</th>
+                      <th style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--pbf-muted)', fontSize: 11, textTransform: 'uppercase' }}>Code</th>
                       <th style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--pbf-muted)', fontSize: 11, textTransform: 'uppercase' }}>Joined</th>
                       <th style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--pbf-muted)', fontSize: 11, textTransform: 'uppercase' }}>Last Sign-in</th>
                       <th style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--pbf-muted)', fontSize: 11, textTransform: 'uppercase' }}>Status</th>
@@ -474,6 +476,9 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
                         <td style={{ padding: '8px 12px' }}>
                           <div style={{ fontWeight: 600 }}>{u.full_name || '(no name)'}</div>
                           <div style={{ fontSize: 11, color: 'var(--pbf-muted)' }}>{u.email}</div>
+                        </td>
+                        <td style={{ padding: '8px 12px', fontSize: 12, fontFamily: 'ui-monospace, monospace', color: u.ambassador_code ? 'var(--pbf-text)' : 'var(--pbf-muted)' }}>
+                          {u.ambassador_code || '—'}
                         </td>
                         <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--pbf-muted)' }}>{fmtDate(u.created_at)}</td>
                         <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--pbf-muted)' }}>{fmtDate(u.last_sign_in_at)}</td>
