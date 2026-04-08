@@ -46,7 +46,7 @@ export function fillTemplate(
   body: string,
   contact: Contact & { _anrede?: string },
   company: Company,
-  ambassador?: { name?: string }
+  ambassador?: { name?: string; code?: string | null }
 ): string {
   const lastName = (contact.name || '').split(' ').slice(-1)[0] || '';
   const firstName = (contact.name || '').split(' ').slice(0, -1).join(' ') || '';
@@ -54,10 +54,12 @@ export function fillTemplate(
   const ambName = ambassador?.name || '';
   const ambLast = ambName.split(' ').slice(-1)[0] || '';
   const ambFirst = ambName.split(' ').slice(0, -1).join(' ') || '';
+  const ambCode = ambassador?.code || '';
   return body
     .replace(/\[AmbassadorName\]/g, ambName)
     .replace(/\[AmbassadorFirstName\]/g, ambFirst)
     .replace(/\[AmbassadorLastName\]/g, ambLast)
+    .replace(/\[Code\]/g, ambCode)
     // English placeholders
     .replace(/\[Salutation\]/g, salutation)
     .replace(/\[LastName\]/g, lastName)

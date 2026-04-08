@@ -215,7 +215,7 @@ export function TemplateManagerModal({
         </div>
         <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
           <p style={{ fontSize: 12, color: 'var(--pbf-muted)', marginBottom: 12 }}>
-            Placeholders: [Salutation], [LastName], [FirstName], [Name], [Title], [Company], [Department], [Email], [LinkedIn], [AmbassadorName], [AmbassadorFirstName], [AmbassadorLastName]
+            Placeholders: [Salutation], [LastName], [FirstName], [Name], [Title], [Company], [Department], [Email], [LinkedIn], [AmbassadorName], [AmbassadorFirstName], [AmbassadorLastName], [Code]
           </p>
           {sharedList.length > 0 && (
             <div style={{ marginBottom: 14 }}>
@@ -289,7 +289,7 @@ export function UseTemplateModal({
   templates: Template[];
   contact: Contact;
   company: Company;
-  ambassador?: { name?: string };
+  ambassador?: { name?: string; code?: string | null };
   onMarkSent?: (templateName: string) => void;
   onClose: () => void;
 }) {

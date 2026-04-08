@@ -68,6 +68,7 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
   const [sharedTemplates, setSharedTemplates] = useState<SharedTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sharedTemplatesErr, setSharedTemplatesErr] = useState<string>('');
 
   // Invite form
   const [inviteEmail, setInviteEmail] = useState('');
@@ -114,7 +115,13 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
       setStats(await statsRes.json());
       setUsers(await usersRes.json());
       if (etRes.ok) setEmailTemplates(await etRes.json());
-      if (stRes.ok) setSharedTemplates(await stRes.json());
+      if (stRes.ok) {
+        setSharedTemplates(await stRes.json());
+        setSharedTemplatesErr('');
+      } else {
+        const err = await stRes.json().catch(() => ({ error: 'unknown' }));
+        setSharedTemplatesErr(err.error || 'Unknown error');
+      }
     } catch {
       setError('Network error');
     }
@@ -236,44 +243,57 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
   };
 
   // ─── Admin email templates CRUD ───
-  const saveEmailTemplate = async (t: AdminEmailTemplate, isNew: boolean) => {
+  // Returns true on success so the editor can keep the form open on error.
+  const saveEmailTemplate = async (t: AdminEmailTemplate, isNew: boolean): Promise<boolean> => {
     const token = await getToken();
     const res = await fetch('/api/admin/email-templates', {
       method: isNew ? 'POST' : 'PUT',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(t),
     });
-    if (res.ok) fetchData();
-    else alert(`Error: ${(await res.json()).error}`);
+    if (res.ok) { fetchData(); return true; }
+    const err = await res.json().catch(() => ({ error: 'unknown' }));
+    alert(`Could not save template: ${err.error}`);
+    return false;
   };
   const deleteEmailTemplate = async (id: string) => {
     if (!confirm('Delete this email template?')) return;
     const token = await getToken();
-    await fetch(`/api/admin/email-templates?id=${encodeURIComponent(id)}`, {
+    const res = await fetch(`/api/admin/email-templates?id=${encodeURIComponent(id)}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'unknown' }));
+      alert(`Could not delete template: ${err.error}`);
+    }
     fetchData();
   };
 
   // ─── Shared templates CRUD ───
-  const saveSharedTemplate = async (t: SharedTemplate, isNew: boolean) => {
+  const saveSharedTemplate = async (t: SharedTemplate, isNew: boolean): Promise<boolean> => {
     const token = await getToken();
     const res = await fetch('/api/admin/shared-templates', {
       method: isNew ? 'POST' : 'PUT',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(t),
     });
-    if (res.ok) fetchData();
-    else alert(`Error: ${(await res.json()).error}`);
+    if (res.ok) { fetchData(); return true; }
+    const err = await res.json().catch(() => ({ error: 'unknown' }));
+    alert(`Could not save template: ${err.error}\n\nIf this says the table is missing, run supabase/add-shared-templates.sql in the Supabase SQL editor.`);
+    return false;
   };
   const deleteSharedTemplate = async (id: string) => {
     if (!confirm('Delete this shared template?')) return;
     const token = await getToken();
-    await fetch(`/api/admin/shared-templates?id=${encodeURIComponent(id)}`, {
+    const res = await fetch(`/api/admin/shared-templates?id=${encodeURIComponent(id)}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'unknown' }));
+      alert(`Could not delete template: ${err.error}`);
+    }
     fetchData();
   };
 
@@ -350,7 +370,7 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
               <div className="section-header"><h3>Broadcast Email to All Ambassadors</h3></div>
               <div className="section-body">
                 <p style={{ fontSize: 12, color: 'var(--pbf-muted)', marginBottom: 10 }}>
-                  Placeholders: [FullName], [Email], [LoginUrl], [AdminName]
+                  Placeholders: [FullName], [Email], [LoginUrl], [AdminName], [Code]
                 </p>
                 <div className="field-group" style={{ marginBottom: 10 }}>
                   <label>Subject</label>
@@ -520,11 +540,25 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
 
         {/* ─── Shared Templates tab ─── */}
         {tab === 'shared-templates' && (
-          <SharedTemplatesEditor
-            templates={sharedTemplates}
-            onSave={saveSharedTemplate}
-            onDelete={deleteSharedTemplate}
-          />
+          <>
+            {sharedTemplatesErr && (
+              <div className="section" style={{ marginBottom: 16, borderColor: 'var(--pbf-red)' }}>
+                <div className="section-body" style={{ color: 'var(--pbf-red)', fontSize: 13 }}>
+                  <strong>Shared templates unavailable:</strong> {sharedTemplatesErr}
+                  {/schema cache|shared_templates/i.test(sharedTemplatesErr) && (
+                    <div style={{ marginTop: 6, color: 'var(--pbf-muted)' }}>
+                      Run <code>supabase/add-shared-templates.sql</code> in the Supabase SQL editor to create the missing table, then reload this page.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            <SharedTemplatesEditor
+              templates={sharedTemplates}
+              onSave={saveSharedTemplate}
+              onDelete={deleteSharedTemplate}
+            />
+          </>
         )}
       </div>
 
@@ -554,7 +588,7 @@ function EmailTemplatesEditor({
   onDelete,
 }: {
   templates: AdminEmailTemplate[];
-  onSave: (t: AdminEmailTemplate, isNew: boolean) => Promise<void>;
+  onSave: (t: AdminEmailTemplate, isNew: boolean) => Promise<boolean>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const [editing, setEditing] = useState<string | 'new' | null>(null);
@@ -575,8 +609,14 @@ function EmailTemplatesEditor({
       alert('slug, name, subject, body are required');
       return;
     }
-    await onSave({ ...form, updated_at: new Date().toISOString() }, editing === 'new');
-    setEditing(null);
+    // Client-side slug-collision check for new templates — gives a friendlier
+    // message than the raw Postgres unique-violation error.
+    if (editing === 'new' && templates.some(t => t.slug.toLowerCase() === form.slug.trim().toLowerCase())) {
+      alert(`A template with slug '${form.slug.trim()}' already exists — choose another slug.`);
+      return;
+    }
+    const ok = await onSave({ ...form, updated_at: new Date().toISOString() }, editing === 'new');
+    if (ok) setEditing(null);
   };
 
   return (
@@ -589,7 +629,7 @@ function EmailTemplatesEditor({
         <p style={{ fontSize: 12, color: 'var(--pbf-muted)', marginBottom: 12 }}>
           These templates are used when the admin sends emails to brand ambassadors (e.g. the welcome email on account creation).
           The slug <code>welcome</code> is the one used by the invite form. Placeholders:
-          [FullName], [Email], [LoginUrl], [TempPassword], [AdminName].
+          [FullName], [Email], [LoginUrl], [TempPassword], [AdminName], [Code].
         </p>
 
         {templates.map(t => (
@@ -609,9 +649,9 @@ function EmailTemplatesEditor({
                     <div style={{ fontWeight: 600, fontSize: 13 }}>{t.name} <span style={{ fontSize: 11, color: 'var(--pbf-muted)', fontWeight: 500 }}>— slug: {t.slug}</span></div>
                     <div style={{ fontSize: 12, color: 'var(--pbf-muted)' }}>Subject: {t.subject}</div>
                   </div>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button className="btn-ghost btn-sm" onClick={() => startEdit(t)}>&#9998;</button>
-                    <button className="btn-danger btn-sm" onClick={() => onDelete(t.id)}>&#10005;</button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn-ghost btn-sm" onClick={() => startEdit(t)} title="Edit this template">Edit</button>
+                    <button className="btn-danger btn-sm" onClick={() => onDelete(t.id)} title="Delete this template">Delete</button>
                   </div>
                 </div>
                 <pre style={{ fontSize: 12, whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.4 }}>{t.body}</pre>
@@ -684,7 +724,7 @@ function SharedTemplatesEditor({
   onDelete,
 }: {
   templates: SharedTemplate[];
-  onSave: (t: SharedTemplate, isNew: boolean) => Promise<void>;
+  onSave: (t: SharedTemplate, isNew: boolean) => Promise<boolean>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const [editing, setEditing] = useState<string | 'new' | null>(null);
@@ -705,8 +745,8 @@ function SharedTemplatesEditor({
       alert('name and body are required');
       return;
     }
-    await onSave(form, editing === 'new');
-    setEditing(null);
+    const ok = await onSave(form, editing === 'new');
+    if (ok) setEditing(null);
   };
 
   return (
@@ -718,7 +758,11 @@ function SharedTemplatesEditor({
       <div className="section-body">
         <p style={{ fontSize: 12, color: 'var(--pbf-muted)', marginBottom: 12 }}>
           These message templates are available read-only to every brand ambassador in their &ldquo;Use Template&rdquo; dialog.
-          Use the same placeholders the ambassadors know: [Salutation], [FirstName], [LastName], [Company], [AmbassadorName], etc.
+          Use the same placeholders the ambassadors know: [Salutation], [FirstName], [LastName], [Company], [AmbassadorName], [Code], etc.
+          <br />
+          <span style={{ fontSize: 11 }}>
+            <code>[Code]</code> is replaced with each ambassador&apos;s personal code at send time.
+          </span>
         </p>
 
         {templates.map(t => (
@@ -729,9 +773,9 @@ function SharedTemplatesEditor({
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                   <div style={{ fontWeight: 600, fontSize: 13 }}>{t.name} <span style={{ fontSize: 11, color: 'var(--pbf-muted)', fontWeight: 500 }}>— sort: {t.sort_order}</span></div>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button className="btn-ghost btn-sm" onClick={() => startEdit(t)}>&#9998;</button>
-                    <button className="btn-danger btn-sm" onClick={() => onDelete(t.id)}>&#10005;</button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn-ghost btn-sm" onClick={() => startEdit(t)} title="Edit this template">Edit</button>
+                    <button className="btn-danger btn-sm" onClick={() => onDelete(t.id)} title="Delete this template">Delete</button>
                   </div>
                 </div>
                 <pre style={{ fontSize: 12, whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.4 }}>{t.body}</pre>
@@ -855,6 +899,9 @@ function SendUserEmailModal({
               ))}
             </select>
           </div>
+          <p style={{ fontSize: 11, color: 'var(--pbf-muted)', margin: '0 0 10px 0' }}>
+            Placeholders: [FullName], [Email], [LoginUrl], [AdminName], [Code]
+          </p>
           <div className="field-group" style={{ marginBottom: 10 }}>
             <label>Subject</label>
             <input value={subject} onChange={e => setSubject(e.target.value)} />

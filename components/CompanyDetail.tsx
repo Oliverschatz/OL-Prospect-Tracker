@@ -15,7 +15,7 @@ interface Props {
   onDelete: () => void;
   allCompanies: Company[];
   templates: Template[];
-  ambassador?: { name?: string };
+  ambassador?: { name?: string; code?: string | null };
   scrollToEventId?: string | null;
 }
 

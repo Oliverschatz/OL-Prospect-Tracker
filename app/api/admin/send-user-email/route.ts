@@ -24,6 +24,13 @@ export async function POST(req: NextRequest) {
   }
   const target = userRes.user;
 
+  // Pull the ambassador's personal code so [Code] can be substituted.
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('ambassador_code')
+    .eq('id', target.id)
+    .maybeSingle();
+
   const mailer = createMailer();
   if (!mailer) {
     return NextResponse.json({ error: 'SMTP not configured' }, { status: 500 });
@@ -34,6 +41,7 @@ export async function POST(req: NextRequest) {
     Email: target.email || '',
     LoginUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://crm.oliverlehmann.com',
     AdminName: caller.user_metadata?.full_name || caller.email || 'Admin',
+    Code: profile?.ambassador_code || '',
     ...(vars || {}),
   };
 

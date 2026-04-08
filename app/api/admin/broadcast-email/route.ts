@@ -23,11 +23,17 @@ export async function POST(req: NextRequest) {
   const mailer = createMailer();
   if (!mailer) return NextResponse.json({ error: 'SMTP not configured' }, { status: 500 });
 
-  // Fetch admin profile IDs so we can skip them unless include_admins is true.
-  let adminIds = new Set<string>();
-  if (!include_admins) {
-    const { data: admins } = await admin.from('profiles').select('id').eq('is_admin', true);
-    adminIds = new Set((admins || []).map((p) => p.id));
+  // Pull every profile in one shot. We need two things:
+  //   1. is_admin  — to optionally skip admins
+  //   2. ambassador_code — so [Code] can be injected per recipient
+  const { data: allProfiles } = await admin
+    .from('profiles')
+    .select('id, is_admin, ambassador_code');
+  const adminIds = new Set<string>();
+  const codeById = new Map<string, string | null>();
+  for (const p of (allProfiles || []) as { id: string; is_admin: boolean | null; ambassador_code: string | null }[]) {
+    if (p.is_admin) adminIds.add(p.id);
+    codeById.set(p.id, p.ambassador_code ?? null);
   }
 
   // Page through all users.
@@ -40,7 +46,7 @@ export async function POST(req: NextRequest) {
   }
   for (const u of allUsers) {
     if (!u.email) continue;
-    if (adminIds.has(u.id)) continue;
+    if (!include_admins && adminIds.has(u.id)) continue;
     if (u.banned_until) continue;
     recipients.push({
       id: u.id,
@@ -56,6 +62,7 @@ export async function POST(req: NextRequest) {
       Email: r.email,
       LoginUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://crm.oliverlehmann.com',
       AdminName: caller.user_metadata?.full_name || caller.email || 'Admin',
+      Code: codeById.get(r.id) || '',
     };
     const finalSubject = fillPlaceholders(subject, vars);
     const finalBody = fillPlaceholders(body, vars);

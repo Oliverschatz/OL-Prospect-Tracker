@@ -75,6 +75,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
 }) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [ambassadorCode, setAmbassadorCode] = useState<string>('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStage, setFilterStage] = useState('all');
   const [filterTag, setFilterTag] = useState('all');
@@ -95,9 +96,19 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
       const [cos, tpls] = await Promise.all([loadAllCompanies(), loadTemplates()]);
       setCompanies(cos);
       setTemplates(tpls);
+      // Pull this ambassador's personal code so [Code] can be substituted
+      // in outreach templates.
+      if (supabase) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('ambassador_code')
+          .eq('id', user.id)
+          .maybeSingle();
+        setAmbassadorCode((data?.ambassador_code as string | null) || '');
+      }
       setLoading(false);
     })();
-  }, []);
+  }, [user.id]);
 
   const selected = companies.find(c => c.id === selectedId);
 
@@ -759,7 +770,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
               onDelete={deleteCompany}
               allCompanies={companies}
               templates={templates}
-              ambassador={{ name: user.user_metadata?.full_name || user.email || '' }}
+              ambassador={{ name: user.user_metadata?.full_name || user.email || '', code: ambassadorCode }}
               scrollToEventId={scrollToEventId}
             />
           ) : (
