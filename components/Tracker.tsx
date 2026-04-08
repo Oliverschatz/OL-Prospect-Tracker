@@ -418,7 +418,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
       {/* Header */}
       <div className="app-header">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="Oliver F. Lehmann — Project Business Training" className="app-logo" />
+        <img src="https://oliverlehmann.com/wp-content/uploads/2023/05/cropped-logo-ol.png" alt="Oliver F. Lehmann — Project Business Training" className="app-logo" />
         <div className="header-actions">
           <button className="btn-secondary btn-sm" onClick={() => setTemplateManagerOpen(true)} title="Message templates">
             &#9993; Templates
