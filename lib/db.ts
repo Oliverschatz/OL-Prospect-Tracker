@@ -176,14 +176,40 @@ export async function loadAllCompanies(): Promise<Company[]> {
     }
   }
 
-  return companies.map(c => ({
-    ...c,
-    fit_scores: (c.fit_scores || {}) as FitScores,
-    tags: (Array.isArray((c as Record<string, unknown>).tags) ? (c as Record<string, unknown>).tags : []) as string[],
-    contacts: contactsByCompany[c.id] || [],
-    activities: companyActivities[c.id] || [],
-    planned_events: companyEvents[c.id] || [],
-  }));
+  return companies.map(c => {
+    const r = c as unknown as Record<string, unknown>;
+    return {
+      ...c,
+      fit_scores: (c.fit_scores || {}) as FitScores,
+      tags: (Array.isArray(r.tags) ? r.tags : []) as string[],
+      attachments: (Array.isArray(r.attachments) ? r.attachments : []) as { label: string; url: string }[],
+      contacts: contactsByCompany[c.id] || [],
+      activities: companyActivities[c.id] || [],
+      planned_events: companyEvents[c.id] || [],
+    };
+  });
+}
+
+export async function bulkDeleteCompanies(ids: string[]): Promise<void> {
+  if (!supabase || ids.length === 0) return;
+  await supabase.from('companies').delete().in('id', ids);
+}
+
+export async function bulkUpdateStage(ids: string[], stage: string): Promise<void> {
+  if (!supabase || ids.length === 0) return;
+  await supabase.from('companies').update({ stage, updated_at: today() }).in('id', ids);
+}
+
+export async function bulkAddTag(ids: string[], tag: string): Promise<void> {
+  if (!supabase || ids.length === 0 || !tag) return;
+  // Fetch existing tags, merge, write back
+  const { data } = await supabase.from('companies').select('id, tags').in('id', ids);
+  for (const row of (data || []) as { id: string; tags: string[] | null }[]) {
+    const tags = Array.isArray(row.tags) ? row.tags : [];
+    if (!tags.includes(tag)) {
+      await supabase.from('companies').update({ tags: [...tags, tag], updated_at: today() }).eq('id', row.id);
+    }
+  }
 }
 
 export async function loadTemplates(): Promise<Template[]> {

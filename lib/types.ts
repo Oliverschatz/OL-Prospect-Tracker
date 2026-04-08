@@ -48,6 +48,12 @@ export interface Contact {
   planned_events: PlannedEvent[];
 }
 
+// ─── Attachment ───
+export interface Attachment {
+  label: string;
+  url: string;
+}
+
 // ─── Company ───
 export interface Company {
   id: string;
@@ -64,6 +70,10 @@ export interface Company {
   notes: string;
   parent_id: string;
   tags: string[];
+  expected_value?: number | null;
+  probability?: number | null;
+  expected_close?: string | null;
+  attachments?: Attachment[];
   created_at: string;
   updated_at: string;
   contacts: Contact[];

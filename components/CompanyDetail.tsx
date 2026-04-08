@@ -171,6 +171,26 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
     updateCompanyFields(company.id, { [key]: value } as Partial<Company>);
   };
 
+  const addAttachment = () => {
+    const label = prompt('Attachment label (e.g. "Proposal v2"):', '');
+    if (!label) return;
+    const url = prompt('Attachment URL:', 'https://');
+    if (!url) return;
+    const next = [...(company.attachments || []), { label, url }];
+    set('attachments', next);
+  };
+
+  const removeAttachment = (idx: number) => {
+    const next = (company.attachments || []).filter((_, i) => i !== idx);
+    set('attachments', next);
+  };
+
+  const logContactReply = (contactId: string) => {
+    const text = prompt('Reply received — short note:', 'Reply received');
+    if (!text) return;
+    logContactActivity(contactId, text);
+  };
+
   const setFit = (criterionKey: string, value: number | undefined) => {
     const newScores = { ...company.fit_scores, [criterionKey]: value };
     const updated = { ...company, fit_scores: newScores, updated_at: today() };
@@ -516,6 +536,53 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
         </div>
       </div>
 
+      {/* Opportunity */}
+      <div className="section">
+        <div className="section-header"><h3>Opportunity</h3></div>
+        <div className="section-body">
+          <div className="field-row">
+            <div className="field-group">
+              <label>Expected Value (€)</label>
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                value={company.expected_value ?? ''}
+                onChange={e => set('expected_value', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="e.g. 25000"
+              />
+            </div>
+            <div className="field-group">
+              <label>Probability (%)</label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="5"
+                value={company.probability ?? ''}
+                onChange={e => set('probability', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="0–100"
+              />
+            </div>
+            <div className="field-group">
+              <label>Expected Close</label>
+              <input
+                type="date"
+                value={company.expected_close ?? ''}
+                onChange={e => set('expected_close', e.target.value || null)}
+              />
+            </div>
+          </div>
+          {(company.expected_value != null && company.probability != null) && (
+            <div style={{ fontSize: 12, color: 'var(--pbf-muted)', marginTop: 4 }}>
+              Weighted: <strong style={{ color: 'var(--pbf-text)' }}>
+                €{Math.round((company.expected_value || 0) * (company.probability || 0) / 100).toLocaleString()}
+              </strong>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* PBP Fit Assessment */}
       <div className="section">
         <div className="section-header"><h3>PBP Fit Assessment</h3></div>
@@ -571,6 +638,30 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
         </div>
       </div>
 
+      {/* Attachments */}
+      <div className="section">
+        <div className="section-header">
+          <h3>Attachments ({(company.attachments || []).length})</h3>
+          <button className="btn-primary btn-sm" onClick={addAttachment}>+ Add Link</button>
+        </div>
+        <div className="section-body">
+          {(company.attachments || []).length === 0 && (
+            <div style={{ color: 'var(--pbf-muted)', fontSize: 13, textAlign: 'center', padding: 8 }}>
+              No attachments. Add a link to a proposal, case study, NDA, etc.
+            </div>
+          )}
+          {(company.attachments || []).map((att, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: 13 }}>
+              <span style={{ color: 'var(--pbf-muted)' }}>&#128206;</span>
+              <a href={att.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pbf-blue)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {att.label}
+              </a>
+              <button className="btn-danger btn-sm" onClick={() => removeAttachment(i)} style={{ fontSize: 10, padding: '2px 5px' }}>&#10005;</button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Contacts */}
       <div className="section">
         <div className="section-header">
@@ -605,6 +696,7 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
                   {templates.length > 0 && (
                     <button className="btn-ghost btn-sm" onClick={() => setUseTemplateContact(ct)} title="Use message template" style={{ fontSize: 13 }}>&#9993;</button>
                   )}
+                  <button className="btn-ghost btn-sm" onClick={() => logContactReply(ct.id)} title="Log a reply received" style={{ fontSize: 13 }}>&#8617;</button>
                   <button className="btn-primary btn-sm" onClick={() => setContactActivityModal(ct.id)} title="Log activity">+ Log</button>
                   <button className="btn-ghost btn-sm" onClick={() => setContactModal(ct)}>Edit</button>
                   <button className="btn-danger btn-sm" onClick={() => deleteContact(ct.id)}>&#10005;</button>
@@ -946,6 +1038,11 @@ export default function CompanyDetail({ company, onChange, onDelete, allCompanie
           contact={useTemplateContact}
           company={company}
           ambassador={ambassador}
+          onMarkSent={(tplName) => {
+            if (useTemplateContact) {
+              logContactActivity(useTemplateContact.id, `Sent message: ${tplName}`);
+            }
+          }}
           onClose={() => setUseTemplateContact(null)}
         />
       )}

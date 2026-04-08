@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { STAGES } from '@/lib/constants';
 import { generateId, today, calcFitScore, fitColor, EMPTY_COMPANY } from '@/lib/helpers';
-import { loadAllCompanies, loadTemplates, createCompany, updateCompanyFields, deleteCompanyFromDb, saveAllTemplates, bulkImportCompanies, loadDummyCompanies, removeDummyCompanies } from '@/lib/db';
+import { loadAllCompanies, loadTemplates, createCompany, updateCompanyFields, deleteCompanyFromDb, saveAllTemplates, bulkImportCompanies, loadDummyCompanies, removeDummyCompanies, bulkDeleteCompanies, bulkUpdateStage, bulkAddTag } from '@/lib/db';
 import { DUMMY_TAG } from '@/lib/dummies';
 import { StageBadge, PipelineBar } from '@/components/ui';
 import { TemplateManagerModal } from '@/components/Modals';
 import CompanyDetail from '@/components/CompanyDetail';
 import TimelineDiagram from '@/components/TimelineDiagram';
+import Reports from '@/components/Reports';
 import type { Company, Template } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -80,7 +81,8 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState('');
-  const [view, setView] = useState<'pipeline' | 'followups' | 'history'>('pipeline');
+  const [view, setView] = useState<'pipeline' | 'followups' | 'history' | 'reports'>('pipeline');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [scrollToEventId, setScrollToEventId] = useState<string | null>(null);
@@ -100,15 +102,25 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
   // Gather all tags
   const allTags = Array.from(new Set(companies.flatMap(c => c.tags || []))).sort();
 
-  // Enhanced search: company name, contact name, contact email, HQ, sector
+  // Global search: company name, contact name/email/title, HQ, sector,
+  // notes, pain points, entry angle, activity text, tags.
   const matchesSearch = (c: Company, q: string) => {
     const lq = q.toLowerCase();
     if (c.name.toLowerCase().includes(lq)) return true;
     if (c.hq.toLowerCase().includes(lq)) return true;
     if (c.sector.toLowerCase().includes(lq)) return true;
-    if (c.contacts.some(ct => ct.name.toLowerCase().includes(lq))) return true;
-    if (c.contacts.some(ct => ct.email.toLowerCase().includes(lq))) return true;
-    if (c.contacts.some(ct => ct.title.toLowerCase().includes(lq))) return true;
+    if ((c.notes || '').toLowerCase().includes(lq)) return true;
+    if ((c.pain_points || '').toLowerCase().includes(lq)) return true;
+    if ((c.entry_angle || '').toLowerCase().includes(lq)) return true;
+    if ((c.tags || []).some(t => t.toLowerCase().includes(lq))) return true;
+    if (c.activities.some(a => (a.text || '').toLowerCase().includes(lq))) return true;
+    if (c.contacts.some(ct =>
+      ct.name.toLowerCase().includes(lq) ||
+      ct.email.toLowerCase().includes(lq) ||
+      ct.title.toLowerCase().includes(lq) ||
+      (ct.notes || '').toLowerCase().includes(lq) ||
+      (ct.activities || []).some(a => (a.text || '').toLowerCase().includes(lq))
+    )) return true;
     return false;
   };
 
@@ -243,6 +255,50 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
     }
   };
 
+  const toggleSelected = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Delete ${selectedIds.size} companies and all their data? This cannot be undone.`)) return;
+    const ids = Array.from(selectedIds);
+    setCompanies(prev => prev.filter(c => !selectedIds.has(c.id)));
+    if (selectedId && selectedIds.has(selectedId)) setSelectedId(null);
+    clearSelection();
+    await bulkDeleteCompanies(ids);
+    setStatusMsg(`Deleted ${ids.length} companies`);
+  };
+
+  const handleBulkSetStage = async (stage: string) => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    setCompanies(prev => prev.map(c => selectedIds.has(c.id) ? { ...c, stage: stage as Company['stage'], updated_at: today() } : c));
+    await bulkUpdateStage(ids, stage);
+    setStatusMsg(`Moved ${ids.length} companies to ${STAGES.find(s => s.key === stage)?.label}`);
+  };
+
+  const handleBulkAddTag = async () => {
+    if (selectedIds.size === 0) return;
+    const tag = prompt('Tag to add to selected companies:', '');
+    if (!tag) return;
+    const ids = Array.from(selectedIds);
+    setCompanies(prev => prev.map(c => {
+      if (!selectedIds.has(c.id)) return c;
+      const tags = c.tags || [];
+      if (tags.includes(tag)) return c;
+      return { ...c, tags: [...tags, tag], updated_at: today() };
+    }));
+    await bulkAddTag(ids, tag);
+    setStatusMsg(`Tagged ${ids.length} companies with "${tag}"`);
+  };
+
   const handleSaveTemplates = async (newTemplates: Template[]) => {
     setTemplates(newTemplates);
     await saveAllTemplates(newTemplates);
@@ -313,13 +369,23 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
 
   const renderItem = (c: Company & { depth?: number }) => {
     const score = calcFitScore(c.fit_scores);
+    const checked = selectedIds.has(c.id);
     return (
       <div
         key={c.id}
         className={`company-item ${selectedId === c.id ? 'active' : ''}`}
         onClick={() => { setSelectedId(c.id); setView('pipeline'); }}
-        style={{ paddingLeft: 16 + (c.depth || 0) * 16 }}
+        style={{ paddingLeft: 16 + (c.depth || 0) * 16, display: 'flex', alignItems: 'flex-start', gap: 6 }}
       >
+        <input
+          type="checkbox"
+          checked={checked}
+          onClick={e => e.stopPropagation()}
+          onChange={() => toggleSelected(c.id)}
+          style={{ width: 'auto', flex: '0 0 auto', margin: '2px 0 0 0' }}
+          title="Select for bulk actions"
+        />
+        <div style={{ flex: 1, minWidth: 0 }}>
         <div className="company-item-name">
           {(c.depth || 0) > 0 && <span style={{ color: 'var(--pbf-border)', marginRight: 4, fontSize: 11 }}>&lfloor;</span>}
           {c.name}
@@ -337,6 +403,7 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
           {(c.planned_events || []).some(e => !e.done && e.event_date <= todayStr) && (
             <span style={{ color: 'var(--pbf-red)', fontWeight: 600, marginLeft: 4 }}>&#9888;</span>
           )}
+        </div>
         </div>
       </div>
     );
@@ -464,8 +531,8 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
 
           {/* View tabs */}
           <div style={{ display: 'flex', borderBottom: '1px solid var(--pbf-border)', padding: '0 8px' }}>
-            {([['pipeline', 'Companies'], ['followups', 'Follow-ups'], ['history', 'History']] as const).map(([k, label]) => (
-              <button key={k} onClick={() => { setView(k); if (k === 'followups' || k === 'history') setSelectedId(null); }}
+            {([['pipeline', 'Companies'], ['followups', 'Follow-ups'], ['history', 'History'], ['reports', 'Reports']] as const).map(([k, label]) => (
+              <button key={k} onClick={() => { setView(k); if (k !== 'pipeline') setSelectedId(null); }}
                 style={{
                   flex: 1, padding: '6px 0', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em',
                   background: 'none', border: 'none', cursor: 'pointer',
@@ -473,12 +540,26 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
                   color: view === k ? 'var(--pbf-navy)' : 'var(--pbf-muted)',
                 }}>
                 {label}
-                {k === 'followups' && overdue.length > 0 && (
-                  <span style={{ background: 'var(--pbf-red)', color: 'white', borderRadius: 8, padding: '0 5px', fontSize: 9, marginLeft: 3 }}>{overdue.length}</span>
+                {k === 'followups' && (overdue.length + dueToday.length) > 0 && (
+                  <span style={{ background: overdue.length > 0 ? 'var(--pbf-red)' : 'var(--pbf-accent)', color: 'white', borderRadius: 8, padding: '0 5px', fontSize: 9, marginLeft: 3 }}>{overdue.length + dueToday.length}</span>
                 )}
               </button>
             ))}
           </div>
+
+          {/* Bulk action bar */}
+          {view === 'pipeline' && selectedIds.size > 0 && (
+            <div style={{ padding: '6px 12px', background: 'var(--pbf-yellow-bg)', borderBottom: '1px solid #ecc94b', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+              <span style={{ fontWeight: 600, marginRight: 4 }}>{selectedIds.size} selected</span>
+              <select onChange={e => { if (e.target.value) { handleBulkSetStage(e.target.value); e.target.value = ''; } }} defaultValue="" style={{ fontSize: 11, padding: '2px 4px', flex: 1 }}>
+                <option value="">Set stage…</option>
+                {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+              </select>
+              <button className="btn-ghost btn-sm" style={{ fontSize: 10 }} onClick={handleBulkAddTag}>+ Tag</button>
+              <button className="btn-danger btn-sm" style={{ fontSize: 10 }} onClick={handleBulkDelete}>Delete</button>
+              <button className="btn-ghost btn-sm" style={{ fontSize: 10 }} onClick={clearSelection}>&#10005;</button>
+            </div>
+          )}
 
           <div style={{ padding: '0 12px 8px', marginTop: 8 }}>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search companies, contacts..." style={{ fontSize: 12, padding: '5px 8px' }} />
@@ -617,7 +698,12 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
 
         {/* Main Content */}
         <div className="main-content">
-          {view === 'followups' && !selected ? (
+          {view === 'reports' ? (
+            <Reports
+              companies={companies}
+              onSelectCompany={(id) => { setSelectedId(id); setView('pipeline'); }}
+            />
+          ) : view === 'followups' && !selected ? (
             <TimelineDiagram
               companies={companies}
               filter="pending"

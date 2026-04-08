@@ -268,12 +268,14 @@ export function UseTemplateModal({
   contact,
   company,
   ambassador,
+  onMarkSent,
   onClose,
 }: {
   templates: Template[];
   contact: Contact;
   company: Company;
   ambassador?: { name?: string };
+  onMarkSent?: (templateName: string) => void;
   onClose: () => void;
 }) {
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -323,6 +325,18 @@ export function UseTemplateModal({
         </div>
         <div className="modal-footer">
           <button className="btn-ghost" onClick={onClose}>Close</button>
+          {onMarkSent && (
+            <button
+              className="btn-secondary"
+              onClick={() => {
+                onMarkSent(templates[selectedIdx]?.name || 'template');
+                onClose();
+              }}
+              title="Log an activity that this message was sent"
+            >
+              Mark as sent
+            </button>
+          )}
           <button className="btn-primary" onClick={copyToClipboard}>
             {copied ? 'Copied!' : 'Copy to Clipboard'}
           </button>
