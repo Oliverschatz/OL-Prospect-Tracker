@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { verifyAdmin } from '@/lib/verify-admin';
 import { createMailer, wrapHtml, fillPlaceholders } from '@/lib/mailer';
+import { listAllUsers } from '@/lib/list-all-users';
 
 // POST /api/admin/broadcast-email
 // Body: { subject, body, include_admins? }
@@ -31,24 +32,21 @@ export async function POST(req: NextRequest) {
 
   // Page through all users.
   const recipients: { id: string; email: string; full_name: string }[] = [];
-  let page = 1;
-  const perPage = 1000;
-  while (true) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    const users = data?.users || [];
-    for (const u of users) {
-      if (!u.email) continue;
-      if (adminIds.has(u.id)) continue;
-      if (u.banned_until) continue;
-      recipients.push({
-        id: u.id,
-        email: u.email,
-        full_name: (u.user_metadata as { full_name?: string } | null)?.full_name || '',
-      });
-    }
-    if (users.length < perPage) break;
-    page += 1;
+  let allUsers;
+  try {
+    allUsers = await listAllUsers(admin);
+  } catch (e: unknown) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+  }
+  for (const u of allUsers) {
+    if (!u.email) continue;
+    if (adminIds.has(u.id)) continue;
+    if (u.banned_until) continue;
+    recipients.push({
+      id: u.id,
+      email: u.email,
+      full_name: (u.user_metadata as { full_name?: string } | null)?.full_name || '',
+    });
   }
 
   const results: { email: string; ok: boolean; error?: string }[] = [];

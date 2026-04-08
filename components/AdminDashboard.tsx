@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { generateId } from '@/lib/helpers';
+import ImportAmbassadorsModal from './ImportAmbassadorsModal';
 
 interface UserStats {
   id: string;
@@ -76,6 +77,9 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
 
   // Per-user send-email modal
   const [sendTarget, setSendTarget] = useState<UserRow | null>(null);
+
+  // Bulk import modal
+  const [importOpen, setImportOpen] = useState(false);
 
   // Broadcast form
   const [broadcastSubject, setBroadcastSubject] = useState('');
@@ -409,6 +413,17 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
         {tab === 'users' && (
           <>
             <div className="section" style={{ marginBottom: 24 }}>
+              <div className="section-header"><h3>Bulk Import from XLSX</h3></div>
+              <div className="section-body">
+                <p style={{ fontSize: 13, color: 'var(--pbf-muted)', marginTop: 0, marginBottom: 10 }}>
+                  Upload an Excel sheet with columns <strong>AmbassadorName</strong>, <strong>Email</strong>, <strong>Location</strong>, <strong>Country</strong>, <strong>LinkedIn Contact</strong>.
+                  Existing users will be updated; new users receive the welcome email with an auto-generated password.
+                </p>
+                <button className="btn-primary" onClick={() => setImportOpen(true)}>Import XLSX…</button>
+              </div>
+            </div>
+
+            <div className="section" style={{ marginBottom: 24 }}>
               <div className="section-header"><h3>Invite New Brand Ambassador</h3></div>
               <div className="section-body">
                 <div className="field-row">
@@ -514,6 +529,13 @@ export default function AdminDashboard({ user, onBack }: { user: User; onBack: (
           target={sendTarget}
           templates={emailTemplates}
           onClose={() => setSendTarget(null)}
+        />
+      )}
+
+      {/* Bulk import modal */}
+      {importOpen && (
+        <ImportAmbassadorsModal
+          onClose={() => { setImportOpen(false); fetchData(); }}
         />
       )}
     </div>
