@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body {
+  @apply bg-msf-mist text-msf-navy;
+}
+
+.display {
+  @apply font-display tracking-tight;
+}
