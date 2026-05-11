@@ -1,5 +1,215 @@
 [
   {
+    "id": "fund-01",
+    "domain": "Fundamentals",
+    "task": "Definition of risk",
+    "question": "According to PMI, which best defines a project \"risk\"?",
+    "options": [
+      "A negative event that has already affected the project",
+      "An uncertain event or condition that, if it occurs, has a positive or negative effect on at least one project objective",
+      "A problem identified by stakeholders that requires immediate corrective action",
+      "Any deviation between planned and actual project performance"
+    ],
+    "correctIndex": 1,
+    "explanation": "PMI defines risk as an uncertain event or condition that may have a positive or negative effect on objectives. A realized negative event is an issue, not a risk; a deviation is a variance."
+  },
+  {
+    "id": "fund-02",
+    "domain": "Fundamentals",
+    "task": "Risk vs. issue",
+    "question": "A previously identified risk has now occurred. What is it called?",
+    "options": [
+      "A residual risk",
+      "A secondary risk",
+      "An issue",
+      "A trigger"
+    ],
+    "correctIndex": 2,
+    "explanation": "Once a risk is realized, it becomes an issue and is managed through issue management. A residual risk remains after a response is applied; a secondary risk is created by a response; a trigger is an early-warning indicator."
+  },
+  {
+    "id": "fund-03",
+    "domain": "Fundamentals",
+    "task": "Risk vs. uncertainty",
+    "question": "How does \"risk\" differ from \"uncertainty\"?",
+    "options": [
+      "They are synonyms in PMI terminology",
+      "Risk refers only to negative outcomes; uncertainty includes positive outcomes",
+      "Uncertainty is the broad condition of incomplete information; risk is a specific uncertain event or condition with an identifiable effect on objectives",
+      "Risk applies to projects only; uncertainty applies to programs and portfolios"
+    ],
+    "correctIndex": 2,
+    "explanation": "Uncertainty is the general state of incomplete information. A risk is a specific uncertain event or condition that has been identified and linked to an effect on objectives."
+  },
+  {
+    "id": "fund-04",
+    "domain": "Fundamentals",
+    "task": "Individual vs. overall risk",
+    "question": "A project has identified 40 individual risks in its register. The project manager wants to understand the total exposure of the project to all sources of uncertainty combined. This is described as:",
+    "options": [
+      "Overall project risk",
+      "Residual risk",
+      "Aggregated individual risk",
+      "Secondary risk"
+    ],
+    "correctIndex": 0,
+    "explanation": "Overall project risk is the effect of uncertainty on the project as a whole — more than the sum of individual risks, because it includes interaction and correlation effects across them."
+  },
+  {
+    "id": "fund-05",
+    "domain": "Fundamentals",
+    "task": "Threats and opportunities",
+    "question": "Which statement about threats and opportunities is correct under PMI's definition of risk?",
+    "options": [
+      "Only threats are risks; opportunities are managed separately",
+      "Both threats and opportunities are risks and should be identified and managed in the risk process",
+      "Opportunities are managed only at portfolio level, not project level",
+      "Threats are managed by the project manager; opportunities are managed by the sponsor"
+    ],
+    "correctIndex": 1,
+    "explanation": "PMI's definition includes both negative (threat) and positive (opportunity) uncertainty. Both belong in the risk register and receive the same identify–analyze–respond–monitor rigor."
+  },
+  {
+    "id": "fund-06",
+    "domain": "Fundamentals",
+    "task": "Why risk management matters",
+    "question": "Why is risk management considered a fundamental — not optional — discipline in project management?",
+    "options": [
+      "Because regulatory bodies require it for every project",
+      "Because projects are unique endeavors with inherent uncertainty about whether objectives will be met, and proactive management of that uncertainty is what enables predictable outcomes",
+      "Because every project has a fixed budget that must include risk reserves",
+      "Because risk management is the only way to eliminate uncertainty from projects"
+    ],
+    "correctIndex": 1,
+    "explanation": "Projects are by definition unique and uncertain. Explicit risk management converts uncontrolled uncertainty into managed exposure, making delivery more predictable. Risk cannot be eliminated, and regulation is not the underlying reason the discipline matters."
+  },
+  {
+    "id": "fund-07",
+    "domain": "Fundamentals",
+    "task": "Project vs. program vs. portfolio risk",
+    "question": "At which level is risk management PRIMARILY focused on whether the right investments are being pursued to deliver strategic value?",
+    "options": [
+      "Project level",
+      "Program level",
+      "Portfolio level",
+      "Operations level"
+    ],
+    "correctIndex": 2,
+    "explanation": "Portfolio risk is about \"doing the right things\" — strategic alignment and investment selection. Program risk is about benefits delivery across related projects. Project risk is about delivering a single project's objectives."
+  },
+  {
+    "id": "fund-08",
+    "domain": "Fundamentals",
+    "task": "Appetite, attitude, threshold",
+    "question": "A sponsor says, \"We are willing to accept a project finishing up to two months late, but no more than that.\" This statement is best described as a:",
+    "options": [
+      "Risk appetite",
+      "Risk attitude",
+      "Risk threshold",
+      "Risk capacity"
+    ],
+    "correctIndex": 2,
+    "explanation": "A risk threshold is a specific, measurable limit on acceptable variation around an objective. Appetite is the general willingness to take risk; attitude is the disposition toward risk; capacity is the maximum risk that can be borne."
+  },
+  {
+    "id": "fund-09",
+    "domain": "Fundamentals",
+    "task": "Known vs. unknown unknowns",
+    "question": "A team has identified, analyzed, and planned responses for 50 risks. The project also sets aside a contingency reserve. What does this reserve PRIMARILY cover?",
+    "options": [
+      "Unknown unknowns — risks that have not yet been identified",
+      "Known unknowns — identified risks for which responses have been planned",
+      "Issues that occur after the project starts",
+      "The cost of risk management activities themselves"
+    ],
+    "correctIndex": 1,
+    "explanation": "Contingency reserves cover identified risks (known unknowns) and form part of the cost baseline. Management reserves cover unforeseen risks (unknown unknowns) and sit outside the baseline."
+  },
+  {
+    "id": "fund-10",
+    "domain": "Fundamentals",
+    "task": "Risk and value creation",
+    "question": "Beyond protecting the project from threats, what is another fundamental contribution of effective risk management?",
+    "options": [
+      "It eliminates the need for project monitoring and control",
+      "It identifies and exploits opportunities, creating value beyond the original plan",
+      "It transfers responsibility for outcomes from the project manager to the sponsor",
+      "It guarantees on-time and on-budget delivery"
+    ],
+    "correctIndex": 1,
+    "explanation": "Risk management is bidirectional: managing threats protects value, and identifying and pursuing opportunities can enhance objectives. It neither eliminates monitoring nor guarantees delivery."
+  },
+  {
+    "id": "fund-11",
+    "domain": "Fundamentals",
+    "task": "Risk culture",
+    "question": "An organization's \"risk culture\" most directly refers to:",
+    "options": [
+      "The risk management procedures documented in its quality management system",
+      "The shared values, beliefs, and behaviors of its people regarding risk-taking and risk handling",
+      "The amount of contingency reserve allocated in each project",
+      "The maturity-level certification the organization holds"
+    ],
+    "correctIndex": 1,
+    "explanation": "Risk culture is about people — the collective attitudes, norms, and behaviors that shape how risk is perceived, communicated, and acted upon. Procedures, reserves, and certifications are downstream artifacts, not the culture itself."
+  },
+  {
+    "id": "fund-12",
+    "domain": "Fundamentals",
+    "task": "Stakeholder risk attitudes",
+    "question": "Two key stakeholders on the same project have very different attitudes toward a particular risk: one wants to accept it, the other wants to mitigate it heavily. The risk manager should:",
+    "options": [
+      "Side with the more senior stakeholder by default",
+      "Surface the divergence, analyze the underlying reasons, and work with both stakeholders to agree on a response aligned with the project's risk appetite",
+      "Average the two positions and propose a moderate response",
+      "Defer the decision until the risk materializes"
+    ],
+    "correctIndex": 1,
+    "explanation": "Differing stakeholder attitudes are common and must be surfaced and reconciled against the agreed risk appetite. Seniority, averaging, or delay all bypass the real conversation."
+  },
+  {
+    "id": "fund-13",
+    "domain": "Fundamentals",
+    "task": "Continuous and iterative process",
+    "question": "Risk management is best understood as:",
+    "options": [
+      "A one-time exercise performed during project initiation",
+      "A phase of the project executed before planning is finalized",
+      "A continuous and iterative process performed throughout the project lifecycle",
+      "A reactive activity triggered only when problems arise"
+    ],
+    "correctIndex": 2,
+    "explanation": "New risks emerge, existing risks change, and assumptions shift throughout the lifecycle, so risk management must be continuous and iterative — planned at the start and performed and updated repeatedly."
+  },
+  {
+    "id": "fund-14",
+    "domain": "Fundamentals",
+    "task": "Contingency vs. management reserves",
+    "question": "Which statement correctly distinguishes contingency reserves from management reserves?",
+    "options": [
+      "Contingency reserves are controlled by the sponsor; management reserves are controlled by the project manager",
+      "Contingency reserves are for identified risks and are part of the cost baseline; management reserves are for unidentified risks and sit outside the cost baseline",
+      "Contingency reserves cover scope changes; management reserves cover schedule slippage",
+      "Contingency and management reserves are interchangeable terms for the same fund"
+    ],
+    "correctIndex": 1,
+    "explanation": "PMI defines contingency reserves as funds for known risks, included in the cost baseline and typically controlled by the project manager. Management reserves cover unknown risks, sit outside the baseline, and require management approval to access."
+  },
+  {
+    "id": "fund-15",
+    "domain": "Fundamentals",
+    "task": "Opportunity as risk",
+    "question": "The PMI view that \"risk\" includes opportunity implies that a project manager should:",
+    "options": [
+      "Treat opportunities as bonus outcomes that need no formal management",
+      "Actively identify, assess, and plan responses to potential positive events with the same rigor used for threats",
+      "Focus the risk register only on threats and capture opportunities in a separate document",
+      "Escalate all opportunities to the portfolio level"
+    ],
+    "correctIndex": 1,
+    "explanation": "Because opportunities and threats are both risks under PMI's definition, both deserve formal identification, analysis, response planning, and monitoring — typically in the same register and with equal rigor."
+  },
+  {
     "id": "rmp-001",
     "domain": "I. Risk Strategy and Planning",
     "task": "Task 1",
@@ -1398,5 +1608,285 @@
     ],
     "correctIndex": 0,
     "explanation": "A closing risk communication serves transition: outcomes, effectiveness, residual risks moving to operations, and lessons learned for future projects. A thank-you note is insufficient; a raw dump is unfocused; silence loses institutional value."
+  },
+  {
+    "id": "cross-01",
+    "domain": "Cross-domain",
+    "task": "Identify → analyze → respond",
+    "question": "During a project status meeting, a team member identifies a previously unknown supplier-quality risk. What is the most appropriate immediate next step?",
+    "options": [
+      "Add the risk to the register, then analyze it qualitatively before deciding on a response",
+      "Implement a contingency response immediately to avoid wasting time",
+      "Wait for the next planned risk review to address it formally",
+      "Inform the sponsor and let them decide on a response"
+    ],
+    "correctIndex": 0,
+    "explanation": "New risks enter the standard cycle: record, analyze (qualitatively and quantitatively as needed), then plan a response. Skipping analysis loses information; deferring loses time; informing the sponsor without analysis offers them no basis for decision."
+  },
+  {
+    "id": "cross-02",
+    "domain": "Cross-domain",
+    "task": "Strategy → analysis",
+    "question": "Mid-project, executive leadership announces a significant cost-cutting initiative. What should the risk manager do FIRST?",
+    "options": [
+      "Cancel all unfunded contingency responses",
+      "Reassess the project's risk appetite and reprioritize existing risks under the new appetite, then bring proposed adjustments to the steering committee",
+      "Wait for the next monthly risk report and include the change there",
+      "Inform the team that all risk activities are now suspended"
+    ],
+    "correctIndex": 1,
+    "explanation": "A change in organizational appetite cascades through analysis: risks that were acceptable may no longer be, and vice versa. The right move is to re-evaluate priorities and propose adjustments, not unilaterally suspend or cancel."
+  },
+  {
+    "id": "cross-03",
+    "domain": "Cross-domain",
+    "task": "Response → monitor",
+    "question": "A team implements a mitigation that transfers schedule risk to a contractor via a fixed-price agreement. A few weeks later, monitoring shows the contractor is at risk of bankruptcy. This new risk is best described as:",
+    "options": [
+      "A residual risk",
+      "A secondary risk",
+      "An issue",
+      "An unknown unknown"
+    ],
+    "correctIndex": 1,
+    "explanation": "A secondary risk is one introduced by the response itself. Transferring schedule risk to a contractor created a new exposure (contractor failure). Residual risk would be what remained of the original schedule risk after transfer."
+  },
+  {
+    "id": "cross-04",
+    "domain": "Cross-domain",
+    "task": "Identify → monitor",
+    "question": "A risk's trigger condition (early-warning indicator) has been observed during monitoring. What should happen next?",
+    "options": [
+      "Mark the risk as \"closed\" in the register",
+      "Execute the pre-planned response and update the register to reflect the response status",
+      "Re-identify the risk from scratch since the trigger means new information is available",
+      "Hold a workshop to determine whether the risk is real"
+    ],
+    "correctIndex": 1,
+    "explanation": "A trigger means the risk is likely materializing — that is precisely when the pre-planned response should be activated. The register is then updated. Closing or rediscovering the risk would discard prior analysis."
+  },
+  {
+    "id": "cross-05",
+    "domain": "Cross-domain",
+    "task": "Analyze → respond",
+    "question": "Quantitative risk analysis produces a P80 cost estimate that is 18% above the current cost baseline. What is the most appropriate use of this information?",
+    "options": [
+      "Replace the baseline with the P80 figure immediately",
+      "Use the difference to inform contingency reserve sizing and discuss the confidence-level gap with the sponsor",
+      "Reduce the project scope to bring the P80 within the baseline",
+      "Discard the result because it exceeds the approved baseline"
+    ],
+    "correctIndex": 1,
+    "explanation": "Quantitative results inform reserve sizing and dialogue with sponsors about acceptable confidence levels. Replacing the baseline bypasses change control; reducing scope may be a response but is premature; discarding wastes the analysis."
+  },
+  {
+    "id": "cross-06",
+    "domain": "Cross-domain",
+    "task": "Plan → identify",
+    "question": "Risk identification is most effective when it occurs:",
+    "options": [
+      "After the project charter is approved but before detailed planning begins",
+      "Throughout the project at planned intervals AND whenever significant changes occur, informed by the risk management plan from Domain I",
+      "Only once, immediately before execution begins",
+      "As needed but always informally, to avoid creating overhead"
+    ],
+    "correctIndex": 1,
+    "explanation": "Identification is iterative throughout the project, with cadence and scope set by the risk management plan produced during Domain I. One-off or purely informal approaches miss emerging risks."
+  },
+  {
+    "id": "cross-07",
+    "domain": "Cross-domain",
+    "task": "Close → plan",
+    "question": "At project close, lessons learned about risk management are MOST valuable when they:",
+    "options": [
+      "Are filed in the project archive and referenced only on demand",
+      "Are captured in organizational process assets and used to inform risk strategy and planning on future projects",
+      "Are distributed to the team but not to other parts of the organization",
+      "Are limited to risks that were realized; missed opportunities are not relevant"
+    ],
+    "correctIndex": 1,
+    "explanation": "Lessons learned should flow into organizational process assets so future projects benefit during their Domain I activities. Missed opportunities are as instructive as realized threats."
+  },
+  {
+    "id": "cross-08",
+    "domain": "Cross-domain",
+    "task": "Analyze → respond",
+    "question": "A risk has high probability and high impact. Cost-benefit analysis shows mitigation would cost more than the expected monetary value of the threat. The team should MOST likely:",
+    "options": [
+      "Mitigate anyway because the impact is high",
+      "Accept the risk actively (with contingency), document the decision, and continue to monitor",
+      "Transfer the risk regardless of cost",
+      "Avoid the risk by removing the relevant scope"
+    ],
+    "correctIndex": 1,
+    "explanation": "When mitigation cost exceeds expected impact, active acceptance with a contingency plan is rational. The decision should be documented and the risk monitored. Mitigating anyway wastes resources; transfer or avoidance may also not be cost-justified."
+  },
+  {
+    "id": "cross-09",
+    "domain": "Cross-domain",
+    "task": "Identify → analyze → respond (opportunity)",
+    "question": "During identification, the team flags an opportunity that, if pursued, could shorten the schedule by 6 weeks but requires reallocating resources from another work package. The next step is to:",
+    "options": [
+      "Pursue the opportunity immediately since shorter schedules are always valuable",
+      "Analyze the opportunity (probability, impact on objectives including the affected work package) before selecting a response strategy",
+      "Reject the opportunity because it disrupts existing plans",
+      "Add it to the issue log"
+    ],
+    "correctIndex": 1,
+    "explanation": "Opportunities follow the same lifecycle as threats: identify → analyze → respond. Pursuing without analyzing the trade-off could create a secondary threat. Rejecting outright forgoes value. It is not an issue (no event has occurred)."
+  },
+  {
+    "id": "cross-10",
+    "domain": "Cross-domain",
+    "task": "Monitor → analyze",
+    "question": "A risk monitoring dashboard shows that the number of realized risks per month has been steadily increasing for the past four months. The risk manager should FIRST:",
+    "options": [
+      "Increase the contingency reserve proportionally",
+      "Investigate whether identification, analysis, or response planning has become less effective, and address the root cause",
+      "Escalate to the sponsor and request additional budget",
+      "Reassign team members to risk activities"
+    ],
+    "correctIndex": 1,
+    "explanation": "A rising rate of realized risks suggests something earlier in the cycle is breaking down. Treating only the symptom (more reserve, more budget, more people) without diagnosing the cause leaves the underlying problem in place."
+  },
+  {
+    "id": "cross-11",
+    "domain": "Cross-domain",
+    "task": "Strategy → respond (portfolio)",
+    "question": "A portfolio strategy depends on a new regulatory approval expected in 12 months. If approval is delayed, five projects in the portfolio are affected. This risk is best handled by:",
+    "options": [
+      "Each project planning its own independent response",
+      "Planning a coordinated response at the program or portfolio level, with each project aligning its individual plans accordingly",
+      "Ignoring the risk at project level since it is outside the project's control",
+      "Transferring the risk to an external insurer"
+    ],
+    "correctIndex": 1,
+    "explanation": "Risks affecting multiple projects are most efficiently managed at the program or portfolio level, with project-level alignment. Independent responses are duplicative; ignoring exposure leaves you vulnerable; insurance is rarely available for regulatory uncertainty."
+  },
+  {
+    "id": "cross-12",
+    "domain": "Cross-domain",
+    "task": "Identify → analyze",
+    "question": "After identification, why is categorization (e.g., via a risk breakdown structure) useful BEFORE detailed analysis?",
+    "options": [
+      "It allows risks to be prioritized without any analysis",
+      "It reveals concentrations and root-cause clusters, helping focus analysis effort and identify systemic exposures",
+      "It is a regulatory requirement for risk management plans",
+      "It replaces the need for qualitative analysis"
+    ],
+    "correctIndex": 1,
+    "explanation": "Categorization surfaces clusters that may share root causes or warrant common responses, focusing subsequent analysis. It does not replace analysis or prioritization."
+  },
+  {
+    "id": "cross-13",
+    "domain": "Cross-domain",
+    "task": "Respond → monitor",
+    "question": "A response plan was implemented two months ago for a high-priority risk. How does the risk manager assess whether the response is working?",
+    "options": [
+      "Wait for the risk to either occur or be closed; that is the only true test",
+      "Compare current risk metrics (probability, impact, trigger indicators) against pre-response baselines and adjust if not on track",
+      "Survey the team about whether they feel the response is helpful",
+      "Trust the response plan unless the sponsor raises concerns"
+    ],
+    "correctIndex": 1,
+    "explanation": "Effectiveness is assessed by monitoring measurable indicators against the baseline established when the response was planned. Waiting for the risk to play out is too late; subjective surveys and trust-by-default are weak controls."
+  },
+  {
+    "id": "cross-14",
+    "domain": "Cross-domain",
+    "task": "Plan → monitor",
+    "question": "The risk management plan specifies a monthly risk report to executives. Mid-project, the project enters a high-volatility phase with significant new risks emerging weekly. The risk manager should:",
+    "options": [
+      "Continue monthly reporting as planned to maintain consistency",
+      "Adjust the cadence (and update the risk management plan) to match the new reality, escalating significant changes as they arise",
+      "Cancel executive reports and rely on the steering committee",
+      "Wait until the next planned plan review to consider any changes"
+    ],
+    "correctIndex": 1,
+    "explanation": "The risk management plan is itself a living document; cadence should match reality. Significant changes can and should be escalated outside the regular cycle. Cancelling reports or deferring updates loses visibility when it is most needed."
+  },
+  {
+    "id": "cross-15",
+    "domain": "Cross-domain",
+    "task": "Identify → respond",
+    "question": "Why is assigning a risk owner during or immediately after identification critical to the overall process?",
+    "options": [
+      "Risk owners are personally liable for the financial impact if the risk occurs",
+      "Risk owners drive analysis, response planning, and monitoring for their assigned risks; without clear ownership, risks tend to drift unmanaged",
+      "Risk owners are the only people allowed to close the risk",
+      "Risk owners must be project managers"
+    ],
+    "correctIndex": 1,
+    "explanation": "Ownership creates accountability for moving each risk through analysis, response, and monitoring. Without an owner, risks stall on the register. Owners need not be project managers and are not personally liable for impact."
+  },
+  {
+    "id": "cross-16",
+    "domain": "Cross-domain",
+    "task": "Analyze → monitor",
+    "question": "Mid-project, the contingency reserve is 70% consumed but only 40% of the project work is complete. The risk manager should MOST appropriately:",
+    "options": [
+      "Immediately request an increase to the management reserve",
+      "Reanalyze the remaining risks and the consumption trend, and bring forecasts and options to the sponsor/steering committee",
+      "Halt all response actions until more reserve is approved",
+      "Stop tracking the reserve to avoid panic"
+    ],
+    "correctIndex": 1,
+    "explanation": "Reserve burn must be analyzed and presented with options — the right response depends on whether the projected exposure for the remainder is high, low, or driven by a few large risks. Halting action or hiding data are both harmful."
+  },
+  {
+    "id": "cross-17",
+    "domain": "Cross-domain",
+    "task": "Plan → identify",
+    "question": "Why is stakeholder engagement during Domain I (Strategy and Planning) particularly important for the success of Domain II (Identification)?",
+    "options": [
+      "Stakeholders need to formally approve every identified risk",
+      "Stakeholders bring diverse perspectives, knowledge, and risk attitudes that shape what gets identified — and how — in later workshops",
+      "Stakeholders are responsible for owning every risk identified",
+      "Without stakeholder approval of the risk management plan, identification cannot legally begin"
+    ],
+    "correctIndex": 1,
+    "explanation": "Identification quality depends on who participates and what they know. Early engagement in planning shapes who attends identification activities and what risk categories receive attention."
+  },
+  {
+    "id": "cross-18",
+    "domain": "Cross-domain",
+    "task": "Identify → analyze → monitor",
+    "question": "A low-priority risk has been placed on a watch list rather than analyzed in detail. During monitoring, the team notices its probability has been steadily increasing. The risk manager should:",
+    "options": [
+      "Continue to monitor without action — the watch list is for low-priority items",
+      "Promote the risk for full qualitative (and possibly quantitative) analysis and response planning given its changed profile",
+      "Wait for the risk to occur and then manage it as an issue",
+      "Remove the risk from the watch list to keep records clean"
+    ],
+    "correctIndex": 1,
+    "explanation": "The watch list is not a permanent home; it is a holding area for risks below the current threshold. A changing profile means the risk should be re-evaluated in the standard cycle."
+  },
+  {
+    "id": "cross-19",
+    "domain": "Cross-domain",
+    "task": "Respond → analyze (lessons)",
+    "question": "A risk occurs that had no pre-planned response. The team improvises a solution and resolves the impact. What should happen next from a risk management standpoint?",
+    "options": [
+      "Nothing — the issue is closed",
+      "Capture the workaround as a lesson learned and analyze whether similar unidentified risks may still exist",
+      "Add the workaround to the risk response plan for future use",
+      "Penalize the original identification team for missing the risk"
+    ],
+    "correctIndex": 1,
+    "explanation": "Workarounds signal that identification or analysis missed something; the team should learn from the gap and look for related unidentified risks. Logging the workaround as a generic future response is rarely useful (each risk is unique); blame undermines a healthy risk culture."
+  },
+  {
+    "id": "cross-20",
+    "domain": "Cross-domain",
+    "task": "Monitor → close",
+    "question": "At what point should a risk be formally CLOSED on the risk register?",
+    "options": [
+      "When the project ends, regardless of risk status",
+      "When the time window in which it could occur has passed, OR the risk has occurred (and become an issue), OR analysis shows it is no longer applicable — and the closure is documented with rationale",
+      "When the risk owner leaves the project",
+      "When the response cost exceeds the impact"
+    ],
+    "correctIndex": 1,
+    "explanation": "Closure is conditional on the risk no longer being a live exposure: out-of-window, realized, or no longer applicable. Closure must be documented. Mass-closing at project end loses information; owner changes are reassignments, not closures."
   }
 ]
