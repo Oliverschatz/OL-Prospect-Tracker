@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PMI-RMP Practice Questions</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pbf-navy: #1a2744;
+    --pbf-blue: #2c5282;
+    --pbf-accent: #e8a838;
+    --pbf-accent-hover: #d4952e;
+    --pbf-light: #f7f8fa;
+    --pbf-border: #d8dde6;
+    --pbf-text: #2d3748;
+    --pbf-muted: #718096;
+    --pbf-red: #c53030;
+    --pbf-green: #276749;
+    --pbf-green-bg: #f0fff4;
+    --pbf-red-bg: #fff5f5;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Source Sans 3', -apple-system, sans-serif;
+    color: var(--pbf-text);
+    background: var(--pbf-light);
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .pw-card {
+    width: 100%;
+    max-width: 640px;
+    background: #fff;
+    border: 1px solid var(--pbf-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+    padding: 22px 24px;
+  }
+  .pw-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .pw-meta {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .pw-badge {
+    background: var(--pbf-navy);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .pw-tag {
+    background: var(--pbf-light);
+    border: 1px solid var(--pbf-border);
+    color: var(--pbf-muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+  }
+  .pw-score {
+    font-size: 13px;
+    color: var(--pbf-muted);
+    font-weight: 600;
+  }
+  .pw-question {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.45;
+    margin: 10px 0 18px;
+    color: var(--pbf-navy);
+  }
+  .pw-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .pw-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    padding: 12px 14px;
+    border: 1.5px solid var(--pbf-border);
+    border-radius: 6px;
+    background: #fff;
+    font-family: inherit;
+    font-size: 14.5px;
+    line-height: 1.45;
+    color: var(--pbf-text);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.05s;
+  }
+  .pw-option:not(:disabled):hover {
+    border-color: var(--pbf-blue);
+    background: #f5f8fd;
+  }
+  .pw-option:not(:disabled):active { transform: translateY(1px); }
+  .pw-option:disabled { cursor: default; }
+  .pw-letter {
+    flex: 0 0 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--pbf-light);
+    border: 1px solid var(--pbf-border);
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--pbf-navy);
+    margin-top: 1px;
+  }
+  .pw-opt-text { flex: 1; }
+  .pw-mark { font-size: 18px; font-weight: 700; margin-left: 6px; }
+  .pw-opt-correct {
+    border-color: var(--pbf-green);
+    background: var(--pbf-green-bg);
+    color: var(--pbf-green);
+  }
+  .pw-opt-correct .pw-letter {
+    background: var(--pbf-green);
+    color: #fff;
+    border-color: var(--pbf-green);
+  }
+  .pw-opt-wrong {
+    border-color: var(--pbf-red);
+    background: var(--pbf-red-bg);
+    color: var(--pbf-red);
+  }
+  .pw-opt-wrong .pw-letter {
+    background: var(--pbf-red);
+    color: #fff;
+    border-color: var(--pbf-red);
+  }
+  .pw-opt-muted { opacity: 0.55; }
+  .pw-feedback {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    border-left: 4px solid;
+    font-size: 14px;
+  }
+  .pw-feedback-ok {
+    background: var(--pbf-green-bg);
+    border-color: var(--pbf-green);
+    color: var(--pbf-green);
+  }
+  .pw-feedback-bad {
+    background: var(--pbf-red-bg);
+    border-color: var(--pbf-red);
+    color: var(--pbf-red);
+  }
+  .pw-feedback-title { font-weight: 700; margin-bottom: 4px; }
+  .pw-feedback-text { color: var(--pbf-text); font-weight: 400; }
+  .pw-actions {
+    margin-top: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .pw-progress { font-size: 12px; color: var(--pbf-muted); }
+  .pw-next {
+    background: var(--pbf-accent);
+    color: var(--pbf-navy);
+    border: none;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+  }
+  .pw-next:hover:not(:disabled) { background: var(--pbf-accent-hover); }
+  .pw-next:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pw-loading, .pw-error {
+    text-align: center;
+    color: var(--pbf-muted);
+    padding: 40px 20px;
+  }
+  .pw-error { color: var(--pbf-red); }
+  @media (max-width: 480px) {
+    body { padding: 10px; }
+    .pw-card { padding: 16px; }
+    .pw-question { font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+  <div class="pw-card" id="app">
+    <div class="pw-loading">Loading questions…</div>
+  </div>
+
+<script>
+(function () {
+  const app = document.getElementById('app');
+  let questions = [];
+  let order = [];      // shuffled queue of indices not yet seen
+  let current = null;  // current question
+  let selected = null; // user's selected option index
+  let score = { correct: 0, total: 0 };
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function nextQuestion() {
+    if (order.length === 0) {
+      order = shuffle(questions.map((_, i) => i));
+      if (current) {
+        const cur = questions.indexOf(current);
+        order = order.filter((i) => i !== cur);
+        if (order.length === 0) order = shuffle(questions.map((_, i) => i));
+      }
+    }
+    const idx = order.shift();
+    current = questions[idx];
+    selected = null;
+    render();
+  }
+
+  function selectOption(idx) {
+    if (selected !== null) return;
+    selected = idx;
+    score.total += 1;
+    if (idx === current.correctIndex) score.correct += 1;
+    render();
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+  }
+
+  function render() {
+    if (!current) {
+      app.innerHTML = '<div class="pw-loading">No questions available.</div>';
+      return;
+    }
+    const answered = selected !== null;
+    const isCorrect = answered && selected === current.correctIndex;
+
+    const optionsHtml = current.options.map((opt, i) => {
+      let cls = '';
+      let mark = '';
+      if (answered) {
+        if (i === current.correctIndex) { cls = 'pw-opt-correct'; mark = '<span class="pw-mark">✓</span>'; }
+        else if (i === selected) { cls = 'pw-opt-wrong'; mark = '<span class="pw-mark">✗</span>'; }
+        else { cls = 'pw-opt-muted'; }
+      }
+      return '<button type="button" class="pw-option ' + cls + '" data-idx="' + i + '"' + (answered ? ' disabled' : '') + '>' +
+        '<span class="pw-letter">' + String.fromCharCode(65 + i) + '</span>' +
+        '<span class="pw-opt-text">' + escapeHtml(opt) + '</span>' +
+        mark +
+        '</button>';
+    }).join('');
+
+    const feedbackHtml = answered
+      ? '<div class="pw-feedback ' + (isCorrect ? 'pw-feedback-ok' : 'pw-feedback-bad') + '">' +
+          '<div class="pw-feedback-title">' + (isCorrect ? 'Correct!' : 'Not quite.') + '</div>' +
+          (current.explanation ? '<div class="pw-feedback-text">' + escapeHtml(current.explanation) + '</div>' : '') +
+        '</div>'
+      : '';
+
+    app.innerHTML =
+      '<div class="pw-header">' +
+        '<div class="pw-meta">' +
+          '<span class="pw-badge">PMI-RMP Practice</span>' +
+          (current.domain ? '<span class="pw-tag">' + escapeHtml(current.domain) + '</span>' : '') +
+          (current.task ? '<span class="pw-tag">' + escapeHtml(current.task) + '</span>' : '') +
+        '</div>' +
+        '<span class="pw-score">Score: ' + score.correct + ' / ' + score.total + '</span>' +
+      '</div>' +
+      '<h2 class="pw-question">' + escapeHtml(current.question) + '</h2>' +
+      '<div class="pw-options">' + optionsHtml + '</div>' +
+      feedbackHtml +
+      '<div class="pw-actions">' +
+        '<span class="pw-progress">Question ' + current.id + ' of ' + questions.length + '</span>' +
+        '<button type="button" class="pw-next" id="pw-next"' + (answered ? '' : ' disabled') + '>Next question →</button>' +
+      '</div>';
+
+    app.querySelectorAll('.pw-option').forEach((btn) => {
+      btn.addEventListener('click', () => selectOption(parseInt(btn.dataset.idx, 10)));
+    });
+    const nextBtn = document.getElementById('pw-next');
+    if (nextBtn) nextBtn.addEventListener('click', nextQuestion);
+  }
+
+  fetch('questions.json', { cache: 'no-cache' })
+    .then((r) => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then((data) => {
+      questions = Array.isArray(data) ? data : [];
+      if (questions.length === 0) throw new Error('No questions found');
+      order = shuffle(questions.map((_, i) => i));
+      nextQuestion();
+    })
+    .catch((err) => {
+      app.innerHTML = '<div class="pw-error">Could not load questions.<br>' + escapeHtml(err.message) + '</div>';
+    });
+})();
+</script>
+</body>
+</html>

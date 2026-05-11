@@ -1,0 +1,1402 @@
+[
+  {
+    "id": "rmp-001",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 1",
+    "question": "You have just been assigned as risk manager on a complex infrastructure project. Before facilitating any risk identification workshop with the team, what should you do first?",
+    "options": [
+      "Send out a survey asking team members which risks they are most concerned about on the project",
+      "Review preliminary documents such as industry benchmarks, historical data, and lessons learned from comparable past projects",
+      "Schedule a kickoff meeting with the project sponsor to confirm the risk budget and reporting cadence for executives",
+      "Build the initial risk register using a standard organizational template so the workshop can populate it directly"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain I, Task 1 calls for a preliminary document analysis — gathering and reviewing benchmarks, historical data, and lessons learned — before risk identification activities so the workshop is informed rather than starting from a blank page."
+  },
+  {
+    "id": "rmp-002",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 2",
+    "question": "Your organization has historically pursued safe, incremental projects. The CEO now wants to enter an emerging market that will require accepting more uncertainty. As risk manager, what is your most important early action?",
+    "options": [
+      "Inform the CEO that the new market is incompatible with the organization's established risk culture and recommend cancelling the initiative",
+      "Begin identifying specific market entry risks so the team has a head start before strategy is finalized",
+      "Analyze the organization's risk culture maturity and confirm whether the stated risk appetite has actually shifted at the governance level",
+      "Increase contingency reserves on all current projects to absorb the additional exposure introduced by the new strategic direction"
+    ],
+    "correctIndex": 2,
+    "explanation": "Domain I, Task 2 includes analyzing environment for risk culture maturity. A stated strategic shift does not automatically mean the organization's risk appetite has changed at the governance level — that alignment must be verified before deeper planning."
+  },
+  {
+    "id": "rmp-003",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 3",
+    "question": "Two senior stakeholders disagree about the acceptable cost overrun threshold for a project: the sponsor wants 5%, the steering committee chair wants 15%. How should you, as risk manager, proceed?",
+    "options": [
+      "Default to the lower threshold of 5% because conservative risk thresholds always protect the organization better",
+      "Average the two figures and document 10% as the agreed threshold to move forward without further delay",
+      "Escalate to the PMO so they can make the decision and remove the conflict from your responsibility",
+      "Facilitate a discussion to resolve the conflict by aligning the threshold to documented organizational risk appetite"
+    ],
+    "correctIndex": 3,
+    "explanation": "Domain I, Task 3 explicitly includes leading conflict resolution between stakeholders on risk appetite. Thresholds must be aligned to organizational risk appetite — not averaged, defaulted, or escalated away."
+  },
+  {
+    "id": "rmp-004",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 4",
+    "question": "A new project team has no shared vocabulary for risk and team members are using terms like 'risk', 'issue', and 'concern' interchangeably. What is the most appropriate first step?",
+    "options": [
+      "Coach and mentor the team on risk management terminology and best practices to establish shared understanding",
+      "Wait until the first risk review meeting to correct usage as the conversation naturally surfaces inconsistencies",
+      "Issue a formal corrective directive to all team members to stop using the terms incorrectly going forward",
+      "Replace any team member who continues to confuse the terms after a single warning has been given"
+    ],
+    "correctIndex": 0,
+    "explanation": "Domain I, Task 4 calls for coaching and mentoring the team on risk management best practices through servant leadership. Shared language is foundational and is built, not enforced."
+  },
+  {
+    "id": "rmp-005",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 5",
+    "question": "While drafting the risk management plan, you need to clarify accountability so that there is no ambiguity about who acts on each risk. Which tool is most appropriate?",
+    "options": [
+      "A Risk Breakdown Structure that groups risks by source category for easier identification",
+      "A probability and impact matrix calibrated to the project's defined thresholds",
+      "A RACI chart aligning risk roles and responsibilities to specific individuals",
+      "A Monte Carlo simulation showing the cumulative effect of all identified risks"
+    ],
+    "correctIndex": 2,
+    "explanation": "Domain I, Task 5 directly references aligning roles and responsibilities with a RAM such as a RACI chart. An RBS categorizes risks, not people; the matrix is for analysis; Monte Carlo is for quantitative analysis."
+  },
+  {
+    "id": "rmp-006",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 5",
+    "question": "You are preparing to communicate risk information to three audiences: the executive sponsor, the project team, and an external regulator. What should you do?",
+    "options": [
+      "Send the same comprehensive risk register to all three audiences to ensure full transparency across stakeholders",
+      "Tailor the risk communication to each audience based on their information needs and decision-making role",
+      "Communicate only to the sponsor and let them cascade the information down and across to other audiences",
+      "Withhold risk details from the regulator until thresholds are formally breached to avoid premature reporting"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain I, Task 6 calls for tailoring risk communication for stakeholders. Different audiences need different levels of detail and framing; uniform communication wastes attention and may breach disclosure obligations."
+  },
+  {
+    "id": "rmp-007",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 2",
+    "question": "Your project is being delivered in a country with rapidly changing regulations and currency volatility. Which technique best supports environmental analysis during planning?",
+    "options": [
+      "Decision tree analysis applied to each major procurement choice on the project",
+      "Earned value management updated weekly to track cost and schedule performance",
+      "PESTLE analysis to identify political, economic, social, technological, legal, and environmental factors",
+      "Reserve analysis to determine the right size of management reserve for the project budget"
+    ],
+    "correctIndex": 2,
+    "explanation": "Domain I, Task 2 lists PESTLE among environmental factor techniques. EVM is monitoring, reserve analysis is response/budgeting, decision trees are quantitative analysis."
+  },
+  {
+    "id": "rmp-008",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 6",
+    "question": "Several team members tell you privately they don't believe risk planning adds value and consider it bureaucratic. What is the most effective response?",
+    "options": [
+      "Report the dissenting team members to the project sponsor so corrective performance action can be taken",
+      "Reduce the time spent on risk activities so the team perceives less overhead in the process",
+      "Educate and coach the team on risk principles to create shared understanding and foster engagement",
+      "Conduct risk planning yourself without involving the skeptical team members so the work still gets done"
+    ],
+    "correctIndex": 2,
+    "explanation": "Domain I, Task 6 explicitly calls for training, coaching, and educating stakeholders in risk principles to foster engagement. Excluding skeptics or reducing rigor undermines the discipline."
+  },
+  {
+    "id": "rmp-009",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 5",
+    "question": "You are defining risk categories for the Risk Breakdown Structure on a software development project. What is the primary purpose of the RBS in the risk management plan?",
+    "options": [
+      "To assign monetary values to each risk so the contingency reserve can be calculated by category",
+      "To establish reporting hierarchy for which risks must be escalated to which level of management",
+      "To group sources of risk hierarchically so that identification is systematic and coverage gaps are visible",
+      "To define the sequence in which risks will be responded to once they are identified and analyzed"
+    ],
+    "correctIndex": 2,
+    "explanation": "The RBS organizes risk sources hierarchically (per the Practice Guide) so identification is systematic and visible. It is not about monetary value, escalation hierarchy, or response sequence."
+  },
+  {
+    "id": "rmp-010",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 3",
+    "question": "Your organization has a documented risk appetite statement at the enterprise level. How should this influence project-level risk thresholds?",
+    "options": [
+      "Project thresholds should be set independently because each project has different characteristics from the enterprise",
+      "Project thresholds should be aligned to the enterprise risk appetite and translated into measurable limits for the project",
+      "Project thresholds should always be tighter than the enterprise appetite to give the project additional safety margin",
+      "Project thresholds are unnecessary if an enterprise risk appetite statement already exists at the organizational level"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain I, Task 3 calls for aligning project risk thresholds to organizational risk appetite. Thresholds translate appetite into project-measurable limits; they are neither independent nor automatically tighter."
+  },
+  {
+    "id": "rmp-011",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 4",
+    "question": "You are determining risk metrics for a new agile project. Which metric is most appropriate to include in the risk management plan?",
+    "options": [
+      "Percentage of identified risks that have an owner assigned and a response strategy documented within one iteration",
+      "Total count of risks identified in the register regardless of whether they have been analyzed or owned",
+      "Number of risk meetings held per month regardless of attendance or outcomes from the meetings themselves",
+      "Volume of risk-related emails sent across the team during the most recent reporting period of the project"
+    ],
+    "correctIndex": 0,
+    "explanation": "A meaningful risk metric measures effective coverage and action — ownership and response coverage — not raw counts of artifacts or activity volume."
+  },
+  {
+    "id": "rmp-012",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 2",
+    "question": "During stakeholder analysis you discover the operations director, a key downstream stakeholder, has not been included in any risk activities. What should you do?",
+    "options": [
+      "Continue without them because operations stakeholders are typically only involved after project closeout",
+      "Add them to the stakeholder register and engage them in upcoming risk activities to capture their perspective",
+      "Inform the project manager and let them decide whether operations involvement is necessary at this stage",
+      "Wait for the operations director to request involvement before adding them to risk planning activities"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain I, Task 2 includes conducting a stakeholder analysis. A material downstream stakeholder should be actively engaged in risk activities; risk is best surfaced with the full set of affected parties."
+  },
+  {
+    "id": "rmp-013",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 5",
+    "question": "The risk management plan must define stakeholder empowerment and education strategy. What does this most directly support?",
+    "options": [
+      "Reducing the workload of the risk manager by transferring all responsibility for risk to other stakeholders",
+      "Building stakeholder capability so they can meaningfully contribute to and act on risk management",
+      "Documenting compliance with PMI standards so audits of the project will pass without findings",
+      "Ensuring stakeholders sign formal acknowledgments that they have been informed about risks"
+    ],
+    "correctIndex": 1,
+    "explanation": "Empowerment and education strategy (Domain I, Task 5) is about building stakeholder capability for meaningful contribution — not offloading responsibility, audit compliance, or documentation theater."
+  },
+  {
+    "id": "rmp-014",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 1",
+    "question": "Your organization has just completed a similar project for a different client. As you prepare risk planning, what is the highest-value use of that prior project's records?",
+    "options": [
+      "Copy the prior project's risk register directly into your new project to save time on identification activities",
+      "Disregard the prior project entirely because every project is unique and historical data is not relevant",
+      "Mine lessons learned, root causes, and outcomes to inform identification and calibrate probability and impact",
+      "Share the prior project's records only with executives so they understand the precedent being set on this project"
+    ],
+    "correctIndex": 2,
+    "explanation": "Domain I, Task 1 supports lessons learned and historical data as preliminary inputs. The value is in informing identification and calibrating analysis — not copy-paste reuse or dismissal."
+  },
+  {
+    "id": "rmp-015",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 4",
+    "question": "A team member asks why the project needs a defined risk methodology when 'we will just deal with problems as they come up.' How do you best respond?",
+    "options": [
+      "Agree that improvising as problems arise is the most realistic approach for a fast-moving project environment",
+      "Explain that a defined methodology enables proactive rather than reactive responses and aligns the team's actions",
+      "Acknowledge their concern and reduce the methodology to a single page so they will feel less burdened by process",
+      "Refer them to the project manager because methodology questions are not within scope of risk management"
+    ],
+    "correctIndex": 1,
+    "explanation": "A defined methodology (Domain I, Task 4) enables proactive, aligned action. Reactive-only approaches are issue management, not risk management; trimming methodology to please skeptics is not the right framing."
+  },
+  {
+    "id": "rmp-016",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 6",
+    "question": "You are leading a planning workshop with stakeholders who hold very different attitudes toward risk — some are highly risk-averse, others are highly risk-seeking. What is your most important role?",
+    "options": [
+      "Persuade the risk-seeking stakeholders to adopt the more cautious view held by the risk-averse stakeholders",
+      "Manage and align stakeholder risk attitudes and appetites so the project operates from a shared position",
+      "Allow each stakeholder to apply their own risk attitude to the decisions within their respective areas",
+      "Document the disagreement in the risk register and proceed without trying to reach alignment"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain I, Task 6 includes managing stakeholder risk appetite and attitudes. The goal is alignment to a shared project position — not winning over one side or letting fragmentation persist."
+  },
+  {
+    "id": "rmp-017",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 3",
+    "question": "Your project's primary objective is regulatory compliance. The sponsor says cost overruns up to 20% are acceptable, but any compliance failure is unacceptable. How should you set thresholds?",
+    "options": [
+      "Apply the same 20% threshold to all objectives because that is the figure the sponsor stated clearly",
+      "Set asymmetric thresholds: wide tolerance on cost and effectively zero tolerance on compliance objectives",
+      "Set tight thresholds on all dimensions to maintain consistency and avoid stakeholder confusion later",
+      "Defer threshold setting until after risk identification has produced a clearer view of the exposures"
+    ],
+    "correctIndex": 1,
+    "explanation": "Thresholds reflect the differing risk appetite per objective. A regulatory project legitimately has near-zero tolerance on compliance and broader tolerance on cost — and the threshold structure should make that explicit."
+  },
+  {
+    "id": "rmp-018",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 4",
+    "question": "Which of the following is the best example of a tailored risk management template appropriate for a small, low-complexity project?",
+    "options": [
+      "A comprehensive register with 30 fields per risk and mandatory quantitative scoring for every entry",
+      "A simplified register focused on risk description, owner, response, and review status, suited to project scale",
+      "No register at all, because small projects do not require any documented risk management approach",
+      "A duplicate of the enterprise risk register so consistency across the organization is preserved"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain I, Task 4 supports providing risk management templates. Tailoring to scale is core — heavy templates on small projects are waste; the absence of any artifact is not tailoring."
+  },
+  {
+    "id": "rmp-019",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 2",
+    "question": "An EEF (enterprise environmental factor) that significantly affects how your project handles risk is best described as which of the following?",
+    "options": [
+      "An internal project assumption documented during the planning phase and validated by the project team",
+      "An organizational asset such as a historical lessons-learned database maintained by the PMO",
+      "A condition outside the immediate control of the project, such as market conditions or government regulation",
+      "A risk that has been identified and is now being actively managed in the risk register by the owner"
+    ],
+    "correctIndex": 2,
+    "explanation": "EEFs are conditions outside the project's immediate control (market, regulatory, infrastructure, etc.). OPAs are organizational assets; assumptions and identified risks are different artifacts."
+  },
+  {
+    "id": "rmp-020",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 5",
+    "question": "You are defining risk prioritization criteria for the risk management plan. Which combination of factors is most appropriate?",
+    "options": [
+      "Probability and impact only, since these are the two factors used in the standard P-I matrix",
+      "Probability, impact, urgency, manageability, and proximity, calibrated to the project context",
+      "Cost only, because in commercial projects every risk eventually translates into a financial impact",
+      "Stakeholder seniority, so that risks raised by senior stakeholders are addressed before others"
+    ],
+    "correctIndex": 1,
+    "explanation": "Robust prioritization considers probability, impact, urgency, manageability, proximity, and other factors as the Practice Guide describes. P-I alone is incomplete; cost alone is reductive; seniority-based prioritization corrupts the discipline."
+  },
+  {
+    "id": "rmp-021",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 1",
+    "question": "When determining who should be responsible for the preliminary document analysis, which factor is most important?",
+    "options": [
+      "The seniority of the individual, because senior staff produce more credible documentation reviews",
+      "The individual's familiarity with the documents and their relevance to the risk process on this project",
+      "The individual's availability over the next two weeks, regardless of background or context they bring",
+      "The cost of the individual's time, with the cheapest qualified resource always selected by default"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain I, Task 1 identifies determining responsibility for preliminary analysis. Relevant familiarity and applicability to the risk process matter more than seniority alone, sheer availability, or cost optimization."
+  },
+  {
+    "id": "rmp-022",
+    "domain": "I. Risk Strategy and Planning",
+    "task": "Task 6",
+    "question": "You are kicking off risk planning on a multi-vendor program. Some vendors view risk information as commercially sensitive. How should you approach this?",
+    "options": [
+      "Demand full transparency from all vendors as a contractual condition for continued program participation",
+      "Set expectations on rules of engagement, then tailor information sharing so vendors collaborate while protecting legitimate confidentiality",
+      "Exclude vendors from risk discussions entirely because their commercial concerns make collaboration impossible",
+      "Share only your organization's risks with vendors and ask nothing of them in return on the program"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain I, Task 6 calls for setting appropriate expectations on rules of engagement and tailoring risk communication. Cross-organizational risk work — the heart of project business — requires balancing collaboration and legitimate confidentiality."
+  },
+  {
+    "id": "rmp-023",
+    "domain": "II. Risk Identification",
+    "task": "Task 1",
+    "question": "During a risk identification workshop, the team keeps generating descriptions like 'cost overrun' and 'schedule slip.' What is the issue with these entries?",
+    "options": [
+      "They are too long and need to be condensed into shorter labels before being added to the register",
+      "They describe impacts rather than uncertain events with causes and effects, and lack the structure needed for analysis",
+      "They are not formally categorized in the Risk Breakdown Structure for the project",
+      "They should be classified as opportunities rather than threats in the register"
+    ],
+    "correctIndex": 1,
+    "explanation": "Well-formed risk statements have cause, uncertain event, and effect. 'Cost overrun' is an impact, not a risk — it is what happens when an underlying uncertainty materializes."
+  },
+  {
+    "id": "rmp-024",
+    "domain": "II. Risk Identification",
+    "task": "Task 1",
+    "question": "You are planning identification sessions and the team is highly distributed across multiple time zones. Which combination of techniques is most appropriate?",
+    "options": [
+      "A single in-person workshop scheduled at headquarters with attendance mandatory for all team members",
+      "A mix of asynchronous techniques (surveys, document analysis) combined with focused virtual interviews and focus groups",
+      "Rely entirely on the risk manager's experience to enumerate risks without involving the distributed team",
+      "Delay identification until the team can be co-located, regardless of project schedule implications"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain II, Task 1 lists meetings, interviews, focus groups, and SME activities. For distributed teams, blending asynchronous and focused synchronous techniques captures broad input without imposing an impractical single event."
+  },
+  {
+    "id": "rmp-025",
+    "domain": "II. Risk Identification",
+    "task": "Task 2",
+    "question": "The project plan rests on the assumption that a key supplier will deliver in eight weeks. How should this assumption be treated in risk identification?",
+    "options": [
+      "Document it in the assumption log only, since assumptions are separate from risks and require no further treatment",
+      "Assess the risk associated with the assumption, recognize cascade effects, and encourage stakeholders to challenge it",
+      "Remove the assumption from the plan and replace it with a firm commitment regardless of the supplier's actual position",
+      "Treat the assumption as a confirmed fact unless and until the supplier formally tells you otherwise"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain II, Task 2 includes assessing risk associated with each assumption, recognizing cascade effects, and encouraging stakeholders to challenge assumptions. Treating an assumption as fact is precisely the failure mode the discipline guards against."
+  },
+  {
+    "id": "rmp-026",
+    "domain": "II. Risk Identification",
+    "task": "Task 4",
+    "question": "Two team members independently identify what appears to be the same risk. Both versions are now in the draft register. What should you do?",
+    "options": [
+      "Keep both entries to ensure neither team member feels their contribution was deleted from the register",
+      "Examine the validity and attributes of each entry, consolidate them if they are genuinely the same, or distinguish them if not",
+      "Automatically delete the second entry on the principle of first-in, first-recognized in the risk register",
+      "Escalate to the project manager so they can decide which version of the risk should remain in the register"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain II, Task 4 calls for analyzing the validity of identified risks and examining attributes (probability, impact, urgency). Consolidation must follow analysis, not seniority or arrival order."
+  },
+  {
+    "id": "rmp-027",
+    "domain": "II. Risk Identification",
+    "task": "Task 4",
+    "question": "A risk has been added to the register with no clear ownership. What is the most appropriate next step?",
+    "options": [
+      "Establish risk ownership immediately so accountability is clear; risks without an owner cannot be managed effectively",
+      "Defer ownership assignment until the risk has materialized into an actual issue requiring attention",
+      "Assign all unowned risks to the project manager by default regardless of the nature of the risk",
+      "Remove the risk from the register because if no one will own it, it does not warrant tracking"
+    ],
+    "correctIndex": 0,
+    "explanation": "Domain II, Task 4 includes establishing risk origin and ownership. An owner is required for the risk to be actively managed; default-assignment to the PM dilutes accountability."
+  },
+  {
+    "id": "rmp-028",
+    "domain": "II. Risk Identification",
+    "task": "Task 1",
+    "question": "A subject matter expert raises what they describe as a risk, but it is actually a problem that has already occurred. How should you handle this?",
+    "options": [
+      "Add it to the risk register so it is not lost and the SME feels their concern was captured properly",
+      "Direct it to issue management since a materialized event is an issue, not a risk; check the register for related residual or secondary risks",
+      "Ignore it because the SME is confused about the distinction between risks and issues",
+      "Add it as an opportunity since it has already happened and now must be managed for any upside"
+    ],
+    "correctIndex": 1,
+    "explanation": "An event that has already occurred is an issue, not a risk (which is by definition uncertain). The right move is correct routing — and a check for related residual or secondary risks the materialized event may have produced."
+  },
+  {
+    "id": "rmp-029",
+    "domain": "II. Risk Identification",
+    "task": "Task 3",
+    "question": "You are documenting risk triggers for a complex aerospace project. A trigger is best described as which of the following?",
+    "options": [
+      "The root cause that creates the underlying conditions for a risk to exist on the project in the first place",
+      "An early-warning indicator that suggests a risk is about to occur or has begun to occur on the project",
+      "The financial impact that the risk will cause if it materializes during the execution phase of the project",
+      "The strategy that has been chosen to respond to the risk in the event that it actually occurs"
+    ],
+    "correctIndex": 1,
+    "explanation": "Triggers are early-warning indicators — leading signals that a risk is about to or has begun to materialize. Cause, impact, and response are different elements of the risk."
+  },
+  {
+    "id": "rmp-030",
+    "domain": "II. Risk Identification",
+    "task": "Task 4",
+    "question": "Which of the following best illustrates a properly structured risk statement?",
+    "options": [
+      "Cost overrun on the project will be a significant problem if it occurs during execution",
+      "Because the supplier is new to this product category, delivery may be late, which could delay testing by four weeks",
+      "We must mitigate supplier risk by adding a second source for critical components on the project",
+      "The supplier should deliver in eight weeks based on initial discussions with their account manager"
+    ],
+    "correctIndex": 1,
+    "explanation": "A well-formed risk statement contains cause ('because the supplier is new'), uncertain event ('delivery may be late'), and effect ('delay testing by four weeks'). The others are an impact, a response, and an assumption respectively."
+  },
+  {
+    "id": "rmp-031",
+    "domain": "II. Risk Identification",
+    "task": "Task 1",
+    "question": "During an identification interview, a stakeholder describes a vague concern that 'something might go wrong with the integration.' How should you proceed?",
+    "options": [
+      "Record the concern verbatim in the register and move on so the stakeholder feels heard during the session",
+      "Probe for specifics about cause, event, and effect, and analyze the business context of the information shared",
+      "Disregard the concern because it is too vague to add value to the register at this stage",
+      "Refer the stakeholder to a different SME and let that person formulate the risk if there is one"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain II, Task 1 calls for performing detailed analyses of identification results and understanding business context. Vague concerns are starting points to probe — neither recorded as-is nor discarded."
+  },
+  {
+    "id": "rmp-032",
+    "domain": "II. Risk Identification",
+    "task": "Task 2",
+    "question": "A project constraint states that the legacy ERP must remain operational during cutover. Which is the most appropriate risk-related action?",
+    "options": [
+      "Treat the constraint as fixed and not subject to risk identification because constraints are binding requirements",
+      "Identify the risks associated with maintaining the legacy ERP, and challenge whether the constraint is genuinely necessary",
+      "Remove the constraint unilaterally so the project has more flexibility during the cutover phase",
+      "Escalate the constraint to executives and pause planning until they confirm whether it should remain in scope"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain II, Task 2 includes assessing risks associated with assumptions and constraints, and encouraging stakeholders to challenge them. Constraints are inputs to risk thinking, not untouchable boundaries."
+  },
+  {
+    "id": "rmp-033",
+    "domain": "II. Risk Identification",
+    "task": "Task 1",
+    "question": "During risk identification you discover that one team member has identified risks that turn out to be issues, another has confused risks with constraints, and a third has captured well-formed risks. What is your immediate priority?",
+    "options": [
+      "Restart the identification activity completely with a different group of contributors to ensure quality",
+      "Coach the team on the distinction between risks, issues, assumptions, and constraints to improve subsequent contributions",
+      "Use only the well-formed contributions from the third team member and discard the rest of the contributions",
+      "Document all contributions as risks regardless of category to keep the volume of identified items high"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain II, Task 1 supports coaching for quality contributions. Categorization confusion is fixed by education, not by restart, selective use, or indiscriminate acceptance."
+  },
+  {
+    "id": "rmp-034",
+    "domain": "II. Risk Identification",
+    "task": "Task 3",
+    "question": "While documenting risk thresholds, a senior stakeholder says 'just use the same thresholds we used on the last project.' What is the most appropriate response?",
+    "options": [
+      "Accept the proposal because prior project thresholds were already validated and reusing them saves time",
+      "Reject the proposal outright because every project must have entirely unique thresholds with no carryover",
+      "Use prior thresholds as a starting point but reassess them against this project's context, compliance, and updated risk data",
+      "Decline to make the decision and escalate the question to the project sponsor for resolution by them"
+    ],
+    "correctIndex": 2,
+    "explanation": "Domain II, Task 3 includes assessing, confirming, and documenting risk compliance thresholds against updated risk data. Prior values can inform but must be reassessed for the current context."
+  },
+  {
+    "id": "rmp-035",
+    "domain": "II. Risk Identification",
+    "task": "Task 4",
+    "question": "You are categorizing newly identified risks. One risk arises from a regulatory change in a country where your supplier is based. How should you classify origin?",
+    "options": [
+      "Internal, because it affects your project's deliverables and was identified by your project team",
+      "External, because the source of uncertainty lies outside your organization's boundary and control",
+      "It does not matter how it is classified as long as it is recorded somewhere in the register",
+      "Classify it as both internal and external simultaneously to capture maximum scope of the risk"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain II, Task 4 calls for establishing risk origin (internal vs. external). The fact that an external source has internal consequences does not make the risk internal."
+  },
+  {
+    "id": "rmp-036",
+    "domain": "II. Risk Identification",
+    "task": "Task 1",
+    "question": "Your team has identified what they believe to be all the risks on the project. As risk manager, how do you assess whether the identification has been sufficient?",
+    "options": [
+      "Count the number of risks identified and declare it sufficient if it exceeds a threshold like fifty entries",
+      "Stop identification once the team becomes tired since fatigue indicates diminishing returns on effort",
+      "Use multiple techniques, check coverage across the RBS, and confirm that key stakeholder perspectives have been captured",
+      "Trust the team's judgment that they have identified everything that they can possibly think of right now"
+    ],
+    "correctIndex": 2,
+    "explanation": "Sufficiency is assessed by coverage across techniques, RBS categories, and stakeholder perspectives. Raw count and fatigue are unreliable proxies, and trust without verification is not rigor."
+  },
+  {
+    "id": "rmp-037",
+    "domain": "II. Risk Identification",
+    "task": "Task 4",
+    "question": "An identified opportunity has a probability of 0.7 and a positive impact of $500,000. Which of the following should you do?",
+    "options": [
+      "Disregard it because risk identification is concerned only with threats and negative impacts on the project",
+      "Capture it in the register as an opportunity, classify it accordingly, and analyze and respond to it",
+      "Refer it to the business development team rather than including it in risk management activities",
+      "Record it only after the project sponsor formally approves it as a recognized opportunity for tracking"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain II, Task 4 explicitly calls for classifying risks as threats or opportunities. Opportunities are part of risk management; their treatment parallels that of threats."
+  },
+  {
+    "id": "rmp-038",
+    "domain": "II. Risk Identification",
+    "task": "Task 1",
+    "question": "You are reviewing telemetry data from a similar prior project as part of identification. What is the most valuable use of this data?",
+    "options": [
+      "Use it to generate identical risks for the current project because past patterns will repeat exactly",
+      "Use it to understand business context and surface analogous uncertainties that may apply to the current project",
+      "File it as a historical reference but exclude it from current identification activity to keep analysis independent",
+      "Share it widely on the company intranet so other projects can use the data however they choose"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain II, Task 1 includes analyzing documents, audio, telemetry, and understanding business context. Past data informs identification by analogy and pattern, not by mechanical replication."
+  },
+  {
+    "id": "rmp-039",
+    "domain": "II. Risk Identification",
+    "task": "Task 2",
+    "question": "During constraint analysis the team identifies that holiday schedules in three countries overlap with the project's planned integration phase. What is the appropriate action?",
+    "options": [
+      "Recognize the cascade effect of the holiday schedules on project timelines and identify the associated risks",
+      "Ignore holiday schedules because they are administrative matters outside the scope of risk management",
+      "Reschedule the integration phase unilaterally without consulting any of the affected country teams",
+      "Mandate that all staff in the three countries work through their holidays to avoid timeline impacts"
+    ],
+    "correctIndex": 0,
+    "explanation": "Domain II, Task 2 explicitly gives the example of predicting cascade effects of stakeholder holiday schedules on project timelines. This is precisely the kind of constraint-driven risk identification expected."
+  },
+  {
+    "id": "rmp-040",
+    "domain": "II. Risk Identification",
+    "task": "Task 3",
+    "question": "A stakeholder pushes back on a risk threshold that they consider too conservative. As risk manager, what is your best response?",
+    "options": [
+      "Hold firm on the existing threshold to demonstrate authority in your role as risk manager on the project",
+      "Empower the stakeholder to challenge the threshold and reassess it against the current data and context",
+      "Refuse to discuss thresholds outside formal governance sessions scheduled in the project calendar",
+      "Lower the threshold immediately to whatever the stakeholder requests to maintain working relationships"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain II, Task 3 explicitly calls for empowering stakeholders to challenge existing thresholds. Authority posturing and accommodation are both poor substitutes for evidence-based reassessment."
+  },
+  {
+    "id": "rmp-041",
+    "domain": "II. Risk Identification",
+    "task": "Task 4",
+    "question": "A risk attribute called 'urgency' has been added to your register alongside probability and impact. What does urgency primarily indicate?",
+    "options": [
+      "How costly the risk will be if it materializes during the execution phase of the project",
+      "How soon a response must be initiated for it to remain effective in addressing the risk",
+      "How likely the risk is to occur during the current period of the project life cycle",
+      "How politically sensitive the risk is among the project's stakeholders and sponsors"
+    ],
+    "correctIndex": 1,
+    "explanation": "Urgency is the proximity-related attribute reflecting how soon a response must begin to remain effective. Cost is impact, likelihood is probability, sensitivity is a separate stakeholder dimension."
+  },
+  {
+    "id": "rmp-042",
+    "domain": "II. Risk Identification",
+    "task": "Task 1",
+    "question": "You have run a workshop with the development team and another with the operations team. The two registers have very little overlap. What does this most likely indicate?",
+    "options": [
+      "One of the workshops was conducted improperly and its outputs should be discarded entirely",
+      "The two teams see different parts of the system and project, and both views are needed for full identification coverage",
+      "The teams are competing with each other and one is deliberately withholding information from the risk process",
+      "Risk identification is unreliable as a discipline and quantitative methods should replace workshops"
+    ],
+    "correctIndex": 1,
+    "explanation": "Different stakeholder groups have different vantage points and the goal of broad identification is to combine them. Low overlap is often a sign of complementary coverage, not failure."
+  },
+  {
+    "id": "rmp-043",
+    "domain": "II. Risk Identification",
+    "task": "Task 2",
+    "question": "An assumption in the project plan states 'the regulatory environment will remain stable through go-live.' How should this be treated during identification?",
+    "options": [
+      "Accept it as documented and move on without further analysis because assumptions are by definition fixed",
+      "Categorize the assumption, assess the risk it carries, and challenge whether it is genuinely robust under current conditions",
+      "Remove the assumption from the plan because no environmental condition can ever be truly guaranteed",
+      "Treat any risk arising from the assumption as out of scope for the project's risk management effort"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain II, Task 2 calls for categorizing assumptions, assessing associated risk, and encouraging stakeholders to challenge them. Assumptions are explicit risk inputs, not exempt content."
+  },
+  {
+    "id": "rmp-044",
+    "domain": "II. Risk Identification",
+    "task": "Task 3",
+    "question": "You are documenting a risk that could occur at multiple points across the project. How should timing of the risk be handled?",
+    "options": [
+      "Document only the earliest possible occurrence so the register remains compact and easier to read",
+      "Document only the latest occurrence because that is the most conservative assumption to plan for",
+      "Document the relevant timing, including triggers, causes, and the periods during which the risk is active",
+      "Timing is not relevant in risk identification and should be deferred entirely until response planning"
+    ],
+    "correctIndex": 2,
+    "explanation": "Domain II, Task 3 includes assessing and documenting risk triggers, causes, and timing. Timing is part of identification because it shapes monitoring, urgency, and response options."
+  },
+  {
+    "id": "rmp-045",
+    "domain": "II. Risk Identification",
+    "task": "Task 1",
+    "question": "When using brainstorming to identify risks, what is the most important facilitation rule to enforce?",
+    "options": [
+      "Defer judgment and welcome wide-ranging contributions before any evaluation or filtering takes place",
+      "Allow only senior team members to contribute since they have the most relevant experience to share",
+      "Require every contribution to include a fully formed cause-event-effect statement on the spot",
+      "Limit the session to one hour so the team does not lose focus during the identification activity"
+    ],
+    "correctIndex": 0,
+    "explanation": "Effective brainstorming separates idea generation from evaluation. Premature filtering, seniority gates, or perfection requirements all suppress the breadth that identification needs."
+  },
+  {
+    "id": "rmp-046",
+    "domain": "III. Risk Analysis",
+    "task": "Task 1",
+    "question": "You have a register of 80 identified risks and limited time before the next steering committee meeting. Which analysis approach is most appropriate to perform first?",
+    "options": [
+      "Quantitative analysis on all 80 risks using Monte Carlo simulation to provide the most rigorous output",
+      "Qualitative analysis to prioritize risks rapidly by probability, impact, and urgency before any deeper analysis",
+      "Skip analysis entirely and proceed directly to response planning to save time before the committee meeting",
+      "Pick the ten most concerning risks intuitively and address only those before the steering committee meeting"
+    ],
+    "correctIndex": 1,
+    "explanation": "Qualitative analysis is the appropriate first-pass screen — fast, subjective, and effective for prioritization. Quantitative analysis is selectively applied to the most material risks afterward."
+  },
+  {
+    "id": "rmp-047",
+    "domain": "III. Risk Analysis",
+    "task": "Task 2",
+    "question": "A project has a 30% probability of a $200,000 cost overrun and a 60% probability of saving $50,000 through an opportunity. What is the combined expected monetary value?",
+    "options": [
+      "EMV is -$30,000, meaning the contingency reserve should be increased by $30,000 to cover the net exposure",
+      "EMV is +$30,000, meaning the project has a net positive expected outcome from these two items combined",
+      "EMV is -$60,000, because the threat dollar amount is larger than the opportunity dollar amount",
+      "EMV cannot be calculated because threats and opportunities should be analyzed in separate calculations"
+    ],
+    "correctIndex": 0,
+    "explanation": "EMV(threat) = 0.30 × (-$200,000) = -$60,000; EMV(opportunity) = 0.60 × (+$50,000) = +$30,000. Combined EMV = -$30,000. Threats are negative, opportunities positive; the sum sizes contingency."
+  },
+  {
+    "id": "rmp-048",
+    "domain": "III. Risk Analysis",
+    "task": "Task 2",
+    "question": "You want to determine which individual risks have the most potential impact on the project's cost outcome. Which technique is most appropriate?",
+    "options": [
+      "Monte Carlo simulation that produces an S-curve for the overall project cost distribution",
+      "Sensitivity analysis displayed as a tornado diagram to rank the influence of individual risks",
+      "Decision tree analysis using expected monetary value to evaluate sequenced choices",
+      "Earned value analysis based on actual project performance to date in the execution phase"
+    ],
+    "correctIndex": 1,
+    "explanation": "Sensitivity analysis ranks individual variables by their influence on outcomes and is typically displayed as a tornado diagram. Monte Carlo aggregates effects; decision trees evaluate choice chains; EVA measures historical performance."
+  },
+  {
+    "id": "rmp-049",
+    "domain": "III. Risk Analysis",
+    "task": "Task 2",
+    "question": "Using PERT three-point estimating, your team estimates a task at O=4 days, M=6 days, P=14 days. What is the beta (PERT) expected duration?",
+    "options": [
+      "Approximately 6.0 days, because PERT typically yields the most likely value as its expected outcome",
+      "Approximately 7.0 days, calculated as (O + 4M + P) / 6 to weight the most likely value most heavily",
+      "Approximately 8.0 days, calculated as the triangular (O + M + P) / 3 distribution mean across three points",
+      "Approximately 14.0 days, because conservative planning always uses the pessimistic estimate as the basis"
+    ],
+    "correctIndex": 1,
+    "explanation": "PERT beta = (O + 4M + P) / 6 = (4 + 24 + 14) / 6 = 42/6 = 7.0 days. The triangular average would be 8.0; the pessimistic alone is 14.0."
+  },
+  {
+    "id": "rmp-050",
+    "domain": "III. Risk Analysis",
+    "task": "Task 2",
+    "question": "For the same task in the previous question (O=4, M=6, P=14), what is the standard deviation?",
+    "options": [
+      "Approximately 1.0 days, calculated as (P - O) / 10 to provide a conservative spread estimate",
+      "Approximately 1.7 days, calculated as (P - O) / 6 to represent one standard deviation of the spread",
+      "Approximately 3.3 days, calculated as (P - O) / 3 to capture the full range divided by three values",
+      "Approximately 10.0 days, equal to the difference between the pessimistic and the optimistic estimates"
+    ],
+    "correctIndex": 1,
+    "explanation": "Standard deviation = (P - O) / 6 = (14 - 4) / 6 = 10/6 ≈ 1.67 days. This is a standard PERT formula on the cheat sheet."
+  },
+  {
+    "id": "rmp-051",
+    "domain": "III. Risk Analysis",
+    "task": "Task 1",
+    "question": "You are using a probability and impact matrix during qualitative analysis. Which is the most important attribute of a well-designed matrix?",
+    "options": [
+      "It has at least seven by seven cells so that every risk can be precisely ranked against all others",
+      "It uses agreed assessment definitions, criteria, and scales calibrated to the project context",
+      "It is identical to the matrix used on every other project in the organization without any tailoring",
+      "It produces a single number for every risk that can be used directly for budget calculations"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain III, Task 1 specifies agreed-upon assessment approach, definitions of probability and impact, risk categories, and pre-established criteria. Tailoring to project context is essential; grid size alone is not the quality criterion."
+  },
+  {
+    "id": "rmp-052",
+    "domain": "III. Risk Analysis",
+    "task": "Task 2",
+    "question": "A Monte Carlo simulation of project cost produces an S-curve showing P50 = $1.2M and P80 = $1.5M. What does this mean?",
+    "options": [
+      "There is a 50% probability of completing at or below $1.2M and an 80% probability at or below $1.5M",
+      "The project will cost exactly $1.2M because P50 represents the most likely scenario from the simulation",
+      "The project must be budgeted at $1.5M minimum since the simulation produces a guaranteed floor estimate",
+      "P50 and P80 are unrelated to the cost outcome and refer only to schedule confidence levels for the project"
+    ],
+    "correctIndex": 0,
+    "explanation": "An S-curve gives the cumulative probability of completing at or below a given cost (or by a given date). P50/P80 are confidence levels — not most-likely or floor values."
+  },
+  {
+    "id": "rmp-053",
+    "domain": "III. Risk Analysis",
+    "task": "Task 3",
+    "question": "During analysis, you find that one risk would impact scope, schedule, and quality simultaneously. How should this affect its prioritization?",
+    "options": [
+      "Lower its priority because it is too complex to address effectively within the current project structure",
+      "Keep the same priority as any single-objective risk because multi-objective effects do not change priority",
+      "Raise its priority because the impact spans multiple objectives, which generally amplifies overall consequence",
+      "Move it out of the project register and treat it exclusively as an organizational rather than project risk"
+    ],
+    "correctIndex": 2,
+    "explanation": "Domain III, Task 3 supports impact analysis across project objectives (scope, schedule, cost, quality, stakeholders). Cross-objective risks generally have higher consequence and warrant higher priority."
+  },
+  {
+    "id": "rmp-054",
+    "domain": "III. Risk Analysis",
+    "task": "Task 2",
+    "question": "You are presented with a decision tree showing two options: build in-house (EMV = -$150,000) or outsource (EMV = -$120,000). What decision does the analysis support?",
+    "options": [
+      "Build in-house because in-house development always provides better quality regardless of cost outcomes",
+      "Outsource because its EMV is less negative, meaning lower expected loss according to the analysis",
+      "Neither, because both EMVs are negative and the project should be cancelled to avoid the loss entirely",
+      "The decision tree cannot inform this choice because EMV does not apply to make-or-buy decisions"
+    ],
+    "correctIndex": 1,
+    "explanation": "EMV-based decision analysis selects the option with the highest (least negative) expected monetary value: -$120,000 is preferable to -$150,000. Quality and other factors may modify the decision but the question is about what the analysis supports."
+  },
+  {
+    "id": "rmp-055",
+    "domain": "III. Risk Analysis",
+    "task": "Task 1",
+    "question": "You complete qualitative analysis and find that 60% of identified risks fall in the 'high' priority zone. What is the most appropriate response?",
+    "options": [
+      "Accept that the project is inherently high risk and proceed with execution without further analytical work",
+      "Recalibrate the matrix definitions and thresholds because a 60% high-priority concentration likely indicates miscalibration",
+      "Cancel the project immediately because a majority of high-priority risks makes the project clearly unviable",
+      "Ignore the matrix outcome and reclassify enough risks downward so that no more than 10% remain in high"
+    ],
+    "correctIndex": 1,
+    "explanation": "A grossly skewed distribution typically indicates the matrix definitions are miscalibrated for the project — too lenient a threshold for 'high' inflates the bucket. Recalibration is the rigorous response; selective reclassification or denial are not."
+  },
+  {
+    "id": "rmp-056",
+    "domain": "III. Risk Analysis",
+    "task": "Task 2",
+    "question": "A risk has a probability of 40% and a financial impact of -$250,000. Using EMV, how much should contingency reserve include for this specific risk?",
+    "options": [
+      "Approximately $100,000, calculated as 0.40 × $250,000 reflecting the expected monetary value of the threat",
+      "The full $250,000 because contingency must always cover the full impact in case the risk materializes",
+      "Zero, because contingency is only used for unknown-unknowns and EMV does not contribute to it",
+      "Approximately $625,000, calculated as $250,000 divided by 40% to scale up the impact figure"
+    ],
+    "correctIndex": 0,
+    "explanation": "Contingency for known-unknowns is informed by EMV: 0.40 × $250,000 = $100,000. Full-impact reserves are wasteful at portfolio scale; EMV is precisely how contingency is sized."
+  },
+  {
+    "id": "rmp-057",
+    "domain": "III. Risk Analysis",
+    "task": "Task 3",
+    "question": "You are conducting a SWOT analysis on a complex risk and identify a regulatory change as the source. SWOT classifies this how?",
+    "options": [
+      "As a strength because regulation often favors established firms over newer market entrants",
+      "As a weakness because regulation typically reflects an internal control issue inside the organization",
+      "As an opportunity or a threat because regulation is an external factor that can be either beneficial or harmful",
+      "Outside the scope of SWOT analysis because regulatory factors do not fit within the SWOT framework"
+    ],
+    "correctIndex": 2,
+    "explanation": "SWOT classifies internal factors as strengths/weaknesses and external factors as opportunities/threats. A regulatory change is external — it can be either an opportunity or a threat depending on its direction."
+  },
+  {
+    "id": "rmp-058",
+    "domain": "III. Risk Analysis",
+    "task": "Task 3",
+    "question": "A stakeholder objects to using an Ishikawa diagram during risk analysis, saying it is 'just a quality tool.' How do you respond?",
+    "options": [
+      "Agree and remove the Ishikawa diagram from the analysis approach to honor the stakeholder's expert opinion",
+      "Explain that the Ishikawa diagram is a valid technique for risk complexity analysis to identify causes and contributing factors",
+      "Replace the Ishikawa diagram with a different tool the stakeholder prefers without questioning the basis for the objection",
+      "Ignore the objection and continue using the diagram without explaining its role in risk analysis to the stakeholder"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain III, Task 3 explicitly lists Ishikawa (cause-and-effect) as a project risk complexity tool. It is widely used to expose root causes contributing to risks and is not exclusive to quality."
+  },
+  {
+    "id": "rmp-059",
+    "domain": "III. Risk Analysis",
+    "task": "Task 2",
+    "question": "Your project has a CPI of 0.85 and an SPI of 1.10 at the midpoint of execution. What does this most directly indicate from a risk perspective?",
+    "options": [
+      "The project is performing within tolerance on both cost and schedule and no risk trigger has been activated",
+      "Cost performance is below baseline and schedule is ahead, possibly signaling cost-related risk triggers worth analysis",
+      "The CPI and SPI cannot be used as risk triggers because EVM and risk management are separate disciplines",
+      "Cancel the project immediately because any deviation from 1.0 in either index indicates failure on the project"
+    ],
+    "correctIndex": 1,
+    "explanation": "CPI < 1.0 means over budget; SPI > 1.0 means ahead of schedule. EVM indices serve as risk triggers — a deteriorating CPI warrants probing what risks are materializing on the cost side."
+  },
+  {
+    "id": "rmp-060",
+    "domain": "III. Risk Analysis",
+    "task": "Task 1",
+    "question": "When applying ordinal classification in qualitative analysis, what are you doing?",
+    "options": [
+      "Assigning ordered ranks (e.g., low, medium, high) without claiming precise numerical relationships among them",
+      "Calculating exact numerical probabilities for each risk based on Monte Carlo simulation runs",
+      "Sorting risks alphabetically by their descriptions to make the register easier to navigate for reviewers",
+      "Assigning a unique identifier number to each risk that is independent of probability and impact"
+    ],
+    "correctIndex": 0,
+    "explanation": "Ordinal classification orders risks (low/medium/high or 1-2-3-4-5) without asserting that medium is twice low. It differs from cardinal (interval/ratio) numerical analysis."
+  },
+  {
+    "id": "rmp-061",
+    "domain": "III. Risk Analysis",
+    "task": "Task 2",
+    "question": "You are performing a forecast and trend analysis on schedule risk. What is the most appropriate use of this analysis?",
+    "options": [
+      "Predicting how current trends in performance data may continue and identifying emerging schedule risks",
+      "Replacing risk identification with statistical extrapolation of the project's prior performance data",
+      "Establishing the project schedule baseline so that performance can be measured against the plan",
+      "Determining who is responsible for delays that have already occurred on the project to date"
+    ],
+    "correctIndex": 0,
+    "explanation": "Domain III, Task 2 calls for forecast and trend analysis on new and historical information. Its purpose is forward-looking identification and quantification of emerging risk — not replacement of identification, baseline setting, or blame allocation."
+  },
+  {
+    "id": "rmp-062",
+    "domain": "III. Risk Analysis",
+    "task": "Task 3",
+    "question": "A risk identified during analysis affects compliance with an industry regulation. How should it be assessed relative to organizational strategic objectives?",
+    "options": [
+      "Compliance risks are operational and do not interact with strategic objectives at the organizational level",
+      "Assess project compliance objectives against organizational strategic objectives to confirm alignment and gaps",
+      "Treat compliance risks separately from all other risks since they cannot be analyzed using the same approach",
+      "Compliance risks should only be assessed after the project has been delivered and is operating in production"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain III, Task 3 explicitly includes assessing project compliance objectives against organizational strategic objectives. Compliance failures typically have strategic consequences and the linkage must be made explicit."
+  },
+  {
+    "id": "rmp-063",
+    "domain": "III. Risk Analysis",
+    "task": "Task 2",
+    "question": "A Monte Carlo simulation requires inputs about the distributions of underlying variables. What is the most appropriate source for these inputs?",
+    "options": [
+      "Default to a normal distribution for every variable to keep the simulation simple and consistent",
+      "Use historical data, expert judgment, and the project's identified risks to construct project-appropriate distributions",
+      "Allow the simulation tool to generate inputs automatically without any project-specific calibration",
+      "Use only the optimistic estimates to ensure the simulation produces favorable confidence levels"
+    ],
+    "correctIndex": 1,
+    "explanation": "Monte Carlo inputs come from historical data, expert judgment, and identified project risks, expressed as appropriate distributions (triangular, beta-PERT, etc.). Default normality, automatic generation, and optimistic-only inputs corrupt the result."
+  },
+  {
+    "id": "rmp-064",
+    "domain": "III. Risk Analysis",
+    "task": "Task 3",
+    "question": "Which of the following best describes the purpose of empowering stakeholders to independently identify threats and opportunities during analysis?",
+    "options": [
+      "To reduce the analytical workload on the risk manager and shift accountability away from the role",
+      "To create a culture in which risk awareness is distributed and stakeholders surface threats and opportunities continuously",
+      "To replace formal analysis techniques with ad-hoc stakeholder contributions during the analysis phase",
+      "To meet a procedural requirement of the risk management plan without expecting actual identification value"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain III, Task 3 includes empowering stakeholders to independently identify threats and opportunities. The aim is distributed risk awareness — neither offloading nor mere procedural compliance."
+  },
+  {
+    "id": "rmp-065",
+    "domain": "III. Risk Analysis",
+    "task": "Task 1",
+    "question": "Your risk matrix uses a 5x5 scale, and you find that one risk could be reasonably placed in either the 'high' or 'very high' cell depending on interpretation. What is the appropriate action?",
+    "options": [
+      "Default to the lower cell to avoid inflating the project's overall risk profile in the matrix",
+      "Default to the higher cell to be conservative regardless of the underlying evidence supporting placement",
+      "Apply the agreed assessment approach and pre-established criteria to determine the correct placement",
+      "Average the two cells and document a custom intermediate level not on the standard matrix used elsewhere"
+    ],
+    "correctIndex": 2,
+    "explanation": "Domain III, Task 1 calls for using an agreed-upon assessment approach and pre-established criteria. Defaulting up or down by inclination is exactly what calibrated criteria prevent."
+  },
+  {
+    "id": "rmp-066",
+    "domain": "III. Risk Analysis",
+    "task": "Task 1",
+    "question": "You discover that several stakeholders are categorizing risks inconsistently in the RBS. What is the most effective immediate response?",
+    "options": [
+      "Discard the inconsistent contributions and proceed with only the consistent categorizations",
+      "Coach the stakeholders on risk categorization strategies and the categories defined in the risk management plan",
+      "Allow the inconsistency to persist because categorization differences will resolve themselves over time",
+      "Remove the RBS from the project's risk management plan to avoid disagreement about categorization"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain III, Task 1 explicitly calls for coaching stakeholders on risk categorization strategies. Inconsistency is fixed by education and shared definitions, not by discarding inputs or abandoning the structure."
+  },
+  {
+    "id": "rmp-067",
+    "domain": "III. Risk Analysis",
+    "task": "Task 2",
+    "question": "You are deciding whether to perform quantitative analysis on a small, low-complexity internal project. What is the most appropriate decision?",
+    "options": [
+      "Always perform Monte Carlo simulation on every project regardless of size or complexity for consistency",
+      "Tailor the analysis to the project — qualitative may be sufficient for small low-complexity projects; quantitative is reserved for more complex projects",
+      "Never perform quantitative analysis on internal projects because it is too expensive to justify the cost",
+      "Refuse to make the decision and escalate it to the PMO for a standard determination on every case"
+    ],
+    "correctIndex": 1,
+    "explanation": "Quantitative analysis is used for complex projects where the depth justifies the effort. Small low-complexity projects are often adequately served by qualitative analysis; tailoring is the discipline."
+  },
+  {
+    "id": "rmp-068",
+    "domain": "III. Risk Analysis",
+    "task": "Task 3",
+    "question": "Which of the following is the strongest example of project risk complexity that justifies more rigorous analysis?",
+    "options": [
+      "A single-team project with a straightforward technical scope and a fixed deadline three months away",
+      "A multi-vendor program with interdependent deliverables, regulatory exposure, and conflicting stakeholder objectives",
+      "A short proof-of-concept conducted internally with only one stakeholder and a small budget allocation",
+      "A repetitive operations task being executed for the hundredth time by an experienced internal team"
+    ],
+    "correctIndex": 1,
+    "explanation": "Multi-party interdependence, regulatory exposure, and stakeholder conflict are the canonical complexity drivers that justify deeper analysis. The other options describe low-complexity contexts."
+  },
+  {
+    "id": "rmp-069",
+    "domain": "IV. Risk Response",
+    "task": "Task 1",
+    "question": "A high-priority threat has been identified: a key vendor may go bankrupt before delivering critical components. Your team proposes adding a second vendor as backup. Which response strategy is this?",
+    "options": [
+      "Avoid, because adding a second vendor eliminates the underlying threat from the project entirely",
+      "Mitigate, because adding a second vendor reduces the probability and/or impact of the original threat",
+      "Accept, because the team is acknowledging the threat and acting on it after the fact",
+      "Escalate, because vendor selection is outside the project manager's authority on the project"
+    ],
+    "correctIndex": 1,
+    "explanation": "Adding a second source reduces the probability and/or impact of the threat (loss of supply) — that is mitigation. Avoidance would mean eliminating the threat entirely (e.g., redesigning to not need the component)."
+  },
+  {
+    "id": "rmp-070",
+    "domain": "IV. Risk Response",
+    "task": "Task 1",
+    "question": "You decide to purchase insurance against a specific threat. Which response strategy does this represent?",
+    "options": [
+      "Mitigate, because insurance reduces the probability of the threat occurring in the first place",
+      "Transfer, because insurance shifts the financial impact and ownership to a third party",
+      "Avoid, because purchasing insurance eliminates the threat from the project's exposure entirely",
+      "Accept, because the project still bears all of the consequences if the threat materializes"
+    ],
+    "correctIndex": 1,
+    "explanation": "Insurance and indemnification clauses are classic transfer strategies — the financial impact shifts to a third party while the underlying event may still occur."
+  },
+  {
+    "id": "rmp-071",
+    "domain": "IV. Risk Response",
+    "task": "Task 1",
+    "question": "An opportunity has been identified that could deliver $400,000 in additional revenue if a partner adopts your project's output. The decision is made to assign a dedicated account manager to ensure adoption. Which strategy is this?",
+    "options": [
+      "Exploit, because the team is taking action to ensure the opportunity definitely occurs",
+      "Enhance, because the action is intended to increase the probability and/or impact of the opportunity",
+      "Share, because a partner is involved in delivering the upside from the opportunity",
+      "Accept, because no proactive action is being taken to capture the opportunity if it occurs"
+    ],
+    "correctIndex": 1,
+    "explanation": "Enhance increases probability or impact of an opportunity but does not guarantee it. Exploit would mean making it 100% certain to occur. Share would allocate ownership to a third party best able to capture it."
+  },
+  {
+    "id": "rmp-072",
+    "domain": "IV. Risk Response",
+    "task": "Task 1",
+    "question": "A threat has been identified that is outside the project manager's authority to address — it requires enterprise-level intervention. What is the appropriate response strategy?",
+    "options": [
+      "Avoid, because the project should remove anything that exceeds the project manager's authority on the project",
+      "Escalate, because the threat falls outside the scope or authority of the project and must be addressed at a higher level",
+      "Accept, because anything outside the project manager's authority should be tolerated without action by the team",
+      "Transfer, because escalation means moving ownership to a third-party organization to address the risk"
+    ],
+    "correctIndex": 1,
+    "explanation": "Escalation is the explicit strategy for threats outside the project's scope or authority — the response moves to the appropriate level (program, portfolio, sponsor, or organization)."
+  },
+  {
+    "id": "rmp-073",
+    "domain": "IV. Risk Response",
+    "task": "Task 1",
+    "question": "After implementing a response that resolves a primary threat, a new risk arises directly from the response itself. What is this new risk called?",
+    "options": [
+      "A residual risk, because it remains after the response was implemented to address the original threat",
+      "A secondary risk, because it arises directly from implementing the response to the original risk",
+      "An emergent risk, because it was unknown at the time of original identification and is now appearing",
+      "An out-of-scope risk that should not be tracked in the project's risk register at any point"
+    ],
+    "correctIndex": 1,
+    "explanation": "Secondary risks arise directly from implementing a response. Residual risks are what remains of the original risk after the response. Emergent risks are unknown-unknowns surfacing in execution but not specifically caused by a response."
+  },
+  {
+    "id": "rmp-074",
+    "domain": "IV. Risk Response",
+    "task": "Task 1",
+    "question": "A risk has been accepted passively. What does this mean in practice?",
+    "options": [
+      "The team will deal with the risk if and when it materializes, without setting aside specific contingency for it",
+      "The team has established an active contingency reserve specifically for this risk in the project's budget",
+      "The team has transferred the risk to a third party that is now responsible for managing the exposure",
+      "The team has eliminated the risk entirely through changes in scope, schedule, or other project parameters"
+    ],
+    "correctIndex": 0,
+    "explanation": "Passive acceptance means no proactive action and no dedicated contingency — the team simply deals with the risk if it occurs. Active acceptance includes establishing a contingency reserve."
+  },
+  {
+    "id": "rmp-075",
+    "domain": "IV. Risk Response",
+    "task": "Task 1",
+    "question": "A response action is being designed for a high-priority threat. Which of the following is the most important attribute the response should have?",
+    "options": [
+      "It must be time-bound with a clear owner, and its effectiveness should be assessable against project objectives",
+      "It must be the most expensive option available so that adequate effort is visibly applied to the threat",
+      "It must be approved by every stakeholder on the project regardless of their relevance to the risk",
+      "It must be implemented immediately, regardless of whether the trigger has materialized yet"
+    ],
+    "correctIndex": 0,
+    "explanation": "Domain IV, Task 1 calls for time-bound actions with assigned owners and effectiveness assessable against project objectives. Cost, universal approval, and premature execution are not response quality criteria."
+  },
+  {
+    "id": "rmp-076",
+    "domain": "IV. Risk Response",
+    "task": "Task 2",
+    "question": "While implementing a contingency plan in response to a materialized risk, your team discovers an unanticipated complication. What is the most appropriate immediate action?",
+    "options": [
+      "Halt the contingency plan and reopen the response planning process until full analysis has been completed",
+      "Continue executing the original contingency plan exactly as written, regardless of what is happening on the ground",
+      "Evaluate and react to the complication, improvise as needed, and update the register with secondary or residual risks",
+      "Wait for the project manager to issue a formal directive before taking any further action on the response"
+    ],
+    "correctIndex": 2,
+    "explanation": "Domain IV, Task 2 explicitly calls for evaluating and reacting to secondary and residual risks from response implementation, improvising as needed. Rigid execution under changed conditions and indefinite pause are both poor responses."
+  },
+  {
+    "id": "rmp-077",
+    "domain": "IV. Risk Response",
+    "task": "Task 2",
+    "question": "An opportunity response is being executed. Which of the following is most important during implementation?",
+    "options": [
+      "Encourage stakeholders to provide feedback so the team can refine the response as it unfolds",
+      "Restrict communication about the opportunity so competitors are not alerted to the project's plans",
+      "Wait until the opportunity has fully materialized before involving any stakeholders in the response",
+      "Implement only the portion of the response that does not require stakeholder feedback during execution"
+    ],
+    "correctIndex": 0,
+    "explanation": "Domain IV, Task 2 includes encouraging stakeholders to provide feedback on the risk response. Real-time feedback enables adjustment, which is critical because response effectiveness is observed only in execution."
+  },
+  {
+    "id": "rmp-078",
+    "domain": "IV. Risk Response",
+    "task": "Task 1",
+    "question": "Your project has $5M in baseline cost and the contingency reserve is $750,000. A new threat is identified with EMV of $200,000. What is the appropriate first action?",
+    "options": [
+      "Increase the contingency reserve by $200,000 by drawing immediately from the management reserve held by upper management",
+      "Plan an appropriate response to the threat and reassess whether the existing contingency reserve is still adequate",
+      "Reduce the contingency reserve by $200,000 to account for the EMV of the new threat that has been identified",
+      "Ignore the new threat because the existing $750,000 contingency is comfortably larger than the threat's EMV"
+    ],
+    "correctIndex": 1,
+    "explanation": "Response planning comes first; the contingency reserve is then reassessed based on the residual exposure after planned responses. Treating contingency as the primary lever before response planning skips a step."
+  },
+  {
+    "id": "rmp-079",
+    "domain": "IV. Risk Response",
+    "task": "Task 1",
+    "question": "A workaround is being executed in response to an unplanned event. How does this differ from a contingency plan?",
+    "options": [
+      "A workaround is the same as a contingency plan and the terms are used interchangeably in practice",
+      "A workaround is an unplanned response to an event that occurred without an existing response in place",
+      "A workaround applies only to opportunities while contingency plans apply only to threats on the project",
+      "A workaround is part of a quantitative analysis and is unrelated to risk response on a project"
+    ],
+    "correctIndex": 1,
+    "explanation": "Workarounds are unplanned responses to events that materialized without an existing planned response — distinct from contingency plans, which are pre-defined responses to known risks."
+  },
+  {
+    "id": "rmp-080",
+    "domain": "IV. Risk Response",
+    "task": "Task 1",
+    "question": "You are illustrating risk response effectiveness to stakeholders over time. Which of the following is most appropriate?",
+    "options": [
+      "A risk burndown chart showing exposure declining over time as responses are implemented effectively",
+      "An organization chart showing reporting lines among project stakeholders involved in risk management",
+      "A WBS dictionary describing every work package planned across the project from start to finish",
+      "A standard project schedule with no annotations specifically related to risk response activities"
+    ],
+    "correctIndex": 0,
+    "explanation": "Domain IV, Task 1 explicitly mentions risk burndown charts and dot plots to illustrate response effectiveness. The other artifacts serve different purposes."
+  },
+  {
+    "id": "rmp-081",
+    "domain": "IV. Risk Response",
+    "task": "Task 1",
+    "question": "While planning a response, the team must decide between two mitigation options. Option A reduces probability by 30%; Option B reduces impact by $100,000. How should the choice be made?",
+    "options": [
+      "Always pick the option that reduces probability, because lowering probability is inherently more valuable",
+      "Always pick the option that reduces impact, because impact is more directly tied to project financials",
+      "Assess each option's effectiveness against the risk strategy and project objectives, including cost of the response itself",
+      "Implement both options simultaneously to capture maximum risk reduction across probability and impact"
+    ],
+    "correctIndex": 2,
+    "explanation": "Domain IV, Task 1 calls for assessing effectiveness against the strategy and project objective impact, including the response cost. There is no general rule that probability-reduction always beats impact-reduction or vice versa."
+  },
+  {
+    "id": "rmp-082",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 1",
+    "question": "You are gathering performance data for risk-relevant work packages. What is the most appropriate first step?",
+    "options": [
+      "Reconcile performance data and reports from risk-relevant work packages to ensure data integrity",
+      "Generate a status report immediately using whatever data is available, regardless of reconciliation",
+      "Skip data reconciliation and rely on stakeholder verbal updates during the next review meeting",
+      "Defer all performance reporting until the project closeout phase has formally begun on the project"
+    ],
+    "correctIndex": 0,
+    "explanation": "Domain V, Task 1 calls for reconciling performance data and reports from risk-relevant work packages. Unreconciled data produces unreliable variance analysis and misleading monitoring."
+  },
+  {
+    "id": "rmp-083",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 1",
+    "question": "A variance analysis shows that schedule variance is increasingly negative across three consecutive reporting periods. What is the most appropriate interpretation from a risk perspective?",
+    "options": [
+      "The trend is a coincidence and no further analysis is needed in the immediate reporting period",
+      "The trend indicates risks may be materializing and warrants investigation of identified and emerging risks",
+      "The trend is a baseline error and the baseline should be revised to make variance return to zero",
+      "The trend is irrelevant to risk management and should be addressed only in schedule management"
+    ],
+    "correctIndex": 1,
+    "explanation": "A persistent negative trend signals that risks may be materializing — exactly the kind of leading information that should trigger a deeper review of the register and emerging risks. EVM trends are explicit risk monitoring inputs."
+  },
+  {
+    "id": "rmp-084",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 2",
+    "question": "After a response has been implemented, you find that some risk remains. What is this remaining risk called and how should it be handled?",
+    "options": [
+      "Secondary risk, which should be assessed and added to the register if not already documented there",
+      "Residual risk, which should be documented and monitored for its impact on project objectives",
+      "Emergent risk, which should be treated as a brand-new entry unrelated to the original risk",
+      "It is not a risk anymore because a response was implemented and the issue has been resolved"
+    ],
+    "correctIndex": 1,
+    "explanation": "Residual risk is what remains after the response — and Domain V, Task 2 calls for monitoring response and documenting residual risk, assessing its impact on objectives."
+  },
+  {
+    "id": "rmp-085",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 2",
+    "question": "A response action you implemented eliminated the original risk but introduced a new one. How should you handle the new risk?",
+    "options": [
+      "Treat it as a secondary risk, document it in the register, assess its impact, and communicate appropriately",
+      "Ignore it because the original risk is now resolved and the project should move on without further analysis",
+      "Reverse the response that introduced it so that the original risk returns to its prior state and exposure",
+      "Reclassify the original risk as still open to avoid having to document the new risk separately"
+    ],
+    "correctIndex": 0,
+    "explanation": "Domain V, Task 2 covers monitoring response for secondary risks and updating/communicating impact. Reversing a working response to avoid documenting a secondary risk is reversed priorities."
+  },
+  {
+    "id": "rmp-086",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 3",
+    "question": "A risk that was actively tracked for nine months has now passed its window — the underlying uncertainty is resolved and it can no longer occur. What is the appropriate action?",
+    "options": [
+      "Leave the risk open in the register indefinitely to preserve the full history of risk management on the project",
+      "Monitor and close out the expired risk, capturing lessons learned and updating relevant project documents",
+      "Reclassify the risk as a new risk with a different name so the register continues to show active management",
+      "Remove the risk entry completely from the register so the artifact is shorter at the next governance review"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain V, Task 3 explicitly calls for monitoring and closing out expired risks. Closure with lessons learned preserves history without cluttering active monitoring; outright deletion destroys the institutional record."
+  },
+  {
+    "id": "rmp-087",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 3",
+    "question": "You are aggregating risk data for project documentation. Which set of documents should be updated to reflect the risk monitoring outputs?",
+    "options": [
+      "Risk register, lessons learned, project management plan, and change logs, as appropriate",
+      "Risk register only, because it is the single source of truth for all risk information on the project",
+      "Only the lessons learned register, since it is the most permanent of the project's documents",
+      "No documents need updating during monitoring because monitoring is a passive observation activity"
+    ],
+    "correctIndex": 0,
+    "explanation": "Domain V, Task 3 explicitly lists risk register, lessons learned, project management plan, and change logs among documents to update. Single-document discipline is incomplete; monitoring is active, not passive."
+  },
+  {
+    "id": "rmp-088",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 4",
+    "question": "You are preparing a risk-level report. Different stakeholders have asked for different levels of detail. How should you handle this?",
+    "options": [
+      "Send the same comprehensive report to every stakeholder regardless of their information needs and role",
+      "Prepare tailored reports for different stakeholders calibrated to their decision-making roles and information needs",
+      "Send only a brief summary to all stakeholders to ensure consistency of message across all audiences",
+      "Send detailed reports only to executives and brief summaries to everyone else regardless of their role"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain V, Task 4 explicitly calls for preparing reports for different stakeholders. Audience-appropriate reporting respects decision-making roles; uniform reporting wastes attention or under-informs."
+  },
+  {
+    "id": "rmp-089",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 1",
+    "question": "Your project has CPI = 0.95 and SPI = 0.92. The variance from the baseline is widening month over month. What does this most likely indicate from a risk monitoring perspective?",
+    "options": [
+      "Overall project risk exposure is increasing and the trend should be analyzed against identified risks",
+      "The project is on track and within tolerance because both indices are above zero",
+      "The baseline must be wrong because real projects rarely show CPI and SPI below 1.0",
+      "Risk management has failed because indices have deviated from 1.0 at all during execution"
+    ],
+    "correctIndex": 0,
+    "explanation": "Both indices below 1.0 (cost and schedule) with widening variance signals increasing overall risk exposure. Domain V, Task 1 calls for monitoring impact against overall project risk exposure to the enterprise."
+  },
+  {
+    "id": "rmp-090",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 4",
+    "question": "You are communicating a deteriorating risk level to the project sponsor. What is the most appropriate approach?",
+    "options": [
+      "Soften the message significantly so the sponsor remains positive about the project's prospects",
+      "Communicate the risk level clearly to the sponsor along with implications and proposed actions",
+      "Withhold the deterioration until it can be confirmed beyond any reasonable doubt over many periods",
+      "Forward the raw data to the sponsor without interpretation so they can draw their own conclusions"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain V, Task 4 calls for communicating risk levels to key stakeholders. Clear communication with implications and recommended actions is the right standard — softening, withholding, and uninterpreted data dump all fail it."
+  },
+  {
+    "id": "rmp-091",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 2",
+    "question": "A residual risk that was previously assessed as low has now grown materially due to changes in the project environment. What should you do?",
+    "options": [
+      "Leave the assessment unchanged because the original assessment was approved by the steering committee",
+      "Reassess and communicate the updated impact of the residual risk on project objectives to relevant stakeholders",
+      "Move the residual risk back into the original risk's response cycle and re-implement the same response",
+      "Close the residual risk so it no longer affects the project's overall risk profile in the register"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain V, Task 2 calls for updating and communicating impact of residual and secondary risks. Static assessments under changed conditions are stale; reassessment and communication are the right actions."
+  },
+  {
+    "id": "rmp-092",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 1",
+    "question": "You are monitoring impact against overall project risk exposure to the enterprise. Which of the following is most relevant?",
+    "options": [
+      "How materialized and emerging risks affect enterprise-level objectives beyond the project itself",
+      "The number of risks closed during the most recent reporting period regardless of their content or impact",
+      "The total length of the risk register measured in pages or entries from week to week",
+      "Whether the risk manager has met all scheduled meeting attendance for the current period"
+    ],
+    "correctIndex": 0,
+    "explanation": "Domain V, Task 1 calls for monitoring impact against overall project risk exposure to the enterprise. The link between project events and enterprise consequence is the central focus."
+  },
+  {
+    "id": "rmp-093",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 3",
+    "question": "A monitoring review reveals that a risk's probability and impact have both decreased substantially since it was last assessed. What should you do?",
+    "options": [
+      "Close the risk immediately, regardless of whether it could still materialize during the project",
+      "Update the risk attributes in the register and continue monitoring it at the appropriate frequency",
+      "Delete the risk from the register because lower probability and impact mean it no longer requires tracking",
+      "Reassign the risk to a different owner because the original owner's assessment is no longer accurate"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain V, Task 3 calls for aggregating and updating risk data. Closure is appropriate only when a risk is genuinely expired; declining attributes call for an updated entry and continued monitoring at the appropriate frequency."
+  },
+  {
+    "id": "rmp-094",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 4",
+    "question": "Which of the following is the most appropriate way to assess overall project risk level for reporting?",
+    "options": [
+      "Count the number of open risks in the register and report the raw count to all stakeholders",
+      "Aggregate risks by exposure (probability × impact), weight by category, and present in the context of thresholds",
+      "Report only the single largest risk in the register since it is the most informative single metric",
+      "Avoid producing an overall risk level because it oversimplifies the complexity of risk management"
+    ],
+    "correctIndex": 1,
+    "explanation": "An overall risk level requires aggregation with weighting and contextualization against thresholds — not raw counts, single-risk shortcuts, or refusal to summarize. Domain V, Task 4 calls for assessing project risk level."
+  },
+  {
+    "id": "rmp-095",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 1",
+    "question": "A work package shows a positive cost variance but a negative schedule variance. What is the most appropriate risk-relevant interpretation?",
+    "options": [
+      "The package is in trouble overall and should be cancelled as soon as possible to avoid further exposure",
+      "The package is performing well overall and no further analysis of underlying causes is needed",
+      "Investigate whether the favorable cost is the result of deferred work that is also driving the schedule slip",
+      "Variances are irrelevant to risk monitoring and the package should be evaluated only by EVM separately"
+    ],
+    "correctIndex": 2,
+    "explanation": "A combined positive cost variance and negative schedule variance often indicates deferred or skipped work — the apparent cost saving may simply be the absence of work that should be happening. Probe rather than celebrate or cancel."
+  },
+  {
+    "id": "rmp-096",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 3",
+    "question": "What is the most appropriate way to incorporate risk monitoring findings into lessons learned?",
+    "options": [
+      "Wait until project closeout and document all findings in one lessons-learned session for the project",
+      "Capture lessons throughout the project as they emerge, and aggregate them into project documents over time",
+      "Avoid documenting lessons learned because each project is unique and prior lessons rarely transfer",
+      "Document only positive lessons so that future project teams are encouraged rather than discouraged"
+    ],
+    "correctIndex": 1,
+    "explanation": "Domain V, Task 3 supports updating project documents including lessons learned throughout the project. Continuous capture preserves context that closeout-only sessions lose; selective filtering corrupts the record."
+  },
+  {
+    "id": "rmp-097",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 2",
+    "question": "Multiple residual and secondary risks have accumulated over several response cycles. What is the most appropriate action?",
+    "options": [
+      "Assess their combined impact on project objectives, update relevant stakeholders, and adjust responses if needed",
+      "Wait until the project closes to address their cumulative impact at one consolidated point in time",
+      "Treat each residual and secondary risk in complete isolation regardless of any compounding effect they have",
+      "Remove residual risks from the register because they are leftovers rather than fully-formed risks"
+    ],
+    "correctIndex": 0,
+    "explanation": "Residual and secondary risks can compound. Domain V, Task 2 calls for assessing their impact on project objectives and communicating it; closeout-only review and pure isolation both miss cumulative effects."
+  },
+  {
+    "id": "rmp-098",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 4",
+    "question": "You are about to communicate risk levels to a senior stakeholder who is known to react badly to bad news. What should you do?",
+    "options": [
+      "Soften or omit deteriorating risks to avoid a negative reaction from the senior stakeholder",
+      "Communicate accurately and clearly, while tailoring tone and format to the stakeholder appropriately",
+      "Delegate the communication to a junior team member so the senior stakeholder's reaction is not yours",
+      "Postpone the communication indefinitely until the risk levels improve and the news becomes positive"
+    ],
+    "correctIndex": 1,
+    "explanation": "Accurate communication is non-negotiable; tailoring is about tone and format, not content. Softening, delegation as avoidance, and postponement all compromise the integrity of risk reporting."
+  },
+  {
+    "id": "rmp-099",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 3",
+    "question": "During a monitoring review, you note that the change log has been updated for several scope changes but the risk register has not been correspondingly updated. What is the most appropriate action?",
+    "options": [
+      "Update the risk register to reflect risks added, removed, or altered by the scope changes, and align documents",
+      "Leave the risk register unchanged because change logs and risk registers are governed separately",
+      "Roll back the scope changes until the risk register can be updated through formal approval processes",
+      "Delete the change log entries so that the risk register and the change log appear consistent again"
+    ],
+    "correctIndex": 0,
+    "explanation": "Domain V, Task 3 calls for aggregating and updating risk data across documents including risk register and change logs. Scope changes routinely alter the risk landscape and the register must reflect that."
+  },
+  {
+    "id": "rmp-100",
+    "domain": "V. Monitor and Close Risks",
+    "task": "Task 4",
+    "question": "At the close of the project, what is the most important risk-related communication to stakeholders?",
+    "options": [
+      "A final summary covering risk outcomes, response effectiveness, residual risks transferring to operations, and lessons learned",
+      "A short note thanking stakeholders for their engagement with the risk process during the project",
+      "A detailed list of every risk that ever appeared in the register regardless of materiality",
+      "No closing risk communication is needed because risk management ends when the project ends"
+    ],
+    "correctIndex": 0,
+    "explanation": "A closing risk communication serves transition: outcomes, effectiveness, residual risks moving to operations, and lessons learned for future projects. A thank-you note is insufficient; a raw dump is unfocused; silence loses institutional value."
+  }
+]
