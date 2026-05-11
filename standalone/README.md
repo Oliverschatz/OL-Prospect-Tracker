@@ -9,19 +9,23 @@ into `main`.
 
 ## Contents
 
-- `practice-app/` — student-facing quiz. Upload contents to
-  `oliverlehmann.com/practice/`.
-  - `index.html` — vanilla-JS quiz UI
-  - `questions.json` — 100 PMI-RMP practice questions
+Three layouts, pick whichever fits your hosting:
 
-- `practice-editor/` — admin editor for the questions. Upload contents to a
-  protected folder, e.g. `oliverlehmann.com/practice-editor/`.
-  - `index.html` — paginated question editor with localStorage auto-save and
-    "Download JSON" export
-  - `questions.json` — starting question set (same as the quiz)
+- `combined/` — both apps + one shared `questions.json` in a single folder.
+  Simplest deployment. URLs:
+  - `oliverlehmann.com/practice/RMP_practice.html` (student quiz)
+  - `oliverlehmann.com/practice/RMP_edit.html` (editor, protect this one)
+  - Zip: `RMP_combined.zip`
 
-- `practice-app.zip`, `practice-editor.zip` — convenience zips of the two
-  folders above.
+- `practice-app/` — quiz only. `RMP_practice.html` + `questions.json`. Use if
+  you want the editor on a completely different folder/subdomain.
+  - Zip: `practice-app.zip`
+
+- `practice-editor/` — editor only. `RMP_edit.html` + `questions.json`. Pair
+  with `practice-app/` above if you separate them.
+  - Zip: `practice-editor.zip`
+
+All three layouts share the same 100-question `questions.json`.
 
 ## Editor workflow
 
