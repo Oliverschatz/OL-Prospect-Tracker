@@ -2,7 +2,7 @@
 
 These are **not part of the Prospect Tracker**. They are independent
 single-page HTML apps for a different audience (PMI-RMP exam candidates)
-and a different deployment target (`oliverlehmann.com/practice/`).
+and a different deployment target (`oliverlehmann.com/practice/RMP/`).
 
 This folder exists on this branch only as a delivery vehicle — do not
 merge into `main`.
@@ -45,11 +45,11 @@ merge into `main`.
 
 ## Deployment
 
-Upload the three files in `practice/` to `oliverlehmann.com/practice/`.
+Upload the three files in `practice/` to `oliverlehmann.com/practice/RMP/`.
 Resulting URLs:
 
-- Quiz: `oliverlehmann.com/practice/`
-- Editor: `oliverlehmann.com/practice/editor.html` (protect this)
+- Quiz: `https://oliverlehmann.com/practice/RMP/`
+- Editor: `https://oliverlehmann.com/practice/RMP/editor.html` (protect this)
 
 ## Editor workflow
 
@@ -57,6 +57,6 @@ Resulting URLs:
 2. Edit questions one at a time — every keystroke auto-saves to your
    browser's local storage, so a refresh won't lose work.
 3. Click **Download JSON** to export the updated `questions.json`.
-4. Upload the downloaded file to `oliverlehmann.com/practice/`, overwriting
+4. Upload the downloaded file to `oliverlehmann.com/practice/RMP/`, overwriting
    the existing `questions.json`. Both the quiz and the editor will pick it
    up on next load.
