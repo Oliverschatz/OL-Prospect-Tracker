@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PMI-RMP Practice Questions</title>
+<title>PMI-RMP Seminar Pack</title>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -18,7 +18,9 @@
     --pbf-red: #c53030;
     --pbf-green: #276749;
     --pbf-green-bg: #f0fff4;
+    --pbf-yellow-bg: #fffff0;
     --pbf-red-bg: #fff5f5;
+    --pbf-blue-bg: #ebf4ff;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
@@ -28,304 +30,741 @@
     background: var(--pbf-light);
     font-size: 15px;
     line-height: 1.5;
-    padding: 20px;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
+    overflow-x: hidden;
   }
-  .pw-card {
-    width: 100%;
-    max-width: 640px;
-    background: #fff;
-    border: 1px solid var(--pbf-border);
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
-    padding: 22px 24px;
-  }
-  .pw-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  .pw-meta {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  .pw-badge {
+  button { font-family: inherit; cursor: pointer; }
+
+  .sm-shell { display: flex; flex-direction: column; min-height: 100vh; }
+  .sm-topbar {
     background: var(--pbf-navy);
     color: #fff;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 4px 10px;
-    border-radius: 999px;
-  }
-  .pw-tag {
-    background: var(--pbf-light);
-    border: 1px solid var(--pbf-border);
-    color: var(--pbf-muted);
-    font-size: 11px;
-    font-weight: 600;
-    padding: 3px 8px;
-    border-radius: 999px;
-  }
-  .pw-score {
-    font-size: 13px;
-    color: var(--pbf-muted);
-    font-weight: 600;
-  }
-  .pw-question {
-    font-family: 'Source Serif 4', Georgia, serif;
-    font-size: 19px;
-    font-weight: 600;
-    line-height: 1.45;
-    margin: 10px 0 18px;
-    color: var(--pbf-navy);
-  }
-  .pw-options {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .pw-option {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    width: 100%;
-    text-align: left;
-    padding: 12px 14px;
-    border: 1.5px solid var(--pbf-border);
-    border-radius: 6px;
-    background: #fff;
-    font-family: inherit;
-    font-size: 14.5px;
-    line-height: 1.45;
-    color: var(--pbf-text);
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s, transform 0.05s;
-  }
-  .pw-option:not(:disabled):hover {
-    border-color: var(--pbf-blue);
-    background: #f5f8fd;
-  }
-  .pw-option:not(:disabled):active { transform: translateY(1px); }
-  .pw-option:disabled { cursor: default; }
-  .pw-letter {
-    flex: 0 0 26px;
-    height: 26px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: var(--pbf-light);
-    border: 1px solid var(--pbf-border);
-    font-weight: 700;
-    font-size: 12px;
-    color: var(--pbf-navy);
-    margin-top: 1px;
-  }
-  .pw-opt-text { flex: 1; }
-  .pw-mark { font-size: 18px; font-weight: 700; margin-left: 6px; }
-  .pw-opt-correct {
-    border-color: var(--pbf-green);
-    background: var(--pbf-green-bg);
-    color: var(--pbf-green);
-  }
-  .pw-opt-correct .pw-letter {
-    background: var(--pbf-green);
-    color: #fff;
-    border-color: var(--pbf-green);
-  }
-  .pw-opt-wrong {
-    border-color: var(--pbf-red);
-    background: var(--pbf-red-bg);
-    color: var(--pbf-red);
-  }
-  .pw-opt-wrong .pw-letter {
-    background: var(--pbf-red);
-    color: #fff;
-    border-color: var(--pbf-red);
-  }
-  .pw-opt-muted { opacity: 0.55; }
-  .pw-feedback {
-    margin-top: 16px;
-    padding: 12px 14px;
-    border-radius: 6px;
-    border-left: 4px solid;
-    font-size: 14px;
-  }
-  .pw-feedback-ok {
-    background: var(--pbf-green-bg);
-    border-color: var(--pbf-green);
-    color: var(--pbf-green);
-  }
-  .pw-feedback-bad {
-    background: var(--pbf-red-bg);
-    border-color: var(--pbf-red);
-    color: var(--pbf-red);
-  }
-  .pw-feedback-title { font-weight: 700; margin-bottom: 4px; }
-  .pw-feedback-text { color: var(--pbf-text); font-weight: 400; }
-  .pw-actions {
-    margin-top: 18px;
+    padding: 10px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
     gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
   }
-  .pw-progress { font-size: 12px; color: var(--pbf-muted); }
-  .pw-next {
-    background: var(--pbf-accent);
-    color: var(--pbf-navy);
-    border: none;
-    font-family: inherit;
-    font-weight: 700;
-    font-size: 14px;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
+  .sm-brand { font-family: 'Source Serif 4', Georgia, serif; font-size: 17px; font-weight: 700; }
+  .sm-topbar-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .sm-timer {
+    font-family: monospace; font-size: 16px; font-weight: 700;
+    background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 4px;
+    letter-spacing: 0.04em; min-width: 76px; text-align: center;
   }
-  .pw-next:hover:not(:disabled) { background: var(--pbf-accent-hover); }
-  .pw-next:disabled { opacity: 0.4; cursor: not-allowed; }
-  .pw-loading, .pw-error {
-    text-align: center;
-    color: var(--pbf-muted);
-    padding: 40px 20px;
+  .sm-pos { font-size: 13px; color: rgba(255,255,255,0.85); font-weight: 600; }
+  .sm-tool-btn {
+    background: transparent; border: 1px solid rgba(255,255,255,0.4); color: #fff;
+    font-weight: 600; font-size: 13px; padding: 6px 12px; border-radius: 4px;
+    transition: background 0.15s;
   }
-  .pw-error { color: var(--pbf-red); }
-  @media (max-width: 480px) {
-    body { padding: 10px; }
-    .pw-card { padding: 16px; }
-    .pw-question { font-size: 17px; }
+  .sm-tool-btn:hover { background: rgba(255,255,255,0.1); }
+  .sm-tool-btn.sm-active { background: var(--pbf-accent); border-color: var(--pbf-accent); color: var(--pbf-navy); }
+
+  .sm-main {
+    display: grid; grid-template-columns: 1fr 200px; gap: 20px;
+    max-width: 1100px; width: 100%; margin: 0 auto; padding: 20px; flex: 1;
   }
+  @media (max-width: 820px) { .sm-main { grid-template-columns: 1fr; } }
+
+  .sm-card {
+    background: #fff; border: 1px solid var(--pbf-border); border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    padding: 22px 24px;
+  }
+  .sm-q-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .sm-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .sm-tag {
+    background: var(--pbf-light); border: 1px solid var(--pbf-border);
+    color: var(--pbf-muted); font-size: 11px; font-weight: 600;
+    padding: 3px 9px; border-radius: 999px;
+  }
+  .sm-flag-btn {
+    background: transparent; border: 1px solid var(--pbf-border); border-radius: 4px;
+    padding: 5px 10px; font-size: 13px; font-weight: 600; color: var(--pbf-muted);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .sm-flag-btn:hover { border-color: var(--pbf-accent); color: var(--pbf-navy); }
+  .sm-flag-btn.sm-flagged {
+    background: var(--pbf-yellow-bg); border-color: var(--pbf-accent); color: #975a16;
+  }
+
+  .sm-question {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 19px; font-weight: 600; line-height: 1.45;
+    margin: 6px 0 18px; color: var(--pbf-navy);
+  }
+
+  .sm-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .sm-option-row {
+    display: flex; align-items: stretch;
+    border: 1.5px solid var(--pbf-border); border-radius: 6px;
+    background: #fff; overflow: hidden;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .sm-option-row.sm-selected { border-color: var(--pbf-blue); background: var(--pbf-blue-bg); }
+  .sm-option-row.sm-struck .sm-option-text {
+    text-decoration: line-through; color: var(--pbf-muted); opacity: 0.55;
+  }
+  .sm-option-row.sm-struck .sm-option-letter { opacity: 0.4; }
+  .sm-option-main {
+    flex: 1; display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 14px; background: transparent; border: none;
+    text-align: left; color: var(--pbf-text); font-size: 14.5px; line-height: 1.45;
+  }
+  .sm-option-main:hover { background: rgba(44, 82, 130, 0.04); }
+  .sm-option-letter {
+    flex: 0 0 26px; height: 26px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%; background: var(--pbf-light); border: 1px solid var(--pbf-border);
+    font-weight: 700; font-size: 12px; color: var(--pbf-navy); margin-top: 1px;
+  }
+  .sm-option-row.sm-selected .sm-option-letter {
+    background: var(--pbf-blue); border-color: var(--pbf-blue); color: #fff;
+  }
+  .sm-option-text { flex: 1; }
+  .sm-strike-btn {
+    flex: 0 0 44px; background: transparent; border: none;
+    border-left: 1px solid var(--pbf-border);
+    color: var(--pbf-muted); font-size: 18px; line-height: 1;
+    transition: background 0.15s, color 0.15s;
+  }
+  .sm-strike-btn:hover { background: var(--pbf-red-bg); color: var(--pbf-red); }
+  .sm-option-row.sm-struck .sm-strike-btn { color: var(--pbf-red); background: var(--pbf-red-bg); }
+  .sm-option-row.sm-struck .sm-strike-btn:hover { background: #fde0e0; }
+
+  .sm-actions {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 10px; padding-top: 14px; border-top: 1px solid var(--pbf-border);
+    flex-wrap: wrap;
+  }
+  .sm-nav-btn {
+    background: #fff; color: var(--pbf-navy); border: 1px solid var(--pbf-border);
+    font-weight: 600; font-size: 14px; padding: 8px 16px; border-radius: 4px;
+  }
+  .sm-nav-btn:hover:not(:disabled) { background: var(--pbf-light); border-color: var(--pbf-navy); }
+  .sm-nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .sm-submit-btn {
+    background: var(--pbf-accent); color: var(--pbf-navy); border: none;
+    font-weight: 700; font-size: 14px; padding: 9px 20px; border-radius: 4px;
+  }
+  .sm-submit-btn:hover { background: var(--pbf-accent-hover); }
+
+  .sm-navigator {
+    background: #fff; border: 1px solid var(--pbf-border); border-radius: 8px;
+    padding: 14px; height: fit-content; position: sticky; top: 80px;
+  }
+  .sm-nav-title {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--pbf-muted); margin-bottom: 10px;
+  }
+  .sm-nav-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .sm-nav-cell {
+    aspect-ratio: 1 / 1; background: #fff;
+    border: 1.5px solid var(--pbf-border); border-radius: 4px;
+    font-size: 13px; font-weight: 700; color: var(--pbf-text);
+    position: relative; transition: transform 0.05s;
+  }
+  .sm-nav-cell:hover { transform: scale(1.05); }
+  .sm-nav-cell.sm-answered { background: var(--pbf-blue-bg); border-color: var(--pbf-blue); color: var(--pbf-blue); }
+  .sm-nav-cell.sm-current { background: var(--pbf-navy); border-color: var(--pbf-navy); color: #fff; }
+  .sm-nav-cell.sm-flagged::after {
+    content: ''; position: absolute; top: 2px; right: 2px;
+    width: 7px; height: 7px; background: var(--pbf-accent); border-radius: 50%;
+  }
+  .sm-nav-legend { margin-top: 12px; font-size: 11px; color: var(--pbf-muted); line-height: 1.6; }
+  .sm-nav-swatch {
+    display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+    margin-right: 4px; vertical-align: middle; border: 1px solid var(--pbf-border);
+  }
+
+  .sm-panel {
+    position: fixed; background: #fff; border: 1px solid var(--pbf-border);
+    border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    z-index: 100; display: none;
+  }
+  .sm-panel.sm-panel-open { display: flex; flex-direction: column; }
+  .sm-panel-head {
+    background: var(--pbf-navy); color: #fff; padding: 8px 12px;
+    border-radius: 8px 8px 0 0;
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: move; user-select: none;
+  }
+  .sm-panel-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+  .sm-panel-close {
+    background: transparent; border: none; color: #fff;
+    font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 3px;
+  }
+  .sm-panel-close:hover { background: rgba(255,255,255,0.15); }
+  .sm-panel-body { padding: 12px; }
+
+  .sm-calc { width: 240px; }
+  .sm-calc-display {
+    background: var(--pbf-light); border: 1px solid var(--pbf-border);
+    border-radius: 4px; padding: 10px;
+    font-family: monospace; font-size: 18px; font-weight: 700;
+    text-align: right; margin-bottom: 8px;
+    min-height: 40px; word-break: break-all; color: var(--pbf-navy);
+  }
+  .sm-calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .sm-calc-btn {
+    background: var(--pbf-light); border: 1px solid var(--pbf-border);
+    border-radius: 4px; padding: 10px 0;
+    font-size: 15px; font-weight: 600; color: var(--pbf-text);
+  }
+  .sm-calc-btn:hover { background: #e8edf3; }
+  .sm-calc-btn.sm-calc-op { background: #fff; color: var(--pbf-blue); }
+  .sm-calc-btn.sm-calc-eq {
+    background: var(--pbf-accent); color: var(--pbf-navy); grid-column: span 2;
+  }
+  .sm-calc-btn.sm-calc-eq:hover { background: var(--pbf-accent-hover); }
+  .sm-calc-btn.sm-calc-clear { background: var(--pbf-red-bg); color: var(--pbf-red); }
+
+  .sm-notepad { width: 320px; }
+  .sm-notepad textarea {
+    width: 100%; height: 280px; border: 1px solid var(--pbf-border);
+    border-radius: 4px; padding: 10px;
+    font-family: inherit; font-size: 14px; line-height: 1.5;
+    color: var(--pbf-text); resize: vertical;
+  }
+  .sm-notepad textarea:focus { outline: none; border-color: var(--pbf-blue); }
+
+  .sm-overlay {
+    position: fixed; inset: 0; background: rgba(26, 39, 68, 0.6);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px; z-index: 200;
+  }
+  .sm-overlay-card {
+    background: #fff; border-radius: 8px;
+    max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+  .sm-overlay-head {
+    background: var(--pbf-navy); color: #fff; padding: 18px 24px;
+    border-radius: 8px 8px 0 0;
+  }
+  .sm-overlay-head h2 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 22px; font-weight: 700;
+  }
+  .sm-overlay-head p { font-size: 14px; opacity: 0.85; margin-top: 4px; }
+  .sm-overlay-body { padding: 22px 24px; }
+  .sm-overlay-actions {
+    padding: 16px 24px; border-top: 1px solid var(--pbf-border);
+    display: flex; justify-content: flex-end; gap: 10px;
+  }
+
+  .sm-score {
+    display: flex; justify-content: space-around; text-align: center;
+    margin-bottom: 20px; padding: 16px;
+    background: var(--pbf-light); border-radius: 6px;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .sm-score-num {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 32px; font-weight: 700; color: var(--pbf-navy); line-height: 1;
+  }
+  .sm-score-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--pbf-muted); font-weight: 700; margin-top: 4px;
+  }
+  .sm-review-q { border-bottom: 1px solid var(--pbf-border); padding: 16px 0; }
+  .sm-review-q:last-child { border-bottom: none; }
+  .sm-review-num {
+    display: inline-block; background: var(--pbf-navy); color: #fff;
+    border-radius: 4px; padding: 2px 8px;
+    font-size: 12px; font-weight: 700; margin-right: 8px;
+  }
+  .sm-review-num.sm-review-wrong { background: var(--pbf-red); }
+  .sm-review-num.sm-review-correct { background: var(--pbf-green); }
+  .sm-review-q-text {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 16px; font-weight: 600; color: var(--pbf-navy);
+    margin: 6px 0 10px; line-height: 1.45;
+  }
+  .sm-review-opt {
+    padding: 6px 10px; border-radius: 4px; margin: 4px 0;
+    font-size: 14px; display: flex; align-items: flex-start; gap: 8px;
+  }
+  .sm-review-opt-letter { font-weight: 700; flex: 0 0 18px; }
+  .sm-review-opt-correct {
+    background: var(--pbf-green-bg); color: var(--pbf-green);
+    border-left: 3px solid var(--pbf-green); padding-left: 7px;
+  }
+  .sm-review-opt-wrong {
+    background: var(--pbf-red-bg); color: var(--pbf-red);
+    border-left: 3px solid var(--pbf-red); padding-left: 7px;
+  }
+  .sm-review-rationale {
+    background: var(--pbf-blue-bg); border-left: 3px solid var(--pbf-blue);
+    padding: 8px 10px; margin-top: 8px; border-radius: 4px;
+    font-size: 13.5px; color: var(--pbf-text); line-height: 1.5;
+  }
+  .sm-review-rationale strong { color: var(--pbf-navy); }
 </style>
 </head>
 <body>
-  <div class="pw-card" id="app">
-    <div class="pw-loading">Loading questions…</div>
+
+<div class="sm-shell" id="sm-shell" style="display:none">
+  <header class="sm-topbar">
+    <span class="sm-brand">PMI-RMP Seminar Pack</span>
+    <div class="sm-topbar-right">
+      <span class="sm-pos" id="sm-pos">Question 1 of 20</span>
+      <span class="sm-timer" id="sm-timer">00:00</span>
+      <button class="sm-tool-btn" id="sm-calc-toggle">Calculator</button>
+      <button class="sm-tool-btn" id="sm-notepad-toggle">Notepad</button>
+    </div>
+  </header>
+
+  <div class="sm-main">
+    <section class="sm-card" id="sm-qpane">
+      <div style="text-align:center;color:var(--pbf-muted);padding:40px 20px;">Loading…</div>
+    </section>
+
+    <aside class="sm-navigator">
+      <div class="sm-nav-title">Questions</div>
+      <div class="sm-nav-grid" id="sm-nav-grid"></div>
+      <div class="sm-nav-legend">
+        <div><span class="sm-nav-swatch" style="background:#fff"></span>Unanswered</div>
+        <div><span class="sm-nav-swatch" style="background:var(--pbf-blue-bg);border-color:var(--pbf-blue)"></span>Answered</div>
+        <div><span class="sm-nav-swatch" style="background:var(--pbf-navy);border-color:var(--pbf-navy)"></span>Current</div>
+        <div>● Flagged for review</div>
+      </div>
+    </aside>
   </div>
+</div>
+
+<div class="sm-overlay" id="sm-start">
+  <div class="sm-overlay-card">
+    <div class="sm-overlay-head">
+      <h2>PMI-RMP Seminar Pack</h2>
+      <p id="sm-start-sub">A pack of practice questions for in-class discussion.</p>
+    </div>
+    <div class="sm-overlay-body">
+      <p style="margin-bottom: 12px;">You will answer <strong id="sm-start-count">20</strong> questions in sequence. There is <strong>no feedback during the pack</strong> &mdash; correct answers and rationales are revealed only after you submit, so the class can review them together.</p>
+      <p style="margin-bottom: 12px;">Tools available during the pack:</p>
+      <ul style="margin-left: 22px; margin-bottom: 12px; line-height: 1.8;">
+        <li><strong>Strike-through</strong> &mdash; click the &times; on any option to mark it as eliminated.</li>
+        <li><strong>Flag for review</strong> &mdash; flag questions to revisit before submitting.</li>
+        <li><strong>Calculator</strong> and <strong>Notepad</strong> &mdash; open from the top bar.</li>
+        <li><strong>Timer</strong> &mdash; counts up; included in your results.</li>
+      </ul>
+      <p style="font-size: 13px; color: var(--pbf-muted);">You can navigate freely between questions using Prev/Next or the question grid on the right.</p>
+    </div>
+    <div class="sm-overlay-actions">
+      <button class="sm-submit-btn" id="sm-start-btn">Begin pack &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<div class="sm-overlay" id="sm-confirm" style="display:none">
+  <div class="sm-overlay-card" style="max-width: 480px;">
+    <div class="sm-overlay-head"><h2>Submit pack?</h2></div>
+    <div class="sm-overlay-body">
+      <p id="sm-confirm-text">You're about to submit. After submitting, the correct answers and rationales will be revealed and the timer stops.</p>
+    </div>
+    <div class="sm-overlay-actions">
+      <button class="sm-nav-btn" id="sm-confirm-cancel">Cancel</button>
+      <button class="sm-submit-btn" id="sm-confirm-yes">Submit pack</button>
+    </div>
+  </div>
+</div>
+
+<div class="sm-overlay" id="sm-results" style="display:none">
+  <div class="sm-overlay-card">
+    <div class="sm-overlay-head">
+      <h2>Pack results</h2>
+      <p>Review each question and discuss with the class.</p>
+    </div>
+    <div class="sm-overlay-body" id="sm-results-body"></div>
+    <div class="sm-overlay-actions">
+      <button class="sm-nav-btn" id="sm-results-close">Close</button>
+      <button class="sm-submit-btn" id="sm-results-restart">Start new pack</button>
+    </div>
+  </div>
+</div>
+
+<div class="sm-panel sm-calc" id="sm-calc-panel" style="right: 20px; top: 80px;">
+  <div class="sm-panel-head" data-drag="sm-calc-panel">
+    <span class="sm-panel-title">Calculator</span>
+    <button class="sm-panel-close" data-close="sm-calc-panel">&times;</button>
+  </div>
+  <div class="sm-panel-body">
+    <div class="sm-calc-display" id="sm-calc-display">0</div>
+    <div class="sm-calc-grid">
+      <button class="sm-calc-btn sm-calc-clear" data-calc="C">C</button>
+      <button class="sm-calc-btn sm-calc-op" data-calc="(">(</button>
+      <button class="sm-calc-btn sm-calc-op" data-calc=")">)</button>
+      <button class="sm-calc-btn sm-calc-op" data-calc="/">&divide;</button>
+      <button class="sm-calc-btn" data-calc="7">7</button>
+      <button class="sm-calc-btn" data-calc="8">8</button>
+      <button class="sm-calc-btn" data-calc="9">9</button>
+      <button class="sm-calc-btn sm-calc-op" data-calc="*">&times;</button>
+      <button class="sm-calc-btn" data-calc="4">4</button>
+      <button class="sm-calc-btn" data-calc="5">5</button>
+      <button class="sm-calc-btn" data-calc="6">6</button>
+      <button class="sm-calc-btn sm-calc-op" data-calc="-">&minus;</button>
+      <button class="sm-calc-btn" data-calc="1">1</button>
+      <button class="sm-calc-btn" data-calc="2">2</button>
+      <button class="sm-calc-btn" data-calc="3">3</button>
+      <button class="sm-calc-btn sm-calc-op" data-calc="+">+</button>
+      <button class="sm-calc-btn" data-calc="0">0</button>
+      <button class="sm-calc-btn" data-calc=".">.</button>
+      <button class="sm-calc-btn sm-calc-op" data-calc="%">%</button>
+      <button class="sm-calc-btn sm-calc-op" data-calc="back">&#9003;</button>
+      <button class="sm-calc-btn sm-calc-eq" data-calc="=">=</button>
+    </div>
+  </div>
+</div>
+
+<div class="sm-panel sm-notepad" id="sm-notepad-panel" style="right: 280px; top: 80px;">
+  <div class="sm-panel-head" data-drag="sm-notepad-panel">
+    <span class="sm-panel-title">Notepad</span>
+    <button class="sm-panel-close" data-close="sm-notepad-panel">&times;</button>
+  </div>
+  <div class="sm-panel-body">
+    <textarea id="sm-notepad-text" placeholder="Scratch notes&hellip; (cleared when you start a new pack)"></textarea>
+  </div>
+</div>
 
 <script>
 (function () {
-  const app = document.getElementById('app');
-  let questions = [];
-  let order = [];      // shuffled queue of indices not yet seen
-  let current = null;  // current question
-  let selected = null; // user's selected option index
-  let score = { correct: 0, total: 0 };
+  const params = new URLSearchParams(location.search);
+  const FROM = Math.max(1, parseInt(params.get('from'), 10) || 1);
+  const SIZE = Math.max(1, parseInt(params.get('size'), 10) || 20);
 
-  function shuffle(arr) {
-    const a = arr.slice();
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  }
+  let allQuestions = [];
+  let pack = [];
+  let answers = [];
+  let strikes = [];
+  let flagged = [];
+  let index = 0;
+  let startedAt = null;
+  let endedAt = null;
+  let timerInterval = null;
 
-  function nextQuestion() {
-    if (order.length === 0) {
-      order = shuffle(questions.map((_, i) => i));
-      if (current) {
-        const cur = questions.indexOf(current);
-        order = order.filter((i) => i !== cur);
-        if (order.length === 0) order = shuffle(questions.map((_, i) => i));
-      }
-    }
-    const idx = order.shift();
-    current = questions[idx];
-    selected = null;
-    render();
-  }
+  const $shell = document.getElementById('sm-shell');
+  const $qpane = document.getElementById('sm-qpane');
+  const $navGrid = document.getElementById('sm-nav-grid');
+  const $timer = document.getElementById('sm-timer');
+  const $pos = document.getElementById('sm-pos');
 
-  function selectOption(idx) {
-    if (selected !== null) return;
-    selected = idx;
-    score.total += 1;
-    if (idx === current.correctIndex) score.correct += 1;
-    render();
-  }
-
-  function escapeHtml(s) {
+  function esc(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
     })[c]);
+  }
+  function fmtTime(ms) {
+    const t = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(t / 3600);
+    const m = Math.floor((t % 3600) / 60);
+    const s = t % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return h > 0 ? pad(h) + ':' + pad(m) + ':' + pad(s) : pad(m) + ':' + pad(s);
+  }
+
+  function buildPack() {
+    const start = FROM - 1;
+    pack = allQuestions.slice(start, start + SIZE);
+    if (pack.length === 0) throw new Error('No questions in selected range');
+    answers = pack.map(() => null);
+    strikes = pack.map(() => []);
+    flagged = pack.map(() => false);
+    index = 0;
+    document.getElementById('sm-start-count').textContent = pack.length;
+  }
+
+  function startTimer() {
+    startedAt = Date.now();
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      $timer.textContent = fmtTime(Date.now() - startedAt);
+    }, 1000);
+    $timer.textContent = '00:00';
+  }
+  function stopTimer() {
+    endedAt = Date.now();
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
   }
 
   function render() {
-    if (!current) {
-      app.innerHTML = '<div class="pw-loading">No questions available.</div>';
-      return;
-    }
-    const answered = selected !== null;
-    const isCorrect = answered && selected === current.correctIndex;
+    const q = pack[index];
+    const total = pack.length;
+    $pos.textContent = 'Question ' + (index + 1) + ' of ' + total;
 
-    const optionsHtml = current.options.map((opt, i) => {
-      let cls = '';
-      let mark = '';
-      if (answered) {
-        if (i === current.correctIndex) { cls = 'pw-opt-correct'; mark = '<span class="pw-mark">✓</span>'; }
-        else if (i === selected) { cls = 'pw-opt-wrong'; mark = '<span class="pw-mark">✗</span>'; }
-        else { cls = 'pw-opt-muted'; }
-      }
-      return '<button type="button" class="pw-option ' + cls + '" data-idx="' + i + '"' + (answered ? ' disabled' : '') + '>' +
-        '<span class="pw-letter">' + String.fromCharCode(65 + i) + '</span>' +
-        '<span class="pw-opt-text">' + escapeHtml(opt) + '</span>' +
-        mark +
-        '</button>';
+    const optionsHtml = q.options.map((opt, i) => {
+      const selected = answers[index] === i;
+      const struck = strikes[index].indexOf(i) !== -1;
+      const cls = ['sm-option-row', selected ? 'sm-selected' : '', struck ? 'sm-struck' : '']
+        .filter(Boolean).join(' ');
+      return '<div class="' + cls + '">' +
+          '<button class="sm-option-main" data-select="' + i + '">' +
+            '<span class="sm-option-letter">' + String.fromCharCode(65 + i) + '</span>' +
+            '<span class="sm-option-text">' + esc(opt) + '</span>' +
+          '</button>' +
+          '<button class="sm-strike-btn" data-strike="' + i + '" title="' +
+            (struck ? 'Remove strike' : 'Strike through (eliminate)') + '">' +
+            (struck ? '&#8634;' : '&times;') +
+          '</button>' +
+        '</div>';
     }).join('');
 
-    const feedbackHtml = answered
-      ? '<div class="pw-feedback ' + (isCorrect ? 'pw-feedback-ok' : 'pw-feedback-bad') + '">' +
-          '<div class="pw-feedback-title">' + (isCorrect ? 'Correct!' : 'Not quite.') + '</div>' +
-          (current.explanation ? '<div class="pw-feedback-text">' + escapeHtml(current.explanation) + '</div>' : '') +
-        '</div>'
-      : '';
+    const isLast = index === total - 1;
+    const answeredCount = answers.filter((a) => a !== null).length;
 
-    app.innerHTML =
-      '<div class="pw-header">' +
-        '<div class="pw-meta">' +
-          '<span class="pw-badge">PMI-RMP Practice</span>' +
-          (current.domain ? '<span class="pw-tag">' + escapeHtml(current.domain) + '</span>' : '') +
-          (current.task ? '<span class="pw-tag">' + escapeHtml(current.task) + '</span>' : '') +
+    $qpane.innerHTML =
+      '<div class="sm-q-header">' +
+        '<div class="sm-tags">' +
+          (q.domain ? '<span class="sm-tag">' + esc(q.domain) + '</span>' : '') +
+          (q.task ? '<span class="sm-tag">' + esc(q.task) + '</span>' : '') +
         '</div>' +
-        '<span class="pw-score">Score: ' + score.correct + ' / ' + score.total + '</span>' +
+        '<button class="sm-flag-btn ' + (flagged[index] ? 'sm-flagged' : '') + '" id="sm-flag-btn">' +
+          (flagged[index] ? '&#9873; Flagged' : '&#9872; Flag for review') +
+        '</button>' +
       '</div>' +
-      '<h2 class="pw-question">' + escapeHtml(current.question) + '</h2>' +
-      '<div class="pw-options">' + optionsHtml + '</div>' +
-      feedbackHtml +
-      '<div class="pw-actions">' +
-        '<span class="pw-progress">Question ' + current.id + ' of ' + questions.length + '</span>' +
-        '<button type="button" class="pw-next" id="pw-next"' + (answered ? '' : ' disabled') + '>Next question →</button>' +
+      '<h2 class="sm-question">' + esc(q.question) + '</h2>' +
+      '<div class="sm-options">' + optionsHtml + '</div>' +
+      '<div class="sm-actions">' +
+        '<div style="display:flex; gap: 8px;">' +
+          '<button class="sm-nav-btn" id="sm-prev"' + (index === 0 ? ' disabled' : '') + '>&larr; Prev</button>' +
+          '<button class="sm-nav-btn" id="sm-next"' + (isLast ? ' disabled' : '') + '>Next &rarr;</button>' +
+        '</div>' +
+        '<button class="sm-submit-btn" id="sm-submit">' +
+          'Submit pack (' + answeredCount + '/' + total + ' answered)' +
+        '</button>' +
       '</div>';
 
-    app.querySelectorAll('.pw-option').forEach((btn) => {
-      btn.addEventListener('click', () => selectOption(parseInt(btn.dataset.idx, 10)));
+    $qpane.querySelectorAll('[data-select]').forEach((b) => {
+      b.addEventListener('click', () => {
+        answers[index] = parseInt(b.dataset.select, 10);
+        render();
+        renderNav();
+      });
     });
-    const nextBtn = document.getElementById('pw-next');
-    if (nextBtn) nextBtn.addEventListener('click', nextQuestion);
+    $qpane.querySelectorAll('[data-strike]').forEach((b) => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const i = parseInt(b.dataset.strike, 10);
+        const cur = strikes[index];
+        const pos = cur.indexOf(i);
+        if (pos === -1) cur.push(i); else cur.splice(pos, 1);
+        render();
+      });
+    });
+    document.getElementById('sm-flag-btn').addEventListener('click', () => {
+      flagged[index] = !flagged[index];
+      render();
+      renderNav();
+    });
+    document.getElementById('sm-prev').addEventListener('click', () => {
+      if (index > 0) { index--; render(); renderNav(); }
+    });
+    document.getElementById('sm-next').addEventListener('click', () => {
+      if (index < pack.length - 1) { index++; render(); renderNav(); }
+    });
+    document.getElementById('sm-submit').addEventListener('click', openConfirm);
   }
 
+  function renderNav() {
+    $navGrid.innerHTML = pack.map((_, i) => {
+      const cls = ['sm-nav-cell',
+        answers[i] !== null ? 'sm-answered' : '',
+        flagged[i] ? 'sm-flagged' : '',
+        i === index ? 'sm-current' : ''
+      ].filter(Boolean).join(' ');
+      return '<button class="' + cls + '" data-go="' + i + '">' + (i + 1) + '</button>';
+    }).join('');
+    $navGrid.querySelectorAll('[data-go]').forEach((b) => {
+      b.addEventListener('click', () => {
+        index = parseInt(b.dataset.go, 10);
+        render();
+        renderNav();
+      });
+    });
+  }
+
+  function openConfirm() {
+    const unanswered = answers.filter((a) => a === null).length;
+    const flaggedCount = flagged.filter(Boolean).length;
+    const parts = [];
+    if (unanswered) parts.push(unanswered + ' question' + (unanswered === 1 ? '' : 's') + ' unanswered');
+    if (flaggedCount) parts.push(flaggedCount + ' flagged');
+    const note = parts.length ? 'You have ' + parts.join(' and ') + '. ' : '';
+    document.getElementById('sm-confirm-text').textContent =
+      note + 'After submitting, the correct answers and rationales will be revealed and the timer stops.';
+    document.getElementById('sm-confirm').style.display = 'flex';
+  }
+  function closeConfirm() { document.getElementById('sm-confirm').style.display = 'none'; }
+  function submitPack() {
+    stopTimer();
+    closeConfirm();
+    renderResults();
+    document.getElementById('sm-results').style.display = 'flex';
+  }
+
+  function renderResults() {
+    const total = pack.length;
+    const correct = pack.reduce((n, q, i) => n + (answers[i] === q.correctIndex ? 1 : 0), 0);
+    const pct = Math.round((correct / total) * 100);
+    const elapsed = (endedAt || Date.now()) - (startedAt || Date.now());
+
+    const summary =
+      '<div class="sm-score">' +
+        '<div><div class="sm-score-num">' + correct + ' / ' + total + '</div><div class="sm-score-label">Correct</div></div>' +
+        '<div><div class="sm-score-num">' + pct + '%</div><div class="sm-score-label">Score</div></div>' +
+        '<div><div class="sm-score-num">' + fmtTime(elapsed) + '</div><div class="sm-score-label">Time</div></div>' +
+      '</div>';
+
+    const items = pack.map((q, i) => {
+      const userAns = answers[i];
+      const ok = userAns === q.correctIndex;
+      const numCls = userAns === null ? '' : (ok ? 'sm-review-correct' : 'sm-review-wrong');
+      const opts = q.options.map((opt, j) => {
+        let cls = 'sm-review-opt';
+        if (j === q.correctIndex) cls += ' sm-review-opt-correct';
+        else if (j === userAns) cls += ' sm-review-opt-wrong';
+        const tag = (j === q.correctIndex) ? ' &mdash; correct'
+                   : ((j === userAns) ? ' &mdash; your answer' : '');
+        return '<div class="' + cls + '">' +
+          '<span class="sm-review-opt-letter">' + String.fromCharCode(65 + j) + '.</span>' +
+          '<span>' + esc(opt) + (tag ? '<em style="font-style:normal;font-weight:600;opacity:0.75;">' + tag + '</em>' : '') + '</span>' +
+        '</div>';
+      }).join('');
+      const yourAns = userAns === null ? '<em>not answered</em>' : String.fromCharCode(65 + userAns);
+      return '<div class="sm-review-q">' +
+          '<span class="sm-review-num ' + numCls + '">' + (i + 1) + '</span>' +
+          (flagged[i] ? '<span style="color:#975a16;font-size:12px;font-weight:700;">&#9873; FLAGGED</span>' : '') +
+          (q.domain ? '<span style="margin-left:6px;color:var(--pbf-muted);font-size:12px;">' + esc(q.domain) + '</span>' : '') +
+          '<div class="sm-review-q-text">' + esc(q.question) + '</div>' +
+          opts +
+          (q.explanation ? '<div class="sm-review-rationale"><strong>Rationale:</strong> ' + esc(q.explanation) + '</div>' : '') +
+          '<div style="margin-top:6px; font-size: 12px; color: var(--pbf-muted);">Your answer: ' + yourAns +
+            ' &middot; Correct: ' + String.fromCharCode(65 + q.correctIndex) + '</div>' +
+        '</div>';
+    }).join('');
+
+    document.getElementById('sm-results-body').innerHTML = summary + items;
+  }
+
+  function startPack() {
+    document.getElementById('sm-start').style.display = 'none';
+    $shell.style.display = 'flex';
+    startTimer();
+    render();
+    renderNav();
+  }
+
+  function restartPack() {
+    document.getElementById('sm-results').style.display = 'none';
+    answers = pack.map(() => null);
+    strikes = pack.map(() => []);
+    flagged = pack.map(() => false);
+    index = 0;
+    document.getElementById('sm-notepad-text').value = '';
+    startTimer();
+    render();
+    renderNav();
+  }
+
+  function togglePanel(id, btn) {
+    const el = document.getElementById(id);
+    const open = el.classList.toggle('sm-panel-open');
+    if (btn) btn.classList.toggle('sm-active', open);
+  }
+  document.getElementById('sm-calc-toggle').addEventListener('click', (e) => togglePanel('sm-calc-panel', e.currentTarget));
+  document.getElementById('sm-notepad-toggle').addEventListener('click', (e) => togglePanel('sm-notepad-panel', e.currentTarget));
+  document.querySelectorAll('[data-close]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const id = b.dataset.close;
+      document.getElementById(id).classList.remove('sm-panel-open');
+      const btn = id === 'sm-calc-panel'
+        ? document.getElementById('sm-calc-toggle')
+        : document.getElementById('sm-notepad-toggle');
+      if (btn) btn.classList.remove('sm-active');
+    });
+  });
+
+  document.querySelectorAll('[data-drag]').forEach((head) => {
+    const panel = document.getElementById(head.dataset.drag);
+    head.addEventListener('mousedown', (e) => {
+      if (e.target.closest('[data-close]')) return;
+      const rect = panel.getBoundingClientRect();
+      const dx = rect.left, dy = rect.top, sx = e.clientX, sy = e.clientY;
+      panel.style.right = 'auto';
+      panel.style.left = dx + 'px';
+      panel.style.top = dy + 'px';
+      function move(ev) {
+        panel.style.left = (dx + ev.clientX - sx) + 'px';
+        panel.style.top = Math.max(0, dy + ev.clientY - sy) + 'px';
+      }
+      function up() {
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', up);
+      }
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', up);
+    });
+  });
+
+  const calcDisplay = document.getElementById('sm-calc-display');
+  let calcExpr = '';
+  function calcRender() { calcDisplay.textContent = calcExpr || '0'; }
+  function calcEval() {
+    let expr = calcExpr;
+    if (!expr) return;
+    if (!/^[\d+\-*/().% ]*$/.test(expr)) {
+      calcDisplay.textContent = 'Err'; calcExpr = ''; return;
+    }
+    expr = expr.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
+    try {
+      const result = Function('"use strict";return (' + expr + ')')();
+      if (typeof result !== 'number' || !isFinite(result)) throw new Error();
+      const rounded = Math.round(result * 1e10) / 1e10;
+      calcDisplay.textContent = String(rounded);
+      calcExpr = String(rounded);
+    } catch (e) {
+      calcDisplay.textContent = 'Err'; calcExpr = '';
+    }
+  }
+  document.querySelectorAll('[data-calc]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const v = b.dataset.calc;
+      if (v === 'C') { calcExpr = ''; calcRender(); return; }
+      if (v === 'back') { calcExpr = calcExpr.slice(0, -1); calcRender(); return; }
+      if (v === '=') { calcEval(); return; }
+      calcExpr += v;
+      calcRender();
+    });
+  });
+  calcRender();
+
+  document.getElementById('sm-start-btn').addEventListener('click', startPack);
+  document.getElementById('sm-confirm-cancel').addEventListener('click', closeConfirm);
+  document.getElementById('sm-confirm-yes').addEventListener('click', submitPack);
+  document.getElementById('sm-results-close').addEventListener('click', () => {
+    document.getElementById('sm-results').style.display = 'none';
+  });
+  document.getElementById('sm-results-restart').addEventListener('click', restartPack);
+
   fetch('questions.json', { cache: 'no-cache' })
-    .then((r) => {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
+    .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then((data) => {
-      questions = Array.isArray(data) ? data : [];
-      if (questions.length === 0) throw new Error('No questions found');
-      order = shuffle(questions.map((_, i) => i));
-      nextQuestion();
+      if (!Array.isArray(data) || data.length === 0) throw new Error('No questions');
+      allQuestions = data;
+      buildPack();
+      document.getElementById('sm-start-sub').textContent =
+        'Questions ' + FROM + ' to ' + (FROM + pack.length - 1) + ' of ' + allQuestions.length + '.';
     })
     .catch((err) => {
-      app.innerHTML = '<div class="pw-error">Could not load questions.<br>' + escapeHtml(err.message) + '</div>';
+      document.getElementById('sm-start').innerHTML =
+        '<div class="sm-overlay-card"><div class="sm-overlay-head"><h2>Could not load questions</h2></div>' +
+        '<div class="sm-overlay-body"><p style="color:var(--pbf-red)">' + esc(err.message) + '</p>' +
+        '<p style="margin-top:8px">Make sure <code>questions.json</code> is in the same folder as this page.</p></div></div>';
     });
 })();
 </script>

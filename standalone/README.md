@@ -11,7 +11,14 @@ merge into `main`.
 
 `practice/` is a single deployment-ready folder:
 
-- `index.html` — student-facing quiz. Served at the folder's URL.
+- `index.html` — student-facing **seminar pack**. Presents 20 questions in
+  sequence with no per-question feedback; correct answers and rationales
+  appear only after the student submits the pack, for in-class discussion.
+  Tools available during the pack: strike-through eliminated options,
+  flag-for-review, count-up timer, draggable calculator (4-function +
+  parentheses + %), and a session notepad.
+  URL params: `?from=N&size=M` picks a different slice (defaults to
+  `?from=1&size=20`). Example: `?from=21&size=20` runs questions 21-40.
 - `editor.html` — admin editor for the questions. Restrict access in
   WordPress so the public can't load it.
 - `questions.json` — 100 PMI-RMP practice questions. Both files read from
