@@ -63,6 +63,7 @@ export default function KanbanBoard({ user, onLogout }: Props) {
   const [currentWorker, setCurrentWorker] = useState<string>('Oliver');
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [dropIndicator, setDropIndicator] = useState<{ cardId: string; position: 'before' | 'after'; panel: Panel } | null>(null);
   const [showWorkerManager, setShowWorkerManager] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
 
@@ -143,39 +144,43 @@ export default function KanbanBoard({ user, onLogout }: Props) {
     }
   }
 
-  // Move a card to a different panel. Records assignment per the spec:
-  //   • leaving "todo" by a worker = current worker is assigned (if not already)
-  //   • returning to "todo"        = clear assignments
-  async function moveCard(cardId: string, toPanel: Panel) {
+  // Move a card to a different panel or reorder within a panel.
+  //   • targetSortOrder lets the caller place the card precisely; if
+  //     omitted the card is appended to the end of the destination panel.
+  //   • Cross-panel moves still apply the worker-assignment rules.
+  async function moveCard(cardId: string, toPanel: Panel, targetSortOrder?: number) {
     const card = cards.find(c => c.id === cardId);
-    if (!card || card.panel === toPanel) return;
+    if (!card) return;
+    const samePanel = card.panel === toPanel;
+    if (samePanel && targetSortOrder === undefined) return;
 
     const now = new Date().toISOString();
-    const history: HistoryEntry[] = [...card.history,
-      { at: now, by: currentWorker, what: `Moved from ${PANELS.find(p => p.id === card.panel)?.label} to ${PANELS.find(p => p.id === toPanel)?.label}` }];
-
+    const history: HistoryEntry[] = [...card.history];
     let workers = card.workers.slice();
-    if (card.panel === 'todo' && toPanel !== 'todo') {
-      if (!workers.includes(currentWorker)) {
+    if (!samePanel) {
+      history.push({ at: now, by: currentWorker, what: `Moved from ${PANELS.find(p => p.id === card.panel)?.label} to ${PANELS.find(p => p.id === toPanel)?.label}` });
+      if (card.panel === 'todo' && toPanel !== 'todo') {
+        if (!workers.includes(currentWorker)) {
+          workers = [...workers, currentWorker];
+          history.push({ at: now, by: currentWorker, what: `${currentWorker} assigned` });
+        }
+      } else if (toPanel === 'todo' && card.panel !== 'todo') {
+        if (workers.length) {
+          history.push({ at: now, by: currentWorker, what: `Sent back to To do — assignments cleared (${workers.join(', ')})` });
+        }
+        workers = [];
+      } else if (toPanel !== 'todo' && !workers.includes(currentWorker)) {
         workers = [...workers, currentWorker];
-        history.push({ at: now, by: currentWorker, what: `${currentWorker} assigned` });
+        history.push({ at: now, by: currentWorker, what: `${currentWorker} joined` });
       }
-    } else if (toPanel === 'todo' && card.panel !== 'todo') {
-      if (workers.length) {
-        history.push({ at: now, by: currentWorker, what: `Sent back to To do — assignments cleared (${workers.join(', ')})` });
-      }
-      workers = [];
-    } else if (toPanel !== 'todo' && !workers.includes(currentWorker)) {
-      // Joining an already-active card from one non-todo panel to another.
-      workers = [...workers, currentWorker];
-      history.push({ at: now, by: currentWorker, what: `${currentWorker} joined` });
     }
 
+    const newSortOrder = targetSortOrder ?? Date.now();
     const patch: Partial<Card> = {
       panel: toPanel,
       workers,
       history,
-      sort_order: Date.now(),
+      sort_order: newSortOrder,
     };
     try {
       const saved = await updateCard(cardId, patch);
@@ -183,6 +188,39 @@ export default function KanbanBoard({ user, onLogout }: Props) {
     } catch (e) {
       setError((e as Error).message);
     }
+  }
+
+  // Compute a sort_order that places `draggedId` immediately before/after `targetId`.
+  // Uses fractional indexing (midpoint between neighbors); rebalances the column if
+  // neighbors collide.
+  async function computeDropSortOrder(
+    draggedId: string, targetCardId: string, position: 'before' | 'after', toPanel: Panel
+  ): Promise<number | null> {
+    const panelCards = grouped[toPanel].filter(c => c.id !== draggedId);
+    const targetIdx = panelCards.findIndex(c => c.id === targetCardId);
+    if (targetIdx === -1) return null;
+    const insertIdx = position === 'before' ? targetIdx : targetIdx + 1;
+    const prev = panelCards[insertIdx - 1];
+    const next = panelCards[insertIdx];
+    const prevSO = prev ? prev.sort_order : 0;
+    const nextSO = next ? next.sort_order : (prev ? prev.sort_order + 2_000_000 : Date.now());
+    if (next && nextSO - prevSO <= 1) {
+      // Neighbors too close — rebalance the whole column with spaced values.
+      const reordered = [...panelCards];
+      reordered.splice(insertIdx, 0, { id: draggedId } as Card);
+      const base = Date.now();
+      await Promise.all(reordered.map((c, i) =>
+        c.id === draggedId ? Promise.resolve() : updateCard(c.id, { sort_order: base + (i + 1) * 1000 })
+      ));
+      // Update local state for siblings; the dragged card itself is handled by moveCard.
+      setCards(curr => curr.map(c => {
+        const idx = reordered.findIndex(r => r.id === c.id);
+        return idx === -1 || c.id === draggedId ? c : { ...c, sort_order: base + (idx + 1) * 1000 };
+      }));
+      const insertPos = reordered.findIndex(r => r.id === draggedId);
+      return base + (insertPos + 1) * 1000;
+    }
+    return Math.floor((prevSO + nextSO) / 2);
   }
 
   // ─── Split a card: original becomes "1", copy goes to "To do" as next number ──
@@ -239,10 +277,45 @@ export default function KanbanBoard({ user, onLogout }: Props) {
   }
 
   // ─── DnD ─────────────────────────────────────────────────────────────
-  function onDragStart(id: string) { setDragId(id); }
+  function onDragStart(id: string) {
+    setDragId(id);
+    setDropIndicator(null);
+  }
   function onDragOver(e: React.DragEvent) { e.preventDefault(); }
-  function onDrop(panel: Panel) {
-    if (dragId) moveCard(dragId, panel);
+  function onDropPanel(panel: Panel) {
+    if (dragId) moveCard(dragId, panel); // appended (no targetSortOrder)
+    setDragId(null);
+    setDropIndicator(null);
+  }
+
+  function onCardDragOver(e: React.DragEvent<HTMLDivElement>, cardId: string, panel: Panel) {
+    if (!dragId || dragId === cardId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const position: 'before' | 'after' = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+    setDropIndicator(prev =>
+      prev && prev.cardId === cardId && prev.position === position && prev.panel === panel
+        ? prev
+        : { cardId, position, panel }
+    );
+  }
+
+  async function onCardDrop(e: React.DragEvent<HTMLDivElement>, cardId: string, panel: Panel) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!dragId || dragId === cardId) {
+      setDropIndicator(null);
+      setDragId(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const position: 'before' | 'after' = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+    const target = await computeDropSortOrder(dragId, cardId, position, panel);
+    if (target !== null) {
+      await moveCard(dragId, panel, target);
+    }
+    setDropIndicator(null);
     setDragId(null);
   }
 
@@ -311,7 +384,7 @@ export default function KanbanBoard({ user, onLogout }: Props) {
           <div
             key={p.id}
             onDragOver={onDragOver}
-            onDrop={() => onDrop(p.id)}
+            onDrop={() => onDropPanel(p.id)}
             style={{
               background: 'var(--pbf-light)',
               border: '1px solid var(--pbf-border)',
@@ -332,25 +405,34 @@ export default function KanbanBoard({ user, onLogout }: Props) {
               const accent = cardColors.length ? blendColors(cardColors) : '#cbd5e0';
               const bg = cardColors.length ? tintBg(cardColors[0]) : 'var(--pbf-white)';
 
+              const showBefore = dropIndicator?.cardId === card.id && dropIndicator.position === 'before' && dropIndicator.panel === p.id;
+              const showAfter  = dropIndicator?.cardId === card.id && dropIndicator.position === 'after'  && dropIndicator.panel === p.id;
+              const indicatorStyle: React.CSSProperties = {
+                height: 3, background: 'var(--pbf-accent)', borderRadius: 2, margin: '4px 0',
+              };
               return (
-                <div
-                  key={card.id}
-                  draggable
-                  onDragStart={() => onDragStart(card.id)}
-                  onClick={() => setOpenCardId(card.id)}
-                  style={{
-                    background: bg,
-                    borderLeft: `4px solid ${accent}`,
-                    border: '1px solid var(--pbf-border)',
-                    borderLeftWidth: 4,
-                    borderLeftColor: accent,
-                    borderRadius: 4,
-                    padding: '8px 10px',
-                    marginBottom: 8,
-                    cursor: 'grab',
-                    boxShadow: 'var(--shadow)',
-                  }}
-                >
+                <div key={card.id}>
+                  {showBefore && <div style={indicatorStyle} />}
+                  <div
+                    draggable
+                    onDragStart={() => onDragStart(card.id)}
+                    onDragOver={(e) => onCardDragOver(e, card.id, p.id)}
+                    onDrop={(e) => onCardDrop(e, card.id, p.id)}
+                    onClick={() => setOpenCardId(card.id)}
+                    style={{
+                      background: bg,
+                      borderLeft: `4px solid ${accent}`,
+                      border: '1px solid var(--pbf-border)',
+                      borderLeftWidth: 4,
+                      borderLeftColor: accent,
+                      borderRadius: 4,
+                      padding: '8px 10px',
+                      marginBottom: 8,
+                      cursor: 'grab',
+                      boxShadow: 'var(--shadow)',
+                      opacity: dragId === card.id ? 0.4 : 1,
+                    }}
+                  >
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>
                       {card.title || 'Untitled'} <span style={{ color: 'var(--pbf-muted)', fontWeight: 400 }}>#{card.split_number}</span>
@@ -389,6 +471,8 @@ export default function KanbanBoard({ user, onLogout }: Props) {
                     {card.links.length > 0 && <span>🔗 {card.links.length}</span>}
                     {card.history.length > 0 && <span>🕒 {new Date(card.history[card.history.length - 1].at).toLocaleDateString()}</span>}
                   </div>
+                  </div>
+                  {showAfter && <div style={indicatorStyle} />}
                 </div>
               );
             })}
