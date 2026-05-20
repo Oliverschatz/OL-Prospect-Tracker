@@ -11,6 +11,7 @@ import {
 } from '@/lib/kanban-db';
 import KanbanCardModal from './KanbanCardModal';
 import { RichTextView } from './KanbanRichText';
+import UrlTransferMenu from './UrlTransferMenu';
 
 type Props = {
   user: User;
@@ -280,6 +281,30 @@ export default function KanbanBoard({ user, onLogout }: Props) {
     setWorkers(curr => [...curr, w]);
   }
 
+  // ─── URL transfer helpers (used by card modal & documents panel) ─────
+  async function addLinkToCard(targetCardId: string, label: string, url: string) {
+    const target = cards.find(c => c.id === targetCardId);
+    if (!target) throw new Error('Target card not found');
+    const newLink = { id: uid(), label, url };
+    const now = new Date().toISOString();
+    const patch: Partial<Card> = {
+      links: [...target.links, newLink],
+      history: [...target.history, { at: now, by: currentWorker, what: `Added link "${label}" (from transfer)` }],
+    };
+    const saved = await updateCard(targetCardId, patch);
+    setCards(curr => curr.map(c => (c.id === targetCardId ? saved : c)));
+  }
+
+  async function addLinkToDocs(kind: DocumentKind, label: string, url: string) {
+    const doc = await createDocument(user.id, kind, label, url);
+    setDocuments(curr => [...curr, doc]);
+  }
+
+  async function removeDocument(docId: string) {
+    await deleteDocument(docId);
+    setDocuments(curr => curr.filter(d => d.id !== docId));
+  }
+
   // ─── DnD ─────────────────────────────────────────────────────────────
   function onDragStart(id: string) {
     setDragId(id);
@@ -387,9 +412,13 @@ export default function KanbanBoard({ user, onLogout }: Props) {
       {showDocuments && (
         <DocumentsPanel
           documents={documents}
+          allCards={cards}
           userId={user.id}
           onClose={() => setShowDocuments(false)}
           onChange={setDocuments}
+          onAddLinkToCard={addLinkToCard}
+          onAddLinkToDocs={addLinkToDocs}
+          onRemoveDocument={removeDocument}
         />
       )}
 
@@ -511,6 +540,7 @@ export default function KanbanBoard({ user, onLogout }: Props) {
         <KanbanCardModal
           card={openCard}
           workers={workers}
+          allCards={cards}
           userId={user.id}
           currentWorker={currentWorker}
           onSetCurrentWorker={setCurrentWorker}
@@ -518,6 +548,8 @@ export default function KanbanBoard({ user, onLogout }: Props) {
           onClose={() => setOpenCardId(null)}
           onSave={handleSaveCard}
           onDelete={() => handleDeleteCard(openCard.id)}
+          onAddLinkToCard={addLinkToCard}
+          onAddLinkToDocs={addLinkToDocs}
         />
       )}
     </div>
@@ -578,16 +610,39 @@ function WorkerManager({
 // ─── Project documents panel ────────────────────────────────────────────
 
 function DocumentsPanel({
-  documents, userId, onClose, onChange,
+  documents, allCards, userId, onClose, onChange,
+  onAddLinkToCard, onAddLinkToDocs, onRemoveDocument,
 }: {
   documents: ProjectDocument[];
+  allCards: Card[];
   userId: string;
   onClose: () => void;
   onChange: (next: ProjectDocument[]) => void;
+  onAddLinkToCard: (cardId: string, label: string, url: string) => Promise<void>;
+  onAddLinkToDocs: (kind: DocumentKind, label: string, url: string) => Promise<void>;
+  onRemoveDocument: (id: string) => Promise<void>;
 }) {
   const [err, setErr] = useState('');
   const internal = documents.filter(d => d.kind === 'internal');
   const external = documents.filter(d => d.kind === 'external');
+
+  async function transferDoc(doc: ProjectDocument, mode: 'move' | 'copy', target: { kind: 'doc'; docKind: DocumentKind } | { kind: 'card'; cardId: string }) {
+    setErr('');
+    try {
+      if (target.kind === 'doc') {
+        await onAddLinkToDocs(target.docKind, doc.label, doc.url);
+      } else {
+        await onAddLinkToCard(target.cardId, doc.label, doc.url);
+      }
+      if (mode === 'move') {
+        await onRemoveDocument(doc.id);
+        onChange(documents.filter(d => d.id !== doc.id));
+      }
+    } catch (e) {
+      setErr((e as Error).message);
+      throw e;
+    }
+  }
 
   async function add(kind: DocumentKind) {
     const label = window.prompt(`Label for the new ${kind} document`);
@@ -639,6 +694,14 @@ function DocumentsPanel({
         {items.map(d => (
           <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 0' }}>
             <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1 }}>{d.label}</a>
+            <UrlTransferMenu
+              label={d.label}
+              url={d.url}
+              source={{ kind: 'doc', docKind: d.kind }}
+              cards={allCards}
+              onMove={(t) => transferDoc(d, 'move', t)}
+              onCopy={(t) => transferDoc(d, 'copy', t)}
+            />
             <button className="btn-ghost btn-sm" type="button" onClick={() => edit(d)}>Edit</button>
             <button className="btn-danger btn-sm" type="button" onClick={() => remove(d)}>Delete</button>
           </div>

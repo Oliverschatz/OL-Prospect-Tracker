@@ -1,22 +1,26 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { Card, CardFile, CardLink, FileVersion, HistoryEntry, Worker } from '@/lib/kanban-types';
+import type { Card, CardFile, CardLink, DocumentKind, FileVersion, HistoryEntry, Worker } from '@/lib/kanban-types';
 import { ECO_DOMAINS } from '@/lib/kanban-eco';
 import { LITERATURE } from '@/lib/kanban-literature';
 import { signedUrl, uploadFile, removeStorageObject } from '@/lib/kanban-db';
 import { RichTextEditor, RichTextView } from './KanbanRichText';
+import UrlTransferMenu, { type TransferTarget } from './UrlTransferMenu';
 
 type Props = {
   card: Card;
   workers: Worker[];
+  allCards: Card[];
   userId: string;
-  currentWorker: string;            // active worker name in the UI
+  currentWorker: string;
   onSetCurrentWorker: (name: string) => void;
   onAddWorker: (name: string) => Promise<void>;
   onClose: () => void;
   onSave: (next: Card) => Promise<void>;
   onDelete: () => Promise<void>;
+  onAddLinkToCard: (targetCardId: string, label: string, url: string) => Promise<void>;
+  onAddLinkToDocs: (kind: DocumentKind, label: string, url: string) => Promise<void>;
 };
 
 function fmtDate(iso: string): string {
@@ -29,9 +33,10 @@ function uid(): string {
 }
 
 export default function KanbanCardModal({
-  card, workers, userId, currentWorker,
+  card, workers, allCards, userId, currentWorker,
   onSetCurrentWorker, onAddWorker,
   onClose, onSave, onDelete,
+  onAddLinkToCard, onAddLinkToDocs,
 }: Props) {
   const [draft, setDraft] = useState<Card>(card);
   const [saving, setSaving] = useState(false);
@@ -91,6 +96,34 @@ export default function KanbanCardModal({
       `Deleted link "${link.label}"`,
       { links: draft.links.filter(l => l.id !== id) }
     ));
+  }
+
+  async function transferLink(link: CardLink, mode: 'move' | 'copy', target: TransferTarget) {
+    setError('');
+    try {
+      if (target.kind === 'doc') {
+        await onAddLinkToDocs(target.docKind, link.label, link.url);
+      } else {
+        await onAddLinkToCard(target.cardId, link.label, link.url);
+      }
+      if (mode === 'move') {
+        const destName = target.kind === 'doc'
+          ? `${target.docKind} documents`
+          : `card "${allCards.find(c => c.id === target.cardId)?.title ?? '?'}"`;
+        setDraft(addHistory(
+          `Moved link "${link.label}" to ${destName}`,
+          { links: draft.links.filter(l => l.id !== link.id) }
+        ));
+      } else {
+        const destName = target.kind === 'doc'
+          ? `${target.docKind} documents`
+          : `card "${allCards.find(c => c.id === target.cardId)?.title ?? '?'}"`;
+        setDraft(addHistory(`Copied link "${link.label}" to ${destName}`));
+      }
+    } catch (e) {
+      setError((e as Error).message);
+      throw e;
+    }
   }
 
   // ─── Files (versioned by name) ───────────────────────────────────────
@@ -342,6 +375,14 @@ export default function KanbanCardModal({
             {draft.links.map(l => (
               <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0' }}>
                 <a href={l.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1 }}>{l.label}</a>
+                <UrlTransferMenu
+                  label={l.label}
+                  url={l.url}
+                  source={{ kind: 'card', cardId: card.id }}
+                  cards={allCards}
+                  onMove={(t) => transferLink(l, 'move', t)}
+                  onCopy={(t) => transferLink(l, 'copy', t)}
+                />
                 <button className="btn-ghost btn-sm" type="button" onClick={() => editLink(l.id)}>Edit</button>
                 <button className="btn-danger btn-sm" type="button" onClick={() => deleteLink(l.id)}>Delete</button>
               </div>
