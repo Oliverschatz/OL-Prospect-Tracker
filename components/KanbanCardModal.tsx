@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Card, CardFile, CardLink, FileVersion, HistoryEntry, Worker } from '@/lib/kanban-types';
 import { ECO_DOMAINS } from '@/lib/kanban-eco';
 import { LITERATURE } from '@/lib/kanban-literature';
-import { signedUrl, uploadFile } from '@/lib/kanban-db';
+import { signedUrl, uploadFile, removeStorageObject } from '@/lib/kanban-db';
 import { RichTextEditor, RichTextView } from './KanbanRichText';
 
 type Props = {
@@ -126,6 +126,57 @@ export default function KanbanCardModal({
     } catch (e) {
       setError((e as Error).message);
     }
+  }
+
+  async function deleteVersion(fileName: string, path: string) {
+    const file = draft.files.find(f => f.name === fileName);
+    if (!file) return;
+    const versionIdx = file.versions.findIndex(v => v.path === path);
+    if (versionIdx === -1) return;
+    const isLastVersion = file.versions.length === 1;
+    const msg = isLastVersion
+      ? `Delete "${fileName}" entirely? This removes the file from storage.`
+      : `Delete version ${versionIdx + 1} of "${fileName}"? This cannot be undone.`;
+    if (!window.confirm(msg)) return;
+
+    try {
+      await removeStorageObject(path);
+    } catch (e) {
+      setError((e as Error).message);
+      return;
+    }
+
+    let nextFiles: CardFile[];
+    let what: string;
+    if (isLastVersion) {
+      nextFiles = draft.files.filter(f => f.name !== fileName);
+      what = `Deleted ${fileName} (last version removed)`;
+    } else {
+      nextFiles = draft.files.map(f =>
+        f.name === fileName
+          ? { ...f, versions: f.versions.filter(v => v.path !== path) }
+          : f
+      );
+      what = `Deleted version ${versionIdx + 1} of ${fileName}`;
+    }
+    setDraft(addHistory(what, { files: nextFiles }));
+  }
+
+  async function deleteAllVersions(fileName: string) {
+    const file = draft.files.find(f => f.name === fileName);
+    if (!file) return;
+    if (!window.confirm(`Delete "${fileName}" and all ${file.versions.length} version(s)? This cannot be undone.`)) return;
+
+    const failed: string[] = [];
+    for (const v of file.versions) {
+      try { await removeStorageObject(v.path); }
+      catch { failed.push(v.path); }
+    }
+    if (failed.length) {
+      setError(`Could not remove ${failed.length} file object(s) from storage. The card entry has still been cleared.`);
+    }
+    const nextFiles = draft.files.filter(f => f.name !== fileName);
+    setDraft(addHistory(`Deleted ${fileName} and all versions`, { files: nextFiles }));
   }
 
   // ─── Image upload from rich text editor ──────────────────────────────
@@ -317,12 +368,27 @@ export default function KanbanCardModal({
                         {open ? '▾' : '▸'} {older.length} older
                       </button>
                     )}
+                    <button
+                      className="btn-danger btn-sm"
+                      type="button"
+                      title={f.versions.length === 1 ? 'Delete this file' : 'Delete latest version'}
+                      onClick={() => deleteVersion(f.name, latest.path)}
+                    >Delete</button>
+                    {f.versions.length > 1 && (
+                      <button
+                        className="btn-danger btn-sm"
+                        type="button"
+                        title="Delete all versions of this file"
+                        onClick={() => deleteAllVersions(f.name)}
+                      >Delete all</button>
+                    )}
                   </div>
                   {open && older.map((v, idx) => (
-                    <div key={v.path} style={{ paddingLeft: 16, fontSize: 12 }}>
-                      <button className="btn-ghost btn-sm" type="button" onClick={() => openVersion(v.path)}>
+                    <div key={v.path} style={{ paddingLeft: 16, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <button className="btn-ghost btn-sm" type="button" onClick={() => openVersion(v.path)} style={{ flex: 1, textAlign: 'left' }}>
                         v{f.versions.length - 1 - idx} · {fmtDate(v.uploaded_at)} · by {v.uploaded_by}
                       </button>
+                      <button className="btn-danger btn-sm" type="button" onClick={() => deleteVersion(f.name, v.path)}>Delete</button>
                     </div>
                   ))}
                 </div>
