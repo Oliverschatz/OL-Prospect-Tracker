@@ -371,8 +371,8 @@ export default function KanbanBoard({ user, onLogout }: Props) {
               {workers.map(w => <option key={w.id} value={w.name} style={{ color: '#1a2744' }}>{w.name}</option>)}
             </select>
           </div>
-          <button className="btn-secondary btn-sm" onClick={() => setShowDocuments(s => !s)}>Documents</button>
-          <button className="btn-secondary btn-sm" onClick={() => setShowWorkerManager(s => !s)}>Workers</button>
+          <button className="btn-secondary btn-sm" onClick={() => setShowDocuments(s => !s)}>Documents ({documents.length})</button>
+          <button className="btn-secondary btn-sm" onClick={() => setShowWorkerManager(s => !s)}>Workers ({workers.length})</button>
           {onLogout && <button className="btn-ghost btn-sm" onClick={onLogout} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Logout</button>}
         </div>
       </div>
