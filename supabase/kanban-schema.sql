@@ -106,3 +106,24 @@ CREATE POLICY "kanban storage update own" ON storage.objects
 CREATE POLICY "kanban storage delete own" ON storage.objects
   FOR DELETE TO authenticated
   USING (bucket_id = 'kanban' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ─── Project-level document lists (Internal / External) ─────────────────
+CREATE TABLE IF NOT EXISTS kanban_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL CHECK (kind IN ('internal', 'external')),
+  label TEXT NOT NULL,
+  url TEXT NOT NULL,
+  sort_order BIGINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE kanban_documents ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "kanban_documents read own"   ON kanban_documents FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "kanban_documents insert own" ON kanban_documents FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "kanban_documents update own" ON kanban_documents FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "kanban_documents delete own" ON kanban_documents FOR DELETE USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS kanban_documents_user_kind_idx
+  ON kanban_documents (user_id, kind, sort_order);

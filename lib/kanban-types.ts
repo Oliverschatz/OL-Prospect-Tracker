@@ -14,6 +14,16 @@ export type Worker = {
   sort_order: number;
 };
 
+export type DocumentKind = 'internal' | 'external';
+
+export type ProjectDocument = {
+  id: string;
+  kind: DocumentKind;
+  label: string;
+  url: string;
+  sort_order: number;
+};
+
 export type CardLink = {
   id: string;
   label: string;

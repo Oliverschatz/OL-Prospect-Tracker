@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Card, Panel, Worker } from './kanban-types';
+import type { Card, Panel, ProjectDocument, DocumentKind, Worker } from './kanban-types';
 import { DEFAULT_WORKER_COLORS } from './kanban-types';
 
 const BUCKET = 'kanban';
@@ -148,4 +148,45 @@ export async function signedUrl(path: string, expiresSec = 3600): Promise<string
 export async function removeStorageObject(path: string): Promise<void> {
   if (!supabase) return;
   await supabase.storage.from(BUCKET).remove([path]);
+}
+
+// ─── Project documents (Internal / External) ────────────────────────────
+
+export async function listDocuments(userId: string): Promise<ProjectDocument[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('kanban_documents')
+    .select('*')
+    .eq('user_id', userId)
+    .order('kind', { ascending: true })
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data || []) as ProjectDocument[];
+}
+
+export async function createDocument(
+  userId: string, kind: DocumentKind, label: string, url: string
+): Promise<ProjectDocument> {
+  if (!supabase) throw new Error('Supabase not configured');
+  const row = { user_id: userId, kind, label: label.trim(), url: url.trim(), sort_order: Date.now() };
+  const { data, error } = await supabase.from('kanban_documents').insert(row).select().single();
+  if (error) throw error;
+  return data as ProjectDocument;
+}
+
+export async function updateDocument(
+  id: string, patch: Partial<Pick<ProjectDocument, 'label' | 'url' | 'kind' | 'sort_order'>>
+): Promise<ProjectDocument> {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { data, error } = await supabase
+    .from('kanban_documents').update(patch).eq('id', id).select().single();
+  if (error) throw error;
+  return data as ProjectDocument;
+}
+
+export async function deleteDocument(id: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from('kanban_documents').delete().eq('id', id);
+  if (error) throw error;
 }
