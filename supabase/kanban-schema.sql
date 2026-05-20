@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS kanban_workers (
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   color TEXT NOT NULL DEFAULT '#e8a838',
-  sort_order INT NOT NULL DEFAULT 0,
+  sort_order BIGINT NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (user_id, name)
 );
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS kanban_cards (
   -- Panel
   panel TEXT NOT NULL DEFAULT 'todo'
     CHECK (panel IN ('todo', 'wip', 'review', 'done')),
-  sort_order INT NOT NULL DEFAULT 0,
+  sort_order BIGINT NOT NULL DEFAULT 0,
 
   -- Workers (free-text first names; matches kanban_workers.name)
   workers TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
