@@ -18,6 +18,18 @@ type Props = {
 
 function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
+function uuid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // RFC 4122 v4 fallback
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 function blendColors(hexes: string[]): string {
   if (hexes.length === 0) return '#ffffff';
   let r = 0, g = 0, b = 0;
@@ -176,7 +188,7 @@ export default function KanbanBoard({ user, onLogout }: Props) {
   // ─── Split a card: original becomes "1", copy goes to "To do" as next number ──
   async function handleSplit(card: Card) {
     try {
-      const group = card.split_group ?? uid();
+      const group = card.split_group ?? uuid();
 
       // Find current max split_number across siblings (including the source).
       const siblings = cards.filter(c => (c.split_group ?? c.id) === (card.split_group ?? card.id));
