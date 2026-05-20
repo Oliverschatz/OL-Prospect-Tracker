@@ -80,6 +80,11 @@ export default function KanbanPage() {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--pbf-navy)' }}>
       <div style={{ background: 'var(--pbf-white)', borderRadius: 8, padding: '40px 36px', width: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <img
+            src="https://oliverlehmann.com/wp-content/uploads/2023/05/cropped-logo-ol.png"
+            alt="Oliver F. Lehmann"
+            style={{ height: 56, marginBottom: 12 }}
+          />
           <h1 style={{ fontFamily: "'Source Serif 4', Georgia, serif", fontSize: 20, color: 'var(--pbf-navy)', marginBottom: 4 }}>
             Kanban Board
           </h1>

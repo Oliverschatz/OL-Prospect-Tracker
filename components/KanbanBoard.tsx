@@ -330,7 +330,14 @@ export default function KanbanBoard({ user, onLogout }: Props) {
   return (
     <div>
       <div className="app-header">
-        <h1>Kanban Board <span>— OliverLehmann.com</span></h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <img
+            src="https://oliverlehmann.com/wp-content/uploads/2023/05/cropped-logo-ol.png"
+            alt="Oliver F. Lehmann"
+            className="app-logo"
+          />
+          <h1>Kanban Board <span>— OliverLehmann.com</span></h1>
+        </div>
         <div className="header-actions">
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'rgba(255,255,255,0.85)' }}>
             <span>Acting as:</span>
