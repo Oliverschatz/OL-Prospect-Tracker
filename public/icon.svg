@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#808080" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Globe outline -->
+  <circle cx="30" cy="30" r="22" />
+  <!-- Equator -->
+  <line x1="8" y1="30" x2="52" y2="30" />
+  <!-- Latitude lines -->
+  <path d="M11 19 H49" />
+  <path d="M11 41 H49" />
+  <!-- Meridians (vertical ellipses) -->
+  <ellipse cx="30" cy="30" rx="10" ry="22" />
+  <line x1="30" y1="8" x2="30" y2="52" />
+  <!-- Orbit ring (tilted) -->
+  <ellipse cx="34" cy="34" rx="26" ry="9" transform="rotate(-20 34 34)" />
+</svg>

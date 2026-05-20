@@ -4,7 +4,7 @@ export const metadata: Metadata = {
   title: 'Kanban Board — OliverLehmann.com',
   description: 'Kanban board widget',
   icons: {
-    icon: 'https://oliverlehmann.com/wp-content/uploads/2023/05/cropped-logo-ol.png',
+    icon: '/icon.svg',
   },
 };
 
