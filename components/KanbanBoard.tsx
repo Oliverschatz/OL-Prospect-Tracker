@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
-import type { Card, HistoryEntry, Panel, Worker } from '@/lib/kanban-types';
+import type { Card, DocumentKind, HistoryEntry, Panel, ProjectDocument, Worker } from '@/lib/kanban-types';
 import { PANELS } from '@/lib/kanban-types';
 import {
-  createCard, createWorker, deleteCard as dbDeleteCard,
-  listCards, listWorkers, updateCard,
+  createCard, createDocument, createWorker, deleteCard as dbDeleteCard,
+  deleteDocument, listCards, listDocuments, listWorkers,
+  updateCard, updateDocument,
 } from '@/lib/kanban-db';
 import KanbanCardModal from './KanbanCardModal';
 import { RichTextView } from './KanbanRichText';
@@ -65,14 +66,17 @@ export default function KanbanBoard({ user, onLogout }: Props) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropIndicator, setDropIndicator] = useState<{ cardId: string; position: 'before' | 'after'; panel: Panel } | null>(null);
   const [showWorkerManager, setShowWorkerManager] = useState(false);
+  const [showDocuments, setShowDocuments] = useState(false);
+  const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [newCardTitle, setNewCardTitle] = useState('');
 
   useEffect(() => {
     (async () => {
       try {
-        const [w, c] = await Promise.all([listWorkers(user.id), listCards(user.id)]);
+        const [w, c, d] = await Promise.all([listWorkers(user.id), listCards(user.id), listDocuments(user.id)]);
         setWorkers(w);
         setCards(c);
+        setDocuments(d);
         if (w.length && !w.find(x => x.name === currentWorker)) {
           setCurrentWorker(w[0].name);
         }
@@ -335,6 +339,7 @@ export default function KanbanBoard({ user, onLogout }: Props) {
               {workers.map(w => <option key={w.id} value={w.name} style={{ color: '#1a2744' }}>{w.name}</option>)}
             </select>
           </div>
+          <button className="btn-secondary btn-sm" onClick={() => setShowDocuments(s => !s)}>Documents</button>
           <button className="btn-secondary btn-sm" onClick={() => setShowWorkerManager(s => !s)}>Workers</button>
           {onLogout && <button className="btn-ghost btn-sm" onClick={onLogout} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Logout</button>}
         </div>
@@ -369,6 +374,15 @@ export default function KanbanBoard({ user, onLogout }: Props) {
           workers={workers} userId={user.id}
           onClose={() => setShowWorkerManager(false)}
           onChange={(next) => setWorkers(next)}
+        />
+      )}
+
+      {showDocuments && (
+        <DocumentsPanel
+          documents={documents}
+          userId={user.id}
+          onClose={() => setShowDocuments(false)}
+          onChange={setDocuments}
         />
       )}
 
@@ -550,6 +564,93 @@ function WorkerManager({
       <p style={{ fontSize: 11, color: 'var(--pbf-muted)', marginTop: 6 }}>
         First names only. Email notifications can be added later.
       </p>
+    </div>
+  );
+}
+
+// ─── Project documents panel ────────────────────────────────────────────
+
+function DocumentsPanel({
+  documents, userId, onClose, onChange,
+}: {
+  documents: ProjectDocument[];
+  userId: string;
+  onClose: () => void;
+  onChange: (next: ProjectDocument[]) => void;
+}) {
+  const [err, setErr] = useState('');
+  const internal = documents.filter(d => d.kind === 'internal');
+  const external = documents.filter(d => d.kind === 'external');
+
+  async function add(kind: DocumentKind) {
+    const label = window.prompt(`Label for the new ${kind} document`);
+    if (!label || !label.trim()) return;
+    const url = window.prompt(`URL (https://…)`);
+    if (!url || !url.trim()) return;
+    if (!/^(https?:|mailto:|tel:)/i.test(url.trim())) {
+      setErr('URL must start with http://, https://, mailto: or tel:');
+      return;
+    }
+    try {
+      const doc = await createDocument(userId, kind, label, url);
+      onChange([...documents, doc]);
+      setErr('');
+    } catch (e) { setErr((e as Error).message); }
+  }
+
+  async function edit(doc: ProjectDocument) {
+    const label = window.prompt('Label', doc.label);
+    if (label === null) return;
+    const url = window.prompt('URL', doc.url);
+    if (url === null) return;
+    try {
+      const saved = await updateDocument(doc.id, { label: label.trim(), url: url.trim() });
+      onChange(documents.map(d => (d.id === doc.id ? saved : d)));
+      setErr('');
+    } catch (e) { setErr((e as Error).message); }
+  }
+
+  async function remove(doc: ProjectDocument) {
+    if (!window.confirm(`Delete "${doc.label}"?`)) return;
+    try {
+      await deleteDocument(doc.id);
+      onChange(documents.filter(d => d.id !== doc.id));
+      setErr('');
+    } catch (e) { setErr((e as Error).message); }
+  }
+
+  function List({ kind, items }: { kind: DocumentKind; items: ProjectDocument[] }) {
+    return (
+      <div style={{ flex: 1, minWidth: 280 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <strong style={{ fontSize: 13, textTransform: 'capitalize' }}>{kind} documents</strong>
+          <button className="btn-ghost btn-sm" onClick={() => add(kind)}>+ Add</button>
+        </div>
+        {items.length === 0 && (
+          <div style={{ fontSize: 12, color: 'var(--pbf-muted)' }}>None yet.</div>
+        )}
+        {items.map(d => (
+          <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 0' }}>
+            <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1 }}>{d.label}</a>
+            <button className="btn-ghost btn-sm" type="button" onClick={() => edit(d)}>Edit</button>
+            <button className="btn-danger btn-sm" type="button" onClick={() => remove(d)}>Delete</button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '12px 24px', background: 'var(--pbf-white)', borderBottom: '1px solid var(--pbf-border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <strong style={{ fontSize: 13 }}>Project documents</strong>
+        <button className="btn-ghost btn-sm" onClick={onClose}>close</button>
+      </div>
+      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+        <List kind="internal" items={internal} />
+        <List kind="external" items={external} />
+      </div>
+      {err && <p style={{ color: 'var(--pbf-red)', fontSize: 12, marginTop: 6 }}>{err}</p>}
     </div>
   );
 }
