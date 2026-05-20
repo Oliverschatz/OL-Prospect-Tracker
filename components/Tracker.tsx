@@ -491,9 +491,6 @@ export default function Tracker({ user, onLogout, isAdmin, onAdmin, onSettings }
             )}
           </div>
           <button className="btn-primary btn-sm" onClick={addCompany}>+ Company</button>
-          <a href="/kanban" className="btn-secondary btn-sm" title="Open Kanban Board" style={{ textDecoration: 'none', display: 'inline-block' }}>
-            Kanban
-          </a>
           {isAdmin && onAdmin && (
             <button className="btn-secondary btn-sm" onClick={onAdmin} title="Admin Dashboard">Admin</button>
           )}

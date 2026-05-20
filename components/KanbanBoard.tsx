@@ -13,7 +13,6 @@ import { RichTextView } from './KanbanRichText';
 
 type Props = {
   user: User;
-  onBack?: () => void;
   onLogout?: () => void;
 };
 
@@ -44,7 +43,7 @@ function tintBg(hex: string): string {
   return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
 }
 
-export default function KanbanBoard({ user, onBack, onLogout }: Props) {
+export default function KanbanBoard({ user, onLogout }: Props) {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -252,7 +251,6 @@ export default function KanbanBoard({ user, onBack, onLogout }: Props) {
             </select>
           </div>
           <button className="btn-secondary btn-sm" onClick={() => setShowWorkerManager(s => !s)}>Workers</button>
-          {onBack && <button className="btn-secondary btn-sm" onClick={onBack}>Back to Tracker</button>}
           {onLogout && <button className="btn-ghost btn-sm" onClick={onLogout} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Logout</button>}
         </div>
       </div>
