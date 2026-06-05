@@ -136,6 +136,42 @@ CREATE TABLE IF NOT EXISTS invoice_items (
   unit_price    NUMERIC NOT NULL DEFAULT 0
 );
 
+-- ─── Idempotent upgrades (safe if an earlier version of these tables exists) ───
+ALTER TABLE seller_settings ADD COLUMN IF NOT EXISTS credentials      TEXT NOT NULL DEFAULT '';
+ALTER TABLE seller_settings ADD COLUMN IF NOT EXISTS mobile           TEXT NOT NULL DEFAULT '';
+ALTER TABLE seller_settings ADD COLUMN IF NOT EXISTS sap_ariba_anid   TEXT NOT NULL DEFAULT '';
+ALTER TABLE seller_settings ADD COLUMN IF NOT EXISTS account_holder   TEXT NOT NULL DEFAULT '';
+ALTER TABLE seller_settings ADD COLUMN IF NOT EXISTS bank_account_no  TEXT NOT NULL DEFAULT '';
+ALTER TABLE seller_settings ADD COLUMN IF NOT EXISTS blz              TEXT NOT NULL DEFAULT '';
+
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS language            TEXT NOT NULL DEFAULT 'de';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS customer_id         TEXT REFERENCES customers(id) ON DELETE SET NULL;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS buyer_name2         TEXT NOT NULL DEFAULT '';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS buyer_street        TEXT NOT NULL DEFAULT '';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS buyer_contact       TEXT NOT NULL DEFAULT '';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS topic               TEXT NOT NULL DEFAULT '';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS service_type        TEXT NOT NULL DEFAULT '';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS venue               TEXT NOT NULL DEFAULT '';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS billing_start       DATE;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS billing_end         DATE;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS billing_unit        TEXT NOT NULL DEFAULT 'Tage';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS units               NUMERIC NOT NULL DEFAULT 1;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS rate                NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS preparation         NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS travel              NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS other_costs         NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS handouts_qty        NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS handouts_unit_price NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS handouts_flat       NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS vat_rate            NUMERIC NOT NULL DEFAULT 19;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS vat_exempt          BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS vat_exempt_reason   TEXT NOT NULL DEFAULT '';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_term        TEXT NOT NULL DEFAULT '';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS closing_text        TEXT NOT NULL DEFAULT '';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS cost_note           TEXT NOT NULL DEFAULT '';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS paid_date           DATE;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminded            BOOLEAN NOT NULL DEFAULT false;
+
 -- ─── Indexes ───
 CREATE INDEX IF NOT EXISTS idx_customers_user_id ON customers(user_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_user_id ON invoices(user_id);
@@ -150,11 +186,15 @@ ALTER TABLE seller_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoice_items ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users see own customers" ON customers;
 CREATE POLICY "Users see own customers" ON customers
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users see own seller_settings" ON seller_settings;
 CREATE POLICY "Users see own seller_settings" ON seller_settings
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users see own invoices" ON invoices;
 CREATE POLICY "Users see own invoices" ON invoices
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users see own invoice_items" ON invoice_items;
 CREATE POLICY "Users see own invoice_items" ON invoice_items
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
