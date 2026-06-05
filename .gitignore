@@ -5,6 +5,7 @@
 
 # testing
 /coverage
+/.invtest
 
 # next.js
 /.next/
