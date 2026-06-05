@@ -78,8 +78,8 @@ export async function generateInvoicePdf(invoice: Invoice, seller: SellerSetting
       const sig = opts.logoBytes.slice(0, 4);
       const isPng = sig[0] === 0x89 && sig[1] === 0x50;
       const img = isPng ? await pdf.embedPng(opts.logoBytes) : await pdf.embedJpg(opts.logoBytes);
-      const w = 230, h = (img.height / img.width) * w;
-      page.drawImage(img, { x: (PW - w) / 2, y: PH - 40 - h, width: w, height: h });
+      const w = 160, h = (img.height / img.width) * w;
+      page.drawImage(img, { x: (PW - w) / 2, y: PH - 42 - h, width: w, height: h });
     } catch { /* logo is decorative; skip on failure */ }
   }
 
@@ -124,7 +124,7 @@ export async function generateInvoicePdf(invoice: Invoice, seller: SellerSetting
     infoRow(L.vatNo, seller.vat_id);
   } else {
     infoRow(L.bankHeading, '');
-    infoRow('', seller.bank_name);
+    infoRow(seller.bank_name, '');
     infoRow(L.account, seller.bank_account_no);
     infoRow(L.blz, seller.blz);
     infoRow(L.iban, seller.iban);
@@ -196,19 +196,20 @@ export async function generateInvoicePdf(invoice: Invoice, seller: SellerSetting
   rightRow(L.vat, moneyPlain(totals.vat)); y -= rowH;
   rightRow(L.amountDue, moneyPlain(totals.gross), { bold: true }); y -= rowH;
 
-  // Group 4 — cost note
-  let g4top = y + 9;
+  // Group 4 — explanation / cost-note box (always present, like the legacy form)
+  y -= 2; page.drawLine({ start: { x: x0, y: y + 8 }, end: { x: x1, y: y + 8 }, thickness: 0.7, color: BORDER }); y -= 6;
   if (invoice.cost_note) {
-    y -= 2; page.drawLine({ start: { x: x0, y: y + 8 }, end: { x: x1, y: y + 8 }, thickness: 0.7, color: BORDER }); y -= 6;
-    g4top = y + 9;
     for (const ln of wrap(invoice.cost_note, font, 9, x1 - x0 - 16)) { T(ln, lblL, y, { size: 9 }); y -= 12; }
+    y -= 4;
+  } else {
+    y -= 22; // keep an empty box for explanations even when there's no note
   }
   const tableBottom = y + 4;
 
   // Outer table border
   const tableTop = groupTops[0] + 2;
   page.drawRectangle({ x: x0, y: tableBottom, width: x1 - x0, height: tableTop - tableBottom, borderColor: BORDER, borderWidth: 0.8 });
-  void g2top; void g3top; void g4top;
+  void g2top; void g3top;
 
   // ─── Payment line + transfer note ───
   y = tableBottom - 16;
