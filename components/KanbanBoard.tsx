@@ -142,6 +142,15 @@ export default function KanbanBoard({ user, onLogout }: Props) {
     return m;
   }, [workers]);
 
+  // How many cards share each split group, so linked siblings can show "#2 / 3".
+  const splitGroupSize = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const c of cards) {
+      if (c.split_group) m.set(c.split_group, (m.get(c.split_group) ?? 0) + 1);
+    }
+    return m;
+  }, [cards]);
+
   const grouped = useMemo(() => {
     const out: Record<Panel, Card[]> = { todo: [], wip: [], review: [], done: [] };
     for (const c of cards) out[c.panel].push(c);
@@ -671,7 +680,16 @@ export default function KanbanBoard({ user, onLogout }: Props) {
                   >
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>
-                      {card.title || 'Untitled'} <span style={{ color: 'var(--pbf-muted)', fontWeight: 400 }}>#{card.split_number}</span>
+                      {card.title || 'Untitled'}
+                      {card.split_group ? (
+                        <span
+                          title={`Linked card — split sibling ${card.split_number} of ${splitGroupSize.get(card.split_group)}`}
+                          style={{
+                            marginLeft: 6, background: 'var(--pbf-blue)', color: 'white',
+                            borderRadius: 999, padding: '0 7px', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap',
+                          }}
+                        >🔗 {card.split_number}/{splitGroupSize.get(card.split_group)}</span>
+                      ) : null}
                     </div>
                     <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
                       <button
@@ -686,6 +704,12 @@ export default function KanbanBoard({ user, onLogout }: Props) {
                         onClick={e => { e.stopPropagation(); handleSplit(card); }}
                         style={{ padding: '0 6px' }}
                       >⎘</button>
+                      <button
+                        className="btn-ghost btn-sm"
+                        title="Delete card"
+                        onClick={e => { e.stopPropagation(); handleDeleteCard(card.id); }}
+                        style={{ padding: '0 6px', color: 'var(--pbf-red)', fontWeight: 700 }}
+                      >×</button>
                     </div>
                   </div>
                   {card.explanation && (
