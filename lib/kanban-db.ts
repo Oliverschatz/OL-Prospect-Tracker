@@ -79,6 +79,15 @@ export async function deleteProject(id: string): Promise<void> {
   if (error) throw error;
 }
 
+// Set (or clear, with null) the WIP column card limit. Owner-only via RLS.
+export async function setWipLimit(id: string, limit: number | null): Promise<Project> {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { data, error } = await supabase
+    .from('kanban_projects').update({ wip_limit: limit }).eq('id', id).select().single();
+  if (error) throw error;
+  return data as Project;
+}
+
 // ─── Project members (invitations) ─────────────────────────────────────────
 
 export async function listMembers(projectId: string): Promise<ProjectMember[]> {

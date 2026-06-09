@@ -8,7 +8,7 @@ import {
   createCard, createDocument, createWorker, deleteCard as dbDeleteCard,
   deleteDocument, listCards, listDocuments, listWorkers,
   updateCard, updateDocument,
-  listProjects, createProject, renameProject, deleteProject,
+  listProjects, createProject, renameProject, deleteProject, setWipLimit,
   listMembers, inviteMember, removeMember, sendInviteEmail, getMyMember, setMemberWorker,
 } from '@/lib/kanban-db';
 import KanbanCardModal from './KanbanCardModal';
@@ -82,6 +82,7 @@ export default function KanbanBoard({ user, onLogout }: Props) {
     [projects, projectId]
   );
   const isOwner = project?.owner_id === user.id;
+  const wipLimit = project?.wip_limit ?? null;
 
   // Load the list of projects the user can access; select the first one.
   useEffect(() => {
@@ -235,6 +236,26 @@ export default function KanbanBoard({ user, onLogout }: Props) {
     return m;
   }
 
+  async function handleSetWipLimit() {
+    if (!project || !isOwner) return;
+    const current = project.wip_limit == null ? '' : String(project.wip_limit);
+    const input = window.prompt('Maximum cards allowed in the WIP column (leave blank for no limit):', current);
+    if (input === null) return;
+    const trimmed = input.trim();
+    let limit: number | null = null;
+    if (trimmed !== '') {
+      const n = parseInt(trimmed, 10);
+      if (!Number.isFinite(n) || n < 1) { setError('WIP limit must be a whole number of at least 1.'); return; }
+      limit = n;
+    }
+    try {
+      const saved = await setWipLimit(project.id, limit);
+      setProjects(curr => curr.map(p => (p.id === saved.id ? saved : p)));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   // ─── Card actions ────────────────────────────────────────────────────
   async function handleAddCard() {
     const title = newCardTitle.trim();
@@ -281,6 +302,12 @@ export default function KanbanBoard({ user, onLogout }: Props) {
     if (!card) return;
     const samePanel = card.panel === toPanel;
     if (samePanel && targetSortOrder === undefined) return;
+
+    // Enforce the WIP limit when moving a card INTO the WIP column.
+    if (!samePanel && toPanel === 'wip' && wipLimit != null && grouped.wip.length >= wipLimit) {
+      setError(`WIP limit reached (${wipLimit}). Finish or move a card out of WIP before adding another.`);
+      return;
+    }
 
     const now = new Date().toISOString();
     const history: HistoryEntry[] = [...card.history];
@@ -405,6 +432,10 @@ export default function KanbanBoard({ user, onLogout }: Props) {
   // trimming or deleting parts of each copy.
   async function handleClone(card: Card) {
     if (!projectId) return;
+    if (card.panel === 'wip' && wipLimit != null && grouped.wip.length >= wipLimit) {
+      setError(`WIP limit reached (${wipLimit}). Clear space in WIP before cloning a WIP card.`);
+      return;
+    }
     try {
       const clone = await createCard(projectId, {
         title: card.title,
@@ -640,10 +671,26 @@ export default function KanbanBoard({ user, onLogout }: Props) {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px 8px' }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--pbf-navy)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.label}</div>
-              <div style={{ fontSize: 12, color: 'var(--pbf-muted)' }}>{counts[p.id]}</div>
+              {p.id === 'wip' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                  <span style={{
+                    color: wipLimit != null && counts.wip >= wipLimit ? 'var(--pbf-red)' : 'var(--pbf-muted)',
+                    fontWeight: wipLimit != null && counts.wip >= wipLimit ? 700 : 400,
+                  }}>
+                    {counts.wip}{wipLimit != null ? ` / ${wipLimit}` : ''}
+                  </span>
+                  {isOwner && (
+                    <button className="btn-ghost btn-sm" title="Set WIP limit" onClick={handleSetWipLimit}
+                      style={{ padding: '0 4px', fontSize: 12 }}>⚙</button>
+                  )}
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: 'var(--pbf-muted)' }}>{counts[p.id]}</div>
+              )}
             </div>
 
-            {grouped[p.id].map(card => {
+            {grouped[p.id].map((card, idx) => {
+              const priority = idx + 1; // 1 = top of the column = highest priority
               const cardColors = card.workers
                 .map(n => workerByName.get(n)?.color)
                 .filter(Boolean) as string[];
@@ -680,6 +727,14 @@ export default function KanbanBoard({ user, onLogout }: Props) {
                   >
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>
+                      <span
+                        title={`Priority ${priority} in ${p.label}`}
+                        style={{
+                          display: 'inline-block', minWidth: 18, textAlign: 'center',
+                          background: 'var(--pbf-navy)', color: 'white', borderRadius: 4,
+                          padding: '0 5px', fontSize: 11, fontWeight: 700, marginRight: 6,
+                        }}
+                      >{priority}</span>
                       {card.title || 'Untitled'}
                       {card.split_group ? (
                         <span
