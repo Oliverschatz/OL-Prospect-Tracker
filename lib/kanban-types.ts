@@ -11,6 +11,7 @@ export type Project = {
   id: string;
   owner_id: string;
   name: string;
+  wip_limit: number | null;   // max cards allowed in the WIP column (null = no limit)
   created_at: string;
 };
 
