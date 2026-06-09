@@ -110,12 +110,24 @@ export default function KanbanBoard({ user, onLogout }: Props) {
           listWorkers(projectId), listCards(projectId), listDocuments(projectId), getMyMember(projectId),
         ]);
         if (cancelled) return;
-        setWorkers(w);
         setCards(c);
         setDocuments(d);
-        // Default "Acting as" to the worker this account was invited as, if any.
-        const mine = me?.worker_name && w.find(x => x.name === me.worker_name) ? me.worker_name : null;
-        setCurrentWorker(cur => mine ?? (w.find(x => x.name === cur) ? cur : (w[0]?.name ?? 'Oliver')));
+        // Default "Acting as" to the worker this account is linked to. If the
+        // membership is linked to a worker name that has no chip in this
+        // project yet (e.g. linked via SQL), create the chip so attribution
+        // and the default selection work.
+        let list = w;
+        const linked = me?.worker_name?.trim() || '';
+        if (linked && !list.some(x => x.name === linked)) {
+          try {
+            const created = await createWorker(projectId, linked);
+            if (cancelled) return;
+            list = [...list, created];
+          } catch { /* a chip with that name may already exist; ignore */ }
+        }
+        setWorkers(list);
+        const mine = linked && list.some(x => x.name === linked) ? linked : null;
+        setCurrentWorker(cur => mine ?? (list.find(x => x.name === cur) ? cur : (list[0]?.name ?? 'Oliver')));
       } catch (e) {
         if (!cancelled) setError((e as Error).message);
       }
