@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { Card, CardFile, CardLink, DocumentKind, FileVersion, HistoryEntry, Worker } from '@/lib/kanban-types';
+import { PANELS } from '@/lib/kanban-types';
 import { ECO_DOMAINS } from '@/lib/kanban-eco';
 import { LITERATURE } from '@/lib/kanban-literature';
 import { signedUrl, uploadFile, removeStorageObject } from '@/lib/kanban-db';
@@ -18,6 +19,7 @@ type Props = {
   onClose: () => void;
   onSave: (next: Card) => Promise<void>;
   onDelete: () => Promise<void>;
+  onOpenCard?: (id: string) => void;
   onAddLinkToCard: (targetCardId: string, label: string, url: string) => Promise<void>;
   onAddLinkToDocs: (kind: DocumentKind, label: string, url: string) => Promise<void>;
 };
@@ -34,7 +36,7 @@ function uid(): string {
 export default function KanbanCardModal({
   card, workers, allCards, currentWorker,
   onSetCurrentWorker, onAddWorker,
-  onClose, onSave, onDelete,
+  onClose, onSave, onDelete, onOpenCard,
   onAddLinkToCard, onAddLinkToDocs,
 }: Props) {
   const [draft, setDraft] = useState<Card>(card);
@@ -54,6 +56,16 @@ export default function KanbanCardModal({
     () => tasks.find(t => t.id === draft.eco_task)?.enablers ?? [],
     [tasks, draft.eco_task]
   );
+  // Other cards produced by splitting the same original (linked siblings).
+  const siblings = useMemo(
+    () => (card.split_group
+      ? allCards
+          .filter(c => c.split_group === card.split_group && c.id !== card.id)
+          .sort((a, b) => a.split_number - b.split_number)
+      : []),
+    [allCards, card.split_group, card.id]
+  );
+
   const chapters = useMemo(
     () => LITERATURE.find(b => b.id === draft.lit_book)?.chapters ?? [],
     [draft.lit_book]
@@ -287,6 +299,42 @@ export default function KanbanCardModal({
 
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && <div style={{ color: 'var(--pbf-red)', fontSize: 13 }}>{error}</div>}
+
+          {/* Linked cards (split siblings) */}
+          {card.split_group && (
+            <div style={{
+              background: 'var(--pbf-light)', border: '1px solid var(--pbf-border)',
+              borderRadius: 6, padding: '8px 12px',
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--pbf-navy)', marginBottom: 4 }}>
+                🔗 Linked cards — split group of {siblings.length + 1}
+              </div>
+              {siblings.length === 0 ? (
+                <div style={{ fontSize: 12, color: 'var(--pbf-muted)' }}>
+                  No other cards in this split group (the rest were deleted).
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {siblings.map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className="btn-secondary btn-sm"
+                      title={`Open "${s.title || 'Untitled'}" #${s.split_number}`}
+                      onClick={() => onOpenCard?.(s.id)}
+                      disabled={!onOpenCard}
+                      style={{ fontSize: 12 }}
+                    >
+                      #{s.split_number} · {s.title || 'Untitled'}
+                      <span style={{ color: 'var(--pbf-muted)', marginLeft: 6 }}>
+                        ({PANELS.find(p => p.id === s.panel)?.label ?? s.panel})
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Title + explanation */}
           <div className="field-row">

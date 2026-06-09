@@ -763,6 +763,7 @@ export default function KanbanBoard({ user, onLogout }: Props) {
           onSetCurrentWorker={setCurrentWorker}
           onAddWorker={handleAddWorker}
           onClose={() => setOpenCardId(null)}
+          onOpenCard={(id) => setOpenCardId(id)}
           onSave={handleSaveCard}
           onDelete={() => handleDeleteCard(openCard.id)}
           onAddLinkToCard={addLinkToCard}
