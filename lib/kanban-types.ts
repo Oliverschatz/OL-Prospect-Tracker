@@ -21,6 +21,7 @@ export type ProjectMember = {
   project_id: string;
   user_id: string | null;   // null until the invited person accepts (logs in)
   email: string;
+  worker_name: string;      // worker chip this person is tied to ('' = none)
   role: MemberRole;
   invited_by: string | null;
   invited_at: string;

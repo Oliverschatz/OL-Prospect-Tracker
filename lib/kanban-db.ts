@@ -93,7 +93,7 @@ export async function listMembers(projectId: string): Promise<ProjectMember[]> {
 }
 
 export async function inviteMember(
-  projectId: string, email: string, invitedBy: string
+  projectId: string, email: string, invitedBy: string, workerName = ''
 ): Promise<ProjectMember> {
   if (!supabase) throw new Error('Supabase not configured');
   const trimmed = email.trim().toLowerCase();
@@ -102,7 +102,7 @@ export async function inviteMember(
   }
   const { data, error } = await supabase
     .from('kanban_project_members')
-    .insert({ project_id: projectId, email: trimmed, role: 'member', invited_by: invitedBy })
+    .insert({ project_id: projectId, email: trimmed, worker_name: workerName.trim(), role: 'member', invited_by: invitedBy })
     .select()
     .single();
   if (error) {
@@ -112,6 +112,23 @@ export async function inviteMember(
     throw error;
   }
   return data as ProjectMember;
+}
+
+// The current user's membership row for a project (matched by account or the
+// email the invitation was addressed to). Used to default "Acting as".
+export async function getMyMember(projectId: string): Promise<ProjectMember | null> {
+  if (!supabase) return null;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const email = (user.email ?? '').toLowerCase();
+  const { data, error } = await supabase
+    .from('kanban_project_members')
+    .select('*')
+    .eq('project_id', projectId)
+    .or(`user_id.eq.${user.id}${email ? `,email.eq.${email}` : ''}`)
+    .limit(1);
+  if (error) throw error;
+  return (data && data[0]) ? (data[0] as ProjectMember) : null;
 }
 
 export async function removeMember(id: string): Promise<void> {
