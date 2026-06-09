@@ -1,0 +1,157 @@
+/* Kanban Shopfloor — Project Business Foundation family theme.
+   Shared chrome + one accent. Retheme by changing --accent and the logo. */
+
+:root {
+  /* Family chrome */
+  --navy: #1c2636;
+  --navy-2: #243044;
+  --bg: #f4f6f9;
+  --card: #ffffff;
+  --border: #e1e6ee;
+  --text: #2b3442;
+  --muted: #6b7686;
+
+  /* Amber callout (family-standard guidance box) */
+  --note-bg: #fdf6e0;
+  --note-border: #ecd791;
+  --note-text: #7a5d12;
+
+  /* Kanban Shopfloor accent (the "stand out" colour) */
+  --accent: #e07b2c;
+  --accent-ink: #ffffff;
+  --accent-soft: #fbeddd;
+
+  /* Signals */
+  --danger: #e4572e;
+  --ok: #2f9e6f;
+  --warn: #c98a18;
+
+  --radius: 6px;
+  --pill: 999px;
+  --shadow: 0 1px 2px rgba(20, 30, 50, 0.06), 0 1px 3px rgba(20, 30, 50, 0.08);
+  --font-head: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-body: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--bg);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4 { font-family: var(--font-head); margin: 0; }
+
+/* ─── Top bar ──────────────────────────────────────────────────────────── */
+.app-bar {
+  background: var(--navy);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  border-bottom: 2px solid var(--accent); /* signature accent underline */
+}
+.app-id { display: flex; flex-direction: column; min-width: 0; }
+.app-id .name-row { display: flex; align-items: center; gap: 8px; }
+.app-id h1 { font-size: 18px; font-weight: 700; color: #fff; }
+.app-id .subtitle { font-size: 11.5px; color: #9aa6b6; }
+.type-badge {
+  background: var(--accent); color: var(--accent-ink);
+  border-radius: 4px; padding: 1px 7px; font-size: 10px; font-weight: 800;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.app-bar .spacer { flex: 1; }
+.app-bar .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pbf-logo {
+  font-size: 10px; color: #aeb8c6; text-align: right; line-height: 1.2;
+  border-left: 1px solid rgba(255,255,255,0.15); padding-left: 14px; margin-left: 4px;
+}
+.pbf-logo strong { color: #fff; display: block; font-size: 11px; }
+
+/* ─── Buttons (pills) ──────────────────────────────────────────────────── */
+.btn {
+  border: 1px solid transparent; border-radius: var(--pill);
+  padding: 6px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  font-family: var(--font-body); line-height: 1; white-space: nowrap;
+}
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-ghost-light { background: rgba(255,255,255,0.10); color: #e7ecf3; border-color: rgba(255,255,255,0.18); }
+.btn-ghost-light:hover { background: rgba(255,255,255,0.18); }
+.btn-secondary { background: #fff; color: var(--text); border-color: var(--border); }
+.btn-secondary:hover { border-color: #c7cedb; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+/* ─── Layout ──────────────────────────────────────────────────────────── */
+.toolbar {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 10px 20px; background: #fff; border-bottom: 1px solid var(--border);
+}
+.note {
+  background: var(--note-bg); border: 1px solid var(--note-border);
+  border-left-width: 4px; color: var(--note-text);
+  border-radius: var(--radius); padding: 10px 14px; font-size: 13px;
+}
+
+/* ─── Board columns with signature separators ─────────────────────────── */
+.board { display: flex; gap: 0; padding: 16px 20px; align-items: flex-start; }
+.column { flex: 1; min-width: 240px; padding: 0 14px; position: relative; }
+.column + .column { border-left: 1px solid var(--border); } /* separator rule */
+.column + .column::before {                                  /* accent tick */
+  content: ''; position: absolute; left: -1px; top: 0; width: 2px; height: 22px;
+  background: var(--accent); border-radius: 2px;
+}
+.column-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.column-head .label {
+  font-weight: 700; font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--navy);
+}
+.column-count { font-size: 12px; color: var(--muted); }
+.column-count.full { color: var(--danger); font-weight: 700; }
+
+.kard {
+  background: var(--card); border: 1px solid var(--border);
+  border-left: 4px solid #cfd6e2; border-radius: var(--radius);
+  padding: 9px 11px; margin-bottom: 9px; box-shadow: var(--shadow); cursor: grab;
+}
+.kard .title-row { display: flex; justify-content: space-between; gap: 8px; }
+.kard .title { font-weight: 600; }
+.prio {
+  display: inline-block; min-width: 18px; text-align: center; margin-right: 6px;
+  background: var(--navy); color: #fff; border-radius: 4px; padding: 0 5px;
+  font-size: 11px; font-weight: 700;
+}
+
+/* OBS pill — text + non-colour treatment, never colour alone */
+.pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  border-radius: var(--pill); padding: 1px 9px; font-size: 11px; font-weight: 600;
+  border: 1.5px solid var(--navy); background: #eef1f6; color: var(--navy);
+}
+.pill.t-dashed { border-style: dashed; }
+.pill.t-dotted { border-style: dotted; }
+.pill.t-double { border-style: double; border-width: 3px; }
+
+/* ─── Footer ──────────────────────────────────────────────────────────── */
+.app-footer {
+  text-align: center; color: var(--muted); font-size: 12px;
+  padding: 22px 16px; border-top: 1px solid var(--border); margin-top: 8px;
+}
+.app-footer a { color: var(--accent); text-decoration: none; }
+.app-footer a:hover { text-decoration: underline; }
+
+input, textarea, select {
+  font-family: var(--font-body); font-size: 14px; color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 10px;
+}
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
