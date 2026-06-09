@@ -9,7 +9,7 @@ import {
   deleteDocument, listCards, listDocuments, listWorkers,
   updateCard, updateDocument,
   listProjects, createProject, renameProject, deleteProject,
-  listMembers, inviteMember, removeMember,
+  listMembers, inviteMember, removeMember, sendInviteEmail,
 } from '@/lib/kanban-db';
 import KanbanCardModal from './KanbanCardModal';
 import { RichTextView } from './KanbanRichText';
@@ -349,6 +349,42 @@ export default function KanbanBoard({ user, onLogout }: Props) {
     }
   }
 
+  // ─── Clone a card: independent duplicate in the same column ───────────
+  // Unlike Split (which links siblings via split_group/number), a clone is a
+  // standalone copy — handy for slicing one task into several by cloning then
+  // trimming or deleting parts of each copy.
+  async function handleClone(card: Card) {
+    if (!projectId) return;
+    try {
+      const clone = await createCard(projectId, {
+        title: card.title,
+        split_group: null,
+        split_number: 1,
+        explanation: card.explanation,
+        body: card.body,
+        panel: card.panel,
+        sort_order: Date.now(),
+        workers: card.workers.slice(),
+        eco_domain: card.eco_domain,
+        eco_task: card.eco_task,
+        eco_enabler: card.eco_enabler,
+        lit_book: card.lit_book,
+        lit_chapter: card.lit_chapter,
+        lit_page: card.lit_page,
+        links: card.links.map(l => ({ ...l, id: uid() })),
+        files: [], // version chains stay with the original; clone starts empty
+        history: [{
+          at: new Date().toISOString(),
+          by: currentWorker,
+          what: `Cloned from "${card.title} #${card.split_number}" by ${currentWorker}`,
+        }],
+      });
+      setCards(curr => [...curr, clone]);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   // ─── Workers ─────────────────────────────────────────────────────────
   async function handleAddWorker(name: string) {
     if (!projectId) return;
@@ -594,12 +630,20 @@ export default function KanbanBoard({ user, onLogout }: Props) {
                     <div style={{ fontWeight: 600, fontSize: 14 }}>
                       {card.title || 'Untitled'} <span style={{ color: 'var(--pbf-muted)', fontWeight: 400 }}>#{card.split_number}</span>
                     </div>
-                    <button
-                      className="btn-ghost btn-sm"
-                      title="Split card"
-                      onClick={e => { e.stopPropagation(); handleSplit(card); }}
-                      style={{ padding: '0 6px' }}
-                    >⎘</button>
+                    <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                      <button
+                        className="btn-ghost btn-sm"
+                        title="Clone card (independent copy)"
+                        onClick={e => { e.stopPropagation(); handleClone(card); }}
+                        style={{ padding: '0 6px' }}
+                      >⧉</button>
+                      <button
+                        className="btn-ghost btn-sm"
+                        title="Split card (linked sibling in To do)"
+                        onClick={e => { e.stopPropagation(); handleSplit(card); }}
+                        style={{ padding: '0 6px' }}
+                      >⎘</button>
+                    </div>
                   </div>
                   {card.explanation && (
                     <div style={{ fontSize: 12, color: 'var(--pbf-muted)', marginTop: 2 }}>
@@ -863,7 +907,14 @@ function MembersPanel({
       const m = await inviteMember(project.id, email, currentUserId);
       setMembers(curr => [...curr, m]);
       setEmail('');
-      setInfo(`Invited ${m.email}. They'll see this project the next time they log in with that email.`);
+      // The invitation row is saved either way; the notification email is
+      // best-effort (it needs SMTP configured).
+      try {
+        await sendInviteEmail(project.id, m.email);
+        setInfo(`Invited ${m.email} — a notification email is on its way. They'll see this project once they log in with that address.`);
+      } catch (mailErr) {
+        setInfo(`Invited ${m.email}. They'll see this project once they log in with that address, but the notification email could not be sent (${(mailErr as Error).message}).`);
+      }
     } catch (e) {
       setErr((e as Error).message);
     }

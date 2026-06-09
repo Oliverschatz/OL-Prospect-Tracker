@@ -147,6 +147,20 @@ BEGIN
   END LOOP;
 END $$;
 
+-- ─── Drop the old user_id-based policies before removing the column ──────────
+DROP POLICY IF EXISTS "kanban_workers read own"     ON kanban_workers;
+DROP POLICY IF EXISTS "kanban_workers insert own"   ON kanban_workers;
+DROP POLICY IF EXISTS "kanban_workers update own"   ON kanban_workers;
+DROP POLICY IF EXISTS "kanban_workers delete own"   ON kanban_workers;
+DROP POLICY IF EXISTS "kanban_cards read own"       ON kanban_cards;
+DROP POLICY IF EXISTS "kanban_cards insert own"     ON kanban_cards;
+DROP POLICY IF EXISTS "kanban_cards update own"     ON kanban_cards;
+DROP POLICY IF EXISTS "kanban_cards delete own"     ON kanban_cards;
+DROP POLICY IF EXISTS "kanban_documents read own"   ON kanban_documents;
+DROP POLICY IF EXISTS "kanban_documents insert own" ON kanban_documents;
+DROP POLICY IF EXISTS "kanban_documents update own" ON kanban_documents;
+DROP POLICY IF EXISTS "kanban_documents delete own" ON kanban_documents;
+
 -- ─── Lock project_id in, drop the now-redundant user_id scoping ──────────────
 ALTER TABLE kanban_workers   ALTER COLUMN project_id SET NOT NULL;
 ALTER TABLE kanban_cards     ALTER COLUMN project_id SET NOT NULL;
@@ -170,28 +184,18 @@ ALTER TABLE kanban_cards     DROP COLUMN IF EXISTS user_id;
 ALTER TABLE kanban_documents DROP COLUMN IF EXISTS user_id;
 
 -- ─── RLS: board tables now keyed on project membership ───────────────────────
-DROP POLICY IF EXISTS "kanban_workers read own"   ON kanban_workers;
-DROP POLICY IF EXISTS "kanban_workers insert own" ON kanban_workers;
-DROP POLICY IF EXISTS "kanban_workers update own" ON kanban_workers;
-DROP POLICY IF EXISTS "kanban_workers delete own" ON kanban_workers;
+-- (the old user_id "*_own" policies were dropped above, before the column.)
+DROP POLICY IF EXISTS "kanban_workers access"   ON kanban_workers;
+DROP POLICY IF EXISTS "kanban_cards access"     ON kanban_cards;
+DROP POLICY IF EXISTS "kanban_documents access" ON kanban_documents;
 
 CREATE POLICY "kanban_workers access" ON kanban_workers
   FOR ALL USING (kanban_can_access(project_id))
   WITH CHECK (kanban_can_access(project_id));
 
-DROP POLICY IF EXISTS "kanban_cards read own"   ON kanban_cards;
-DROP POLICY IF EXISTS "kanban_cards insert own" ON kanban_cards;
-DROP POLICY IF EXISTS "kanban_cards update own" ON kanban_cards;
-DROP POLICY IF EXISTS "kanban_cards delete own" ON kanban_cards;
-
 CREATE POLICY "kanban_cards access" ON kanban_cards
   FOR ALL USING (kanban_can_access(project_id))
   WITH CHECK (kanban_can_access(project_id));
-
-DROP POLICY IF EXISTS "kanban_documents read own"   ON kanban_documents;
-DROP POLICY IF EXISTS "kanban_documents insert own" ON kanban_documents;
-DROP POLICY IF EXISTS "kanban_documents update own" ON kanban_documents;
-DROP POLICY IF EXISTS "kanban_documents delete own" ON kanban_documents;
 
 CREATE POLICY "kanban_documents access" ON kanban_documents
   FOR ALL USING (kanban_can_access(project_id))

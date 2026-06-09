@@ -120,6 +120,26 @@ export async function removeMember(id: string): Promise<void> {
   if (error) throw error;
 }
 
+// Send the invitation notification email (best-effort; requires SMTP config).
+export async function sendInviteEmail(projectId: string, email: string): Promise<void> {
+  if (!supabase) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error('Not signed in');
+  const res = await fetch('/api/kanban/invite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      projectId, email,
+      appUrl: typeof window !== 'undefined' ? window.location.origin : '',
+    }),
+  });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error(j.error || 'Failed to send invitation email');
+  }
+}
+
 // Link any pending invitations addressed to the signed-in user's email to
 // their account, so the shared projects become visible. Safe to call repeatedly.
 export async function claimInvites(): Promise<void> {
