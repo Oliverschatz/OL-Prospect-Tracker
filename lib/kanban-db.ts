@@ -131,6 +131,20 @@ export async function getMyMember(projectId: string): Promise<ProjectMember | nu
   return (data && data[0]) ? (data[0] as ProjectMember) : null;
 }
 
+// Link (or unlink) an existing member to a worker chip after the fact.
+// Owner-only via RLS (see kanban-member-owner-update.sql).
+export async function setMemberWorker(id: string, workerName: string): Promise<ProjectMember> {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { data, error } = await supabase
+    .from('kanban_project_members')
+    .update({ worker_name: workerName.trim() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as ProjectMember;
+}
+
 export async function removeMember(id: string): Promise<void> {
   if (!supabase) return;
   const { error } = await supabase.from('kanban_project_members').delete().eq('id', id);

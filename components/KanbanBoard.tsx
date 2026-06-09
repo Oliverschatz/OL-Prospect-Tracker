@@ -9,7 +9,7 @@ import {
   deleteDocument, listCards, listDocuments, listWorkers,
   updateCard, updateDocument,
   listProjects, createProject, renameProject, deleteProject,
-  listMembers, inviteMember, removeMember, sendInviteEmail, getMyMember,
+  listMembers, inviteMember, removeMember, sendInviteEmail, getMyMember, setMemberWorker,
 } from '@/lib/kanban-db';
 import KanbanCardModal from './KanbanCardModal';
 import { RichTextView } from './KanbanRichText';
@@ -194,6 +194,18 @@ export default function KanbanBoard({ user, onLogout }: Props) {
   async function handleInvite(email: string, workerName: string): Promise<ProjectMember> {
     if (!project) throw new Error('No project selected');
     const m = await inviteMember(project.id, email, user.id, workerName);
+    const name = workerName.trim();
+    if (name && !workers.some(w => w.name === name)) {
+      const w = await createWorker(project.id, name);
+      setWorkers(curr => [...curr, w]);
+    }
+    return m;
+  }
+
+  // Link an existing member to a worker chip (creating it if needed).
+  async function handleSetMemberWorker(memberId: string, workerName: string): Promise<ProjectMember> {
+    if (!project) throw new Error('No project selected');
+    const m = await setMemberWorker(memberId, workerName);
     const name = workerName.trim();
     if (name && !workers.some(w => w.name === name)) {
       const w = await createWorker(project.id, name);
@@ -558,6 +570,7 @@ export default function KanbanBoard({ user, onLogout }: Props) {
           isOwner={isOwner}
           workers={workers}
           onInvite={handleInvite}
+          onSetWorker={handleSetMemberWorker}
           onClose={() => setShowMembers(false)}
         />
       )}
@@ -896,12 +909,13 @@ function DocumentsPanel({
 // ─── Members / invitations panel ────────────────────────────────────────
 
 function MembersPanel({
-  project, isOwner, workers, onInvite, onClose,
+  project, isOwner, workers, onInvite, onSetWorker, onClose,
 }: {
   project: Project;
   isOwner: boolean;
   workers: Worker[];
   onInvite: (email: string, workerName: string) => Promise<ProjectMember>;
+  onSetWorker: (memberId: string, workerName: string) => Promise<ProjectMember>;
   onClose: () => void;
 }) {
   const [members, setMembers] = useState<ProjectMember[]>([]);
@@ -941,6 +955,16 @@ function MembersPanel({
       setErr((e as Error).message);
     }
     setBusy(false);
+  }
+
+  async function link(m: ProjectMember, workerName: string) {
+    setErr('');
+    try {
+      const saved = await onSetWorker(m.id, workerName);
+      setMembers(curr => curr.map(x => (x.id === saved.id ? saved : x)));
+    } catch (e) {
+      setErr((e as Error).message);
+    }
   }
 
   async function remove(m: ProjectMember) {
@@ -993,9 +1017,6 @@ function MembersPanel({
             <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
               <span style={{ flex: 1 }}>
                 {m.email || '(owner)'}
-                {m.worker_name && (
-                  <span style={{ color: 'var(--pbf-muted)' }}> · worker “{m.worker_name}”</span>
-                )}
                 {m.role === 'owner' && <span style={{ color: 'var(--pbf-muted)' }}> — owner</span>}
                 {m.role !== 'owner' && (
                   <span style={{ color: 'var(--pbf-muted)' }}>
@@ -1003,6 +1024,19 @@ function MembersPanel({
                   </span>
                 )}
               </span>
+              {isOwner ? (
+                <select
+                  value={workers.some(w => w.name === m.worker_name) ? m.worker_name : ''}
+                  onChange={e => link(m, e.target.value)}
+                  title="Worker this person acts as"
+                  style={{ fontSize: 12, padding: '2px 4px', maxWidth: 150 }}
+                >
+                  <option value="">— no worker —</option>
+                  {workers.map(w => <option key={w.id} value={w.name}>{w.name}</option>)}
+                </select>
+              ) : (
+                m.worker_name && <span style={{ color: 'var(--pbf-muted)', fontSize: 12 }}>worker “{m.worker_name}”</span>
+              )}
               {isOwner && m.role !== 'owner' && (
                 <button className="btn-danger btn-sm" onClick={() => remove(m)}>Remove</button>
               )}
