@@ -9,7 +9,7 @@ import {
   deleteDocument, listCards, listDocuments, listWorkers,
   updateCard, updateDocument,
   listProjects, createProject, renameProject, deleteProject,
-  listMembers, inviteMember, removeMember, sendInviteEmail,
+  listMembers, inviteMember, removeMember, sendInviteEmail, getMyMember,
 } from '@/lib/kanban-db';
 import KanbanCardModal from './KanbanCardModal';
 import { RichTextView } from './KanbanRichText';
@@ -106,12 +106,16 @@ export default function KanbanBoard({ user, onLogout }: Props) {
     setOpenCardId(null);
     (async () => {
       try {
-        const [w, c, d] = await Promise.all([listWorkers(projectId), listCards(projectId), listDocuments(projectId)]);
+        const [w, c, d, me] = await Promise.all([
+          listWorkers(projectId), listCards(projectId), listDocuments(projectId), getMyMember(projectId),
+        ]);
         if (cancelled) return;
         setWorkers(w);
         setCards(c);
         setDocuments(d);
-        setCurrentWorker(cur => (w.find(x => x.name === cur) ? cur : (w[0]?.name ?? 'Oliver')));
+        // Default "Acting as" to the worker this account was invited as, if any.
+        const mine = me?.worker_name && w.find(x => x.name === me.worker_name) ? me.worker_name : null;
+        setCurrentWorker(cur => mine ?? (w.find(x => x.name === cur) ? cur : (w[0]?.name ?? 'Oliver')));
       } catch (e) {
         if (!cancelled) setError((e as Error).message);
       }
@@ -183,6 +187,19 @@ export default function KanbanBoard({ user, onLogout }: Props) {
     } catch (e) {
       setError((e as Error).message);
     }
+  }
+
+  // Invite a worker: record the membership and make sure the matching worker
+  // chip exists on the board so the invitee shows up by name.
+  async function handleInvite(email: string, workerName: string): Promise<ProjectMember> {
+    if (!project) throw new Error('No project selected');
+    const m = await inviteMember(project.id, email, user.id, workerName);
+    const name = workerName.trim();
+    if (name && !workers.some(w => w.name === name)) {
+      const w = await createWorker(project.id, name);
+      setWorkers(curr => [...curr, w]);
+    }
+    return m;
   }
 
   // ─── Card actions ────────────────────────────────────────────────────
@@ -539,7 +556,8 @@ export default function KanbanBoard({ user, onLogout }: Props) {
         <MembersPanel
           project={project}
           isOwner={isOwner}
-          currentUserId={user.id}
+          workers={workers}
+          onInvite={handleInvite}
           onClose={() => setShowMembers(false)}
         />
       )}
@@ -878,15 +896,17 @@ function DocumentsPanel({
 // ─── Members / invitations panel ────────────────────────────────────────
 
 function MembersPanel({
-  project, isOwner, currentUserId, onClose,
+  project, isOwner, workers, onInvite, onClose,
 }: {
   project: Project;
   isOwner: boolean;
-  currentUserId: string;
+  workers: Worker[];
+  onInvite: (email: string, workerName: string) => Promise<ProjectMember>;
   onClose: () => void;
 }) {
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [email, setEmail] = useState('');
+  const [workerName, setWorkerName] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -904,16 +924,18 @@ function MembersPanel({
     setErr(''); setInfo('');
     setBusy(true);
     try {
-      const m = await inviteMember(project.id, email, currentUserId);
+      const m = await onInvite(email, workerName);
       setMembers(curr => [...curr, m]);
       setEmail('');
+      setWorkerName('');
+      const asName = m.worker_name ? ` as worker "${m.worker_name}"` : '';
       // The invitation row is saved either way; the notification email is
       // best-effort (it needs SMTP configured).
       try {
         await sendInviteEmail(project.id, m.email);
-        setInfo(`Invited ${m.email} — a notification email is on its way. They'll see this project once they log in with that address.`);
+        setInfo(`Invited ${m.email}${asName} — a notification email is on its way. They'll see this project once they log in with that address.`);
       } catch (mailErr) {
-        setInfo(`Invited ${m.email}. They'll see this project once they log in with that address, but the notification email could not be sent (${(mailErr as Error).message}).`);
+        setInfo(`Invited ${m.email}${asName}. They'll see this project once they log in with that address, but the notification email could not be sent (${(mailErr as Error).message}).`);
       }
     } catch (e) {
       setErr((e as Error).message);
@@ -940,12 +962,23 @@ function MembersPanel({
       </div>
 
       {isOwner ? (
-        <div style={{ display: 'flex', gap: 6, maxWidth: 420, marginBottom: 8 }}>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-            placeholder="worker@example.com"
-            onKeyDown={e => { if (e.key === 'Enter' && !busy) invite(); }} style={{ flex: 1 }} />
-          <button className="btn-primary btn-sm" onClick={invite} disabled={busy}>Invite worker</button>
-        </div>
+        <>
+          <div style={{ display: 'flex', gap: 6, maxWidth: 560, marginBottom: 4, flexWrap: 'wrap' }}>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="worker@example.com"
+              onKeyDown={e => { if (e.key === 'Enter' && !busy) invite(); }} style={{ flex: 2, minWidth: 200 }} />
+            <input list="kanban-worker-names" value={workerName} onChange={e => setWorkerName(e.target.value)}
+              placeholder="Worker name (e.g. Anna)"
+              onKeyDown={e => { if (e.key === 'Enter' && !busy) invite(); }} style={{ flex: 1, minWidth: 140 }} />
+            <datalist id="kanban-worker-names">
+              {workers.map(w => <option key={w.id} value={w.name} />)}
+            </datalist>
+            <button className="btn-primary btn-sm" onClick={invite} disabled={busy}>Invite worker</button>
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--pbf-muted)', marginBottom: 8 }}>
+            The worker name links this person to a card chip; they&apos;ll act as it by default. New names create a new worker.
+          </p>
+        </>
       ) : (
         <p style={{ fontSize: 12, color: 'var(--pbf-muted)', marginBottom: 8 }}>
           This project is shared with you. Only the owner can invite or remove members.
@@ -960,6 +993,9 @@ function MembersPanel({
             <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
               <span style={{ flex: 1 }}>
                 {m.email || '(owner)'}
+                {m.worker_name && (
+                  <span style={{ color: 'var(--pbf-muted)' }}> · worker “{m.worker_name}”</span>
+                )}
                 {m.role === 'owner' && <span style={{ color: 'var(--pbf-muted)' }}> — owner</span>}
                 {m.role !== 'owner' && (
                   <span style={{ color: 'var(--pbf-muted)' }}>
