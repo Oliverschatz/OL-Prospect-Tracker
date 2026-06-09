@@ -7,8 +7,29 @@ export const PANELS: { id: Panel; label: string }[] = [
   { id: 'done',   label: 'Done' },
 ];
 
+export type Project = {
+  id: string;
+  owner_id: string;
+  name: string;
+  created_at: string;
+};
+
+export type MemberRole = 'owner' | 'member';
+
+export type ProjectMember = {
+  id: string;
+  project_id: string;
+  user_id: string | null;   // null until the invited person accepts (logs in)
+  email: string;
+  role: MemberRole;
+  invited_by: string | null;
+  invited_at: string;
+  accepted_at: string | null;
+};
+
 export type Worker = {
   id: string;
+  project_id: string;
   name: string;
   color: string;
   sort_order: number;
@@ -18,6 +39,7 @@ export type DocumentKind = 'internal' | 'external';
 
 export type ProjectDocument = {
   id: string;
+  project_id: string;
   kind: DocumentKind;
   label: string;
   url: string;
@@ -50,6 +72,7 @@ export type HistoryEntry = {
 
 export type Card = {
   id: string;
+  project_id: string;
   title: string;
   split_group: string | null;
   split_number: number;
@@ -70,6 +93,9 @@ export type Card = {
   created_at: string;
   updated_at: string;
 };
+
+// Name given to the first project created for a brand-new board.
+export const DEFAULT_PROJECT_NAME = 'New PMP Class';
 
 // Bright, distinguishable defaults used when a new worker is created.
 export const DEFAULT_WORKER_COLORS = [

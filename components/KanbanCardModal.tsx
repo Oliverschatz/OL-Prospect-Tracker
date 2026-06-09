@@ -12,7 +12,6 @@ type Props = {
   card: Card;
   workers: Worker[];
   allCards: Card[];
-  userId: string;
   currentWorker: string;
   onSetCurrentWorker: (name: string) => void;
   onAddWorker: (name: string) => Promise<void>;
@@ -33,7 +32,7 @@ function uid(): string {
 }
 
 export default function KanbanCardModal({
-  card, workers, allCards, userId, currentWorker,
+  card, workers, allCards, currentWorker,
   onSetCurrentWorker, onAddWorker,
   onClose, onSave, onDelete,
   onAddLinkToCard, onAddLinkToDocs,
@@ -130,7 +129,7 @@ export default function KanbanCardModal({
   async function onUploadFile(file: File) {
     setError('');
     try {
-      const { path, size } = await uploadFile(userId, card.id, file);
+      const { path, size } = await uploadFile(card.project_id, card.id, file);
       const version: FileVersion = {
         path,
         uploaded_at: new Date().toISOString(),
@@ -214,7 +213,7 @@ export default function KanbanCardModal({
 
   // ─── Image upload from rich text editor ──────────────────────────────
   async function uploadInlineImage(file: File): Promise<string> {
-    const { path } = await uploadFile(userId, card.id, file);
+    const { path } = await uploadFile(card.project_id, card.id, file);
     return await signedUrl(path, 60 * 60 * 24 * 7); // 1-week signed URL
   }
 
