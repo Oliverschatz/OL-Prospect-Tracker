@@ -1,30 +1,154 @@
 import { supabase } from './supabase';
-import type { Card, Panel, ProjectDocument, DocumentKind, Worker } from './kanban-types';
-import { DEFAULT_WORKER_COLORS } from './kanban-types';
+import type {
+  Card, Panel, ProjectDocument, DocumentKind, Worker, Project, ProjectMember,
+} from './kanban-types';
+import { DEFAULT_WORKER_COLORS, DEFAULT_PROJECT_NAME } from './kanban-types';
 
 const BUCKET = 'kanban';
 
+// ─── Projects ────────────────────────────────────────────────────────────
+// RLS returns every project the current user owns or has been added to as a
+// member, so a plain select is already scoped correctly.
+
+export async function listProjects(userId: string): Promise<Project[]> {
+  if (!supabase) return [];
+  // Pick up any pending invitations addressed to this account first, so the
+  // shared projects show up in the same load.
+  await claimInvites();
+
+  const { data, error } = await supabase
+    .from('kanban_projects')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+
+  // Brand-new board: seed the first project with the canonical name.
+  if (!data || data.length === 0) {
+    const seeded = await createProject(userId, DEFAULT_PROJECT_NAME);
+    return [seeded];
+  }
+  return data as Project[];
+}
+
+export async function createProject(userId: string, name: string): Promise<Project> {
+  if (!supabase) throw new Error('Supabase not configured');
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error('Project name is required');
+
+  const { data, error } = await supabase
+    .from('kanban_projects')
+    .insert({ owner_id: userId, name: trimmed })
+    .select()
+    .single();
+  if (error) {
+    if ((error as { code?: string }).code === '23505') {
+      throw new Error(`A project named "${trimmed}" already exists`);
+    }
+    throw error;
+  }
+  const project = data as Project;
+
+  // Record the owner as a member and seed the default worker.
+  const { data: { user } } = await supabase.auth.getUser();
+  await supabase.from('kanban_project_members').insert({
+    project_id: project.id, user_id: userId, email: (user?.email ?? '').toLowerCase(),
+    role: 'owner', invited_by: userId, accepted_at: new Date().toISOString(),
+  });
+  await createWorker(project.id, 'Oliver');
+  return project;
+}
+
+export async function renameProject(id: string, name: string): Promise<Project> {
+  if (!supabase) throw new Error('Supabase not configured');
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error('Project name is required');
+  const { data, error } = await supabase
+    .from('kanban_projects').update({ name: trimmed }).eq('id', id).select().single();
+  if (error) {
+    if ((error as { code?: string }).code === '23505') {
+      throw new Error(`A project named "${trimmed}" already exists`);
+    }
+    throw error;
+  }
+  return data as Project;
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from('kanban_projects').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ─── Project members (invitations) ─────────────────────────────────────────
+
+export async function listMembers(projectId: string): Promise<ProjectMember[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('kanban_project_members')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('invited_at', { ascending: true });
+  if (error) throw error;
+  return (data || []) as ProjectMember[];
+}
+
+export async function inviteMember(
+  projectId: string, email: string, invitedBy: string
+): Promise<ProjectMember> {
+  if (!supabase) throw new Error('Supabase not configured');
+  const trimmed = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    throw new Error('Please enter a valid email address');
+  }
+  const { data, error } = await supabase
+    .from('kanban_project_members')
+    .insert({ project_id: projectId, email: trimmed, role: 'member', invited_by: invitedBy })
+    .select()
+    .single();
+  if (error) {
+    if ((error as { code?: string }).code === '23505') {
+      throw new Error(`${trimmed} has already been invited to this project`);
+    }
+    throw error;
+  }
+  return data as ProjectMember;
+}
+
+export async function removeMember(id: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from('kanban_project_members').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Link any pending invitations addressed to the signed-in user's email to
+// their account, so the shared projects become visible. Safe to call repeatedly.
+export async function claimInvites(): Promise<void> {
+  if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  const email = user?.email?.toLowerCase();
+  if (!user || !email) return;
+  await supabase
+    .from('kanban_project_members')
+    .update({ user_id: user.id, accepted_at: new Date().toISOString() })
+    .is('user_id', null)
+    .eq('email', email);
+}
+
 // ─── Workers ─────────────────────────────────────────────────────────────
 
-export async function listWorkers(userId: string): Promise<Worker[]> {
+export async function listWorkers(projectId: string): Promise<Worker[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('kanban_workers')
     .select('*')
-    .eq('user_id', userId)
+    .eq('project_id', projectId)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
   if (error) throw error;
-
-  // Seed "Oliver" the first time the user opens the board.
-  if (!data || data.length === 0) {
-    const seeded = await createWorker(userId, 'Oliver');
-    return [seeded];
-  }
-  return data as Worker[];
+  return (data || []) as Worker[];
 }
 
-export async function createWorker(userId: string, name: string): Promise<Worker> {
+export async function createWorker(projectId: string, name: string): Promise<Worker> {
   if (!supabase) throw new Error('Supabase not configured');
   const trimmed = name.trim();
   if (!trimmed) throw new Error('Worker name is required');
@@ -32,7 +156,7 @@ export async function createWorker(userId: string, name: string): Promise<Worker
   const { data: existing } = await supabase
     .from('kanban_workers')
     .select('sort_order')
-    .eq('user_id', userId)
+    .eq('project_id', projectId)
     .order('sort_order', { ascending: false })
     .limit(1);
   const nextOrder = existing && existing.length ? (existing[0].sort_order ?? 0) + 1 : 0;
@@ -40,7 +164,7 @@ export async function createWorker(userId: string, name: string): Promise<Worker
 
   const { data, error } = await supabase
     .from('kanban_workers')
-    .insert({ user_id: userId, name: trimmed, color, sort_order: nextOrder })
+    .insert({ project_id: projectId, name: trimmed, color, sort_order: nextOrder })
     .select()
     .single();
   if (error) throw error;
@@ -61,12 +185,12 @@ export async function deleteWorker(id: string): Promise<void> {
 
 // ─── Cards ───────────────────────────────────────────────────────────────
 
-export async function listCards(userId: string): Promise<Card[]> {
+export async function listCards(projectId: string): Promise<Card[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('kanban_cards')
     .select('*')
-    .eq('user_id', userId)
+    .eq('project_id', projectId)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
   if (error) throw error;
@@ -74,13 +198,13 @@ export async function listCards(userId: string): Promise<Card[]> {
 }
 
 export async function createCard(
-  userId: string,
+  projectId: string,
   partial: Partial<Card> & { title: string }
 ): Promise<Card> {
   if (!supabase) throw new Error('Supabase not configured');
   const now = new Date().toISOString();
   const row = {
-    user_id: userId,
+    project_id: projectId,
     title: partial.title,
     split_group: partial.split_group ?? null,
     split_number: partial.split_number ?? 1,
@@ -124,15 +248,16 @@ export async function deleteCard(id: string): Promise<void> {
 }
 
 // ─── Storage helpers ─────────────────────────────────────────────────────
+// Objects are namespaced by project id so every project member can read them.
 
 export async function uploadFile(
-  userId: string,
+  projectId: string,
   cardId: string,
   file: File
 ): Promise<{ path: string; size: number }> {
   if (!supabase) throw new Error('Supabase not configured');
   const safeName = file.name.replace(/[^A-Za-z0-9._-]+/g, '_');
-  const path = `${userId}/${cardId}/${Date.now()}_${safeName}`;
+  const path = `${projectId}/${cardId}/${Date.now()}_${safeName}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
   if (error) throw error;
   return { path, size: file.size };
@@ -152,12 +277,12 @@ export async function removeStorageObject(path: string): Promise<void> {
 
 // ─── Project documents (Internal / External) ────────────────────────────
 
-export async function listDocuments(userId: string): Promise<ProjectDocument[]> {
+export async function listDocuments(projectId: string): Promise<ProjectDocument[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('kanban_documents')
     .select('*')
-    .eq('user_id', userId)
+    .eq('project_id', projectId)
     .order('kind', { ascending: true })
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
@@ -166,10 +291,10 @@ export async function listDocuments(userId: string): Promise<ProjectDocument[]> 
 }
 
 export async function createDocument(
-  userId: string, kind: DocumentKind, label: string, url: string
+  projectId: string, kind: DocumentKind, label: string, url: string
 ): Promise<ProjectDocument> {
   if (!supabase) throw new Error('Supabase not configured');
-  const row = { user_id: userId, kind, label: label.trim(), url: url.trim(), sort_order: Date.now() };
+  const row = { project_id: projectId, kind, label: label.trim(), url: url.trim(), sort_order: Date.now() };
   const { data, error } = await supabase.from('kanban_documents').insert(row).select().single();
   if (error) throw error;
   return data as ProjectDocument;

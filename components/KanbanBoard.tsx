@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
-import type { Card, DocumentKind, HistoryEntry, Panel, ProjectDocument, Worker } from '@/lib/kanban-types';
+import type { Card, DocumentKind, HistoryEntry, Panel, Project, ProjectDocument, ProjectMember, Worker } from '@/lib/kanban-types';
 import { PANELS } from '@/lib/kanban-types';
 import {
   createCard, createDocument, createWorker, deleteCard as dbDeleteCard,
   deleteDocument, listCards, listDocuments, listWorkers,
   updateCard, updateDocument,
+  listProjects, createProject, renameProject, deleteProject,
+  listMembers, inviteMember, removeMember,
 } from '@/lib/kanban-db';
 import KanbanCardModal from './KanbanCardModal';
 import { RichTextView } from './KanbanRichText';
@@ -58,9 +60,12 @@ function tintBg(hex: string): string {
 }
 
 export default function KanbanBoard({ user, onLogout }: Props) {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+  const [boardLoading, setBoardLoading] = useState(false);
   const [error, setError] = useState('');
   const [currentWorker, setCurrentWorker] = useState<string>('Oliver');
   const [openCardId, setOpenCardId] = useState<string | null>(null);
@@ -68,19 +73,23 @@ export default function KanbanBoard({ user, onLogout }: Props) {
   const [dropIndicator, setDropIndicator] = useState<{ cardId: string; position: 'before' | 'after'; panel: Panel } | null>(null);
   const [showWorkerManager, setShowWorkerManager] = useState(false);
   const [showDocuments, setShowDocuments] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [newCardTitle, setNewCardTitle] = useState('');
 
+  const project = useMemo(
+    () => projects.find(p => p.id === projectId) ?? null,
+    [projects, projectId]
+  );
+  const isOwner = project?.owner_id === user.id;
+
+  // Load the list of projects the user can access; select the first one.
   useEffect(() => {
     (async () => {
       try {
-        const [w, c, d] = await Promise.all([listWorkers(user.id), listCards(user.id), listDocuments(user.id)]);
-        setWorkers(w);
-        setCards(c);
-        setDocuments(d);
-        if (w.length && !w.find(x => x.name === currentWorker)) {
-          setCurrentWorker(w[0].name);
-        }
+        const ps = await listProjects(user.id);
+        setProjects(ps);
+        setProjectId(prev => (prev && ps.some(p => p.id === prev) ? prev : ps[0]?.id ?? null));
       } catch (e) {
         setError((e as Error).message);
       }
@@ -88,6 +97,28 @@ export default function KanbanBoard({ user, onLogout }: Props) {
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id]);
+
+  // Load the board (workers / cards / documents) for the selected project.
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    setBoardLoading(true);
+    setOpenCardId(null);
+    (async () => {
+      try {
+        const [w, c, d] = await Promise.all([listWorkers(projectId), listCards(projectId), listDocuments(projectId)]);
+        if (cancelled) return;
+        setWorkers(w);
+        setCards(c);
+        setDocuments(d);
+        setCurrentWorker(cur => (w.find(x => x.name === cur) ? cur : (w[0]?.name ?? 'Oliver')));
+      } catch (e) {
+        if (!cancelled) setError((e as Error).message);
+      }
+      if (!cancelled) setBoardLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [projectId]);
 
   const workerByName = useMemo(() => {
     const m = new Map<string, Worker>();
@@ -112,12 +143,54 @@ export default function KanbanBoard({ user, onLogout }: Props) {
     done: grouped.done.length,
   }), [cards.length, grouped]);
 
+  // ─── Project actions ──────────────────────────────────────────────────
+  async function handleNewProject() {
+    const name = window.prompt('Name for the new project');
+    if (!name || !name.trim()) return;
+    try {
+      const p = await createProject(user.id, name);
+      setProjects(curr => [...curr, p]);
+      setProjectId(p.id);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function handleRenameProject() {
+    if (!project || !isOwner) return;
+    const name = window.prompt('Rename project', project.name);
+    if (name === null || !name.trim() || name.trim() === project.name) return;
+    try {
+      const saved = await renameProject(project.id, name);
+      setProjects(curr => curr.map(p => (p.id === saved.id ? saved : p)));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function handleDeleteProject() {
+    if (!project || !isOwner) return;
+    if (projects.filter(p => p.owner_id === user.id).length <= 1) {
+      setError('You must keep at least one project of your own.');
+      return;
+    }
+    if (!window.confirm(`Delete project "${project.name}" and all its cards, workers and documents? This cannot be undone.`)) return;
+    try {
+      await deleteProject(project.id);
+      const remaining = projects.filter(p => p.id !== project.id);
+      setProjects(remaining);
+      setProjectId(remaining[0]?.id ?? null);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   // ─── Card actions ────────────────────────────────────────────────────
   async function handleAddCard() {
     const title = newCardTitle.trim();
-    if (!title) return;
+    if (!title || !projectId) return;
     try {
-      const c = await createCard(user.id, {
+      const c = await createCard(projectId, {
         title, panel: 'todo', split_number: 1,
         sort_order: (grouped.todo[grouped.todo.length - 1]?.sort_order ?? 0) + 1,
       });
@@ -230,6 +303,7 @@ export default function KanbanBoard({ user, onLogout }: Props) {
 
   // ─── Split a card: original becomes "1", copy goes to "To do" as next number ──
   async function handleSplit(card: Card) {
+    if (!projectId) return;
     try {
       const group = card.split_group ?? uuid();
 
@@ -246,7 +320,7 @@ export default function KanbanBoard({ user, onLogout }: Props) {
 
       // 2. Create the copy in "To do" — content is copied, files/links re-linked by reference,
       //    history starts fresh with a "split from #N" entry.
-      const copy = await createCard(user.id, {
+      const copy = await createCard(projectId, {
         title: card.title,
         split_group: card.split_group ?? group,
         split_number: nextN,
@@ -277,7 +351,8 @@ export default function KanbanBoard({ user, onLogout }: Props) {
 
   // ─── Workers ─────────────────────────────────────────────────────────
   async function handleAddWorker(name: string) {
-    const w = await createWorker(user.id, name);
+    if (!projectId) return;
+    const w = await createWorker(projectId, name);
     setWorkers(curr => [...curr, w]);
   }
 
@@ -296,7 +371,8 @@ export default function KanbanBoard({ user, onLogout }: Props) {
   }
 
   async function addLinkToDocs(kind: DocumentKind, label: string, url: string) {
-    const doc = await createDocument(user.id, kind, label, url);
+    if (!projectId) return;
+    const doc = await createDocument(projectId, kind, label, url);
     setDocuments(curr => [...curr, doc]);
   }
 
@@ -350,7 +426,7 @@ export default function KanbanBoard({ user, onLogout }: Props) {
 
   // ─── Render ──────────────────────────────────────────────────────────
   if (loading) return <div className="loading-screen">Loading kanban…</div>;
-  const openCard = cards.find(c => c.id === openCardId) || null;
+  const openCard = boardLoading ? null : (cards.find(c => c.id === openCardId) || null);
 
   return (
     <div>
@@ -365,12 +441,34 @@ export default function KanbanBoard({ user, onLogout }: Props) {
         </div>
         <div className="header-actions">
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'rgba(255,255,255,0.85)' }}>
+            <span>Project:</span>
+            <select value={projectId ?? ''} onChange={e => setProjectId(e.target.value)}
+              style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.25)', padding: '4px 8px', maxWidth: 200 }}>
+              {projects.map(p => (
+                <option key={p.id} value={p.id} style={{ color: '#1a2744' }}>
+                  {p.name}{p.owner_id !== user.id ? ' (shared)' : ''}
+                </option>
+              ))}
+            </select>
+            <button className="btn-ghost btn-sm" title="New project" onClick={handleNewProject}
+              style={{ color: 'white', padding: '2px 8px' }}>+</button>
+            {isOwner && (
+              <>
+                <button className="btn-ghost btn-sm" title="Rename project" onClick={handleRenameProject}
+                  style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11 }}>Rename</button>
+                <button className="btn-ghost btn-sm" title="Delete project" onClick={handleDeleteProject}
+                  style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Delete</button>
+              </>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'rgba(255,255,255,0.85)' }}>
             <span>Acting as:</span>
             <select value={currentWorker} onChange={e => setCurrentWorker(e.target.value)}
               style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.25)', padding: '4px 8px' }}>
               {workers.map(w => <option key={w.id} value={w.name} style={{ color: '#1a2744' }}>{w.name}</option>)}
             </select>
           </div>
+          <button className="btn-secondary btn-sm" onClick={() => setShowMembers(s => !s)}>Invite</button>
           <button className="btn-secondary btn-sm" onClick={() => setShowDocuments(s => !s)}>Documents ({documents.length})</button>
           <button className="btn-secondary btn-sm" onClick={() => setShowWorkerManager(s => !s)}>Workers ({workers.length})</button>
           {onLogout && <button className="btn-ghost btn-sm" onClick={onLogout} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Logout</button>}
@@ -401,19 +499,28 @@ export default function KanbanBoard({ user, onLogout }: Props) {
         </div>
       </div>
 
-      {showWorkerManager && (
+      {showMembers && project && (
+        <MembersPanel
+          project={project}
+          isOwner={isOwner}
+          currentUserId={user.id}
+          onClose={() => setShowMembers(false)}
+        />
+      )}
+
+      {showWorkerManager && projectId && (
         <WorkerManager
-          workers={workers} userId={user.id}
+          workers={workers} projectId={projectId}
           onClose={() => setShowWorkerManager(false)}
           onChange={(next) => setWorkers(next)}
         />
       )}
 
-      {showDocuments && (
+      {showDocuments && projectId && (
         <DocumentsPanel
           documents={documents}
           allCards={cards}
-          userId={user.id}
+          projectId={projectId}
           onClose={() => setShowDocuments(false)}
           onChange={setDocuments}
           onAddLinkToCard={addLinkToCard}
@@ -541,7 +648,6 @@ export default function KanbanBoard({ user, onLogout }: Props) {
           card={openCard}
           workers={workers}
           allCards={cards}
-          userId={user.id}
           currentWorker={currentWorker}
           onSetCurrentWorker={setCurrentWorker}
           onAddWorker={handleAddWorker}
@@ -559,10 +665,10 @@ export default function KanbanBoard({ user, onLogout }: Props) {
 // ─── Worker manager popover ─────────────────────────────────────────────
 
 function WorkerManager({
-  workers, userId, onClose, onChange,
+  workers, projectId, onClose, onChange,
 }: {
   workers: Worker[];
-  userId: string;
+  projectId: string;
   onClose: () => void;
   onChange: (next: Worker[]) => void;
 }) {
@@ -572,7 +678,7 @@ function WorkerManager({
   async function add() {
     setErr('');
     try {
-      const w = await createWorker(userId, name);
+      const w = await createWorker(projectId, name);
       onChange([...workers, w]);
       setName('');
     } catch (e) {
@@ -610,12 +716,12 @@ function WorkerManager({
 // ─── Project documents panel ────────────────────────────────────────────
 
 function DocumentsPanel({
-  documents, allCards, userId, onClose, onChange,
+  documents, allCards, projectId, onClose, onChange,
   onAddLinkToCard, onAddLinkToDocs, onRemoveDocument,
 }: {
   documents: ProjectDocument[];
   allCards: Card[];
-  userId: string;
+  projectId: string;
   onClose: () => void;
   onChange: (next: ProjectDocument[]) => void;
   onAddLinkToCard: (cardId: string, label: string, url: string) => Promise<void>;
@@ -654,7 +760,7 @@ function DocumentsPanel({
       return;
     }
     try {
-      const doc = await createDocument(userId, kind, label, url);
+      const doc = await createDocument(projectId, kind, label, url);
       onChange([...documents, doc]);
       setErr('');
     } catch (e) { setErr((e as Error).message); }
@@ -721,6 +827,108 @@ function DocumentsPanel({
         <List kind="external" items={external} />
       </div>
       {err && <p style={{ color: 'var(--pbf-red)', fontSize: 12, marginTop: 6 }}>{err}</p>}
+    </div>
+  );
+}
+
+// ─── Members / invitations panel ────────────────────────────────────────
+
+function MembersPanel({
+  project, isOwner, currentUserId, onClose,
+}: {
+  project: Project;
+  isOwner: boolean;
+  currentUserId: string;
+  onClose: () => void;
+}) {
+  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [info, setInfo] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      try { setMembers(await listMembers(project.id)); }
+      catch (e) { setErr((e as Error).message); }
+      setLoading(false);
+    })();
+  }, [project.id]);
+
+  async function invite() {
+    setErr(''); setInfo('');
+    setBusy(true);
+    try {
+      const m = await inviteMember(project.id, email, currentUserId);
+      setMembers(curr => [...curr, m]);
+      setEmail('');
+      setInfo(`Invited ${m.email}. They'll see this project the next time they log in with that email.`);
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+    setBusy(false);
+  }
+
+  async function remove(m: ProjectMember) {
+    if (m.role === 'owner') return;
+    if (!window.confirm(`Remove ${m.email} from "${project.name}"?`)) return;
+    try {
+      await removeMember(m.id);
+      setMembers(curr => curr.filter(x => x.id !== m.id));
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  }
+
+  return (
+    <div style={{ padding: '12px 24px', background: 'var(--pbf-white)', borderBottom: '1px solid var(--pbf-border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <strong style={{ fontSize: 13 }}>Team members — {project.name}</strong>
+        <button className="btn-ghost btn-sm" onClick={onClose}>close</button>
+      </div>
+
+      {isOwner ? (
+        <div style={{ display: 'flex', gap: 6, maxWidth: 420, marginBottom: 8 }}>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+            placeholder="worker@example.com"
+            onKeyDown={e => { if (e.key === 'Enter' && !busy) invite(); }} style={{ flex: 1 }} />
+          <button className="btn-primary btn-sm" onClick={invite} disabled={busy}>Invite worker</button>
+        </div>
+      ) : (
+        <p style={{ fontSize: 12, color: 'var(--pbf-muted)', marginBottom: 8 }}>
+          This project is shared with you. Only the owner can invite or remove members.
+        </p>
+      )}
+
+      {loading ? (
+        <div style={{ fontSize: 12, color: 'var(--pbf-muted)' }}>Loading members…</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 480 }}>
+          {members.map(m => (
+            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+              <span style={{ flex: 1 }}>
+                {m.email || '(owner)'}
+                {m.role === 'owner' && <span style={{ color: 'var(--pbf-muted)' }}> — owner</span>}
+                {m.role !== 'owner' && (
+                  <span style={{ color: 'var(--pbf-muted)' }}>
+                    {' '}— {m.accepted_at ? 'joined' : 'invited (pending)'}
+                  </span>
+                )}
+              </span>
+              {isOwner && m.role !== 'owner' && (
+                <button className="btn-danger btn-sm" onClick={() => remove(m)}>Remove</button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {info && <p style={{ color: 'var(--pbf-green)', fontSize: 12, marginTop: 6 }}>{info}</p>}
+      {err && <p style={{ color: 'var(--pbf-red)', fontSize: 12, marginTop: 6 }}>{err}</p>}
+      <p style={{ fontSize: 11, color: 'var(--pbf-muted)', marginTop: 6 }}>
+        Invited workers can view and edit this project's cards once they sign in with the invited email.
+      </p>
     </div>
   );
 }
