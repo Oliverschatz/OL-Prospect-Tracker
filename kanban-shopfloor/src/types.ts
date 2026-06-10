@@ -42,7 +42,7 @@ export interface Estimate {
 // the full unit→sub-unit→individual breakdown. Every other organization is
 // opaque — a box plus whatever individuals you happen to know.
 export type ObsKind = 'organization' | 'unit' | 'individual';
-export type UnitType = 'unit' | 'managed_team' | 'scrum_team';
+export type UnitType = 'division' | 'department' | 'subsidiary' | 'managed_team' | 'scrum_team' | 'volunteer_team' | 'other';
 export type ObsTreatment = 'solid' | 'dashed' | 'dotted' | 'double' | 'monogram';
 
 export interface Contact {
@@ -182,7 +182,11 @@ export const DEFAULT_CONSTRAINTS: ConstraintDef[] = [
 export const POINTS_SCALE = [1, 2, 3, 5, 8, 13, 20, 30, 50] as const;
 
 export const UNIT_TYPE_LABELS: Record<UnitType, string> = {
-  unit: 'Business unit',
-  managed_team: 'Managed team',
-  scrum_team: 'Self-managed (Scrum) team',
+  division: 'Division',
+  department: 'Department',
+  subsidiary: 'Subsidiary',
+  managed_team: 'Managed project team',
+  scrum_team: 'Self-managed Scrum team',
+  volunteer_team: 'Volunteer team',
+  other: 'Other',
 };

@@ -28,10 +28,9 @@ export default function SwimlaneView({ board, mode, dismissed, onDismiss, onOpen
   walk(null, 0);
   lanes.push({ id: '__unassigned__', name: 'Unassigned', kind: 'unassigned', depth: 0 });
 
-  // Tasks (top-level) ordered left→right by decreasing priority:
-  // by column order, then by position within the column.
+  // Global priority order (decreasing): by column order, then position in column.
   const colIndex = new Map(board.settings.columns.map((c, i) => [c.id, i]));
-  const tasks: Card[] = liveCards(board)
+  const ordered: Card[] = liveCards(board)
     .filter(c => !c.parent_id)
     .sort((a, b) => (colIndex.get(a.column)! - colIndex.get(b.column)!) || (a.sort_order - b.sort_order));
 
@@ -39,75 +38,57 @@ export default function SwimlaneView({ board, mode, dismissed, onDismiss, onOpen
   const estLabel = (c: Card) => (board.settings.estimate_method === 'points'
     ? `${pointsRollup(board, c) ?? 0} pts`
     : formatEstimate(c.estimate, board.settings.estimate_method));
-
   const inLane = (lane: Lane, t: Card) =>
     lane.kind === 'unassigned' ? t.assignees.length === 0 : t.assignees.includes(lane.id);
-
-  const gridCols = `220px repeat(${tasks.length}, 150px)`;
 
   return (
     <div className="view-scroll">
       <div className="view-head">
         <h2>Swimlanes</h2>
-        <p className="muted">Who is assigned what. Each row is an organization, business unit or person; each column is a task, ordered left→right by decreasing priority (not a timeline).</p>
+        <p className="muted">Each row is an organization, business unit or person. Within a lane the tasks are packed left→right in the expected order of completion (decreasing priority) — it is not a timeline.</p>
       </div>
 
       <Coach id="swim" mode={mode} dismissed={dismissed} onDismiss={onDismiss}>
-        A task appears in the lane of every OBS node it's assigned to. Assign work on the <strong>Kanban board</strong> (click a card) and it lands here. Click any chip to open the task.
+        A task sits in the lane of every OBS node it's assigned to, ordered by priority within that lane. Assign work on the <strong>Kanban board</strong>; click a lane label to edit that node, or a chip to open the task.
       </Coach>
 
-      {tasks.length === 0
+      {ordered.length === 0
         ? <div className="panel"><p className="muted">No tasks yet. Add cards on the Kanban board.</p></div>
         : (
           <div className="swim">
-            <div className="swim-grid" style={{ gridTemplateColumns: gridCols }}>
-              <div className="swim-corner">Lane \ priority →</div>
-              {tasks.map((t, i) => (
-                <div className="swim-head" key={t.id}><span className="swim-prio">#{i + 1}</span><span className="swim-col">{colLabel(t.column)}</span></div>
-              ))}
-              {lanes.map(lane => (
-                <RowFragment key={lane.id} lane={lane} tasks={tasks} inLane={inLane} estLabel={estLabel} onOpenCard={onOpenCard} onEditNode={onEditNode} />
-              ))}
-            </div>
+            {lanes.map(lane => {
+              const laneTasks = ordered.filter(t => inLane(lane, t));
+              const editable = lane.kind !== 'unassigned';
+              return (
+                <div className="swim-row" key={lane.id}>
+                  <div
+                    className={`swim-lane k-${lane.kind}${editable ? ' clickable' : ''}`}
+                    style={{ paddingLeft: 8 + lane.depth * 16 }}
+                    title={editable ? `${lane.name} — click to edit` : lane.name}
+                    onClick={editable ? () => onEditNode(lane.id) : undefined}
+                  >
+                    <span className="swim-lane-mark">{lane.kind === 'organization' ? '▣' : lane.kind === 'unit' ? '▤' : lane.kind === 'individual' ? '•' : '∅'}</span>
+                    {lane.name}
+                  </div>
+                  <div className="swim-track">
+                    {laneTasks.length === 0
+                      ? <span className="swim-empty">—</span>
+                      : laneTasks.map((t, i) => (
+                        <button className="swim-chip" key={t.id} onClick={() => onOpenCard(t.id)} title={`${t.title} · ${colLabel(t.column)}`}>
+                          <span className="swim-chip-prio">{i + 1}</span>
+                          <span className="swim-chip-body">
+                            <span className="swim-chip-title">{t.title}</span>
+                            <span className="swim-chip-est">{estLabel(t)} · {colLabel(t.column)}</span>
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       <Footer />
     </div>
-  );
-}
-
-function RowFragment({
-  lane, tasks, inLane, estLabel, onOpenCard, onEditNode,
-}: {
-  lane: Lane;
-  tasks: Card[];
-  inLane: (lane: Lane, t: Card) => boolean;
-  estLabel: (c: Card) => string;
-  onOpenCard: (id: string) => void;
-  onEditNode: (id: string) => void;
-}) {
-  const editable = lane.kind !== 'unassigned';
-  return (
-    <>
-      <div
-        className={`swim-lane k-${lane.kind}${editable ? ' clickable' : ''}`}
-        style={{ paddingLeft: 8 + lane.depth * 16 }}
-        title={editable ? `${lane.name} — click to edit` : lane.name}
-        onClick={editable ? () => onEditNode(lane.id) : undefined}
-      >
-        <span className="swim-lane-mark">{lane.kind === 'organization' ? '▣' : lane.kind === 'unit' ? '▤' : lane.kind === 'individual' ? '•' : '∅'}</span>
-        {lane.name}
-      </div>
-      {tasks.map(t => (
-        <div className="swim-cell" key={t.id}>
-          {inLane(lane, t) && (
-            <button className="swim-chip" onClick={() => onOpenCard(t.id)} title={t.title}>
-              <span className="swim-chip-title">{t.title}</span>
-              <span className="swim-chip-est">{estLabel(t)}</span>
-            </button>
-          )}
-        </div>
-      ))}
-    </>
   );
 }

@@ -178,7 +178,7 @@ export function addObs(
     parent_id: opts.parent_id,
     is_home: opts.kind === 'organization' ? !!opts.is_home : undefined,
     org_code: opts.kind === 'organization' ? 'ORG' : undefined,
-    unit_type: opts.kind === 'unit' ? (opts.unit_type ?? 'unit') : undefined,
+    unit_type: opts.kind === 'unit' ? (opts.unit_type ?? 'department') : undefined,
     color: nextObsColor(board),
     treatment: opts.kind === 'organization' ? 'solid' : undefined,
     rev: 0, actor, updated_at: new Date().toISOString(),

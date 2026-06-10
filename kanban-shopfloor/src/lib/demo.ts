@@ -36,7 +36,7 @@ export function buildDemo(): Board {
   b = updateObs(b, home.id, { name: 'Steinbrecher Construction & Restoration Ltd.', org_code: 'STB', color: '#1a2744', industry: 'General contractor — heritage construction' }, A);
 
   const obs = (kind: 'organization' | 'unit' | 'individual', parent: string, name: string, extra?: Partial<Parameters<typeof updateObs>[2]>): string => {
-    const r = addObs(b, { kind, parent_id: parent, name, unit_type: kind === 'unit' ? 'unit' : undefined }, A);
+    const r = addObs(b, { kind, parent_id: parent, name, unit_type: kind === 'unit' ? 'department' : undefined }, A);
     b = r.board;
     if (extra) b = updateObs(b, r.id, extra, A);
     return r.id;

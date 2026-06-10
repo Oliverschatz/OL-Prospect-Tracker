@@ -179,7 +179,7 @@ export function nextObsColor(board: Board): string {
 }
 
 export function unitTypeLabel(node: ObsNode): string {
-  return node.unit_type ? UNIT_TYPE_LABELS[node.unit_type] : UNIT_TYPE_LABELS.unit;
+  return node.unit_type ? UNIT_TYPE_LABELS[node.unit_type] : UNIT_TYPE_LABELS.other;
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -240,11 +240,14 @@ export function normalizeBoard(b: Board): Board {
 
   // OBS: rename legacy kinds ('org' → organization, 'resource' → individual).
   const obs = Array.isArray(b.obs) ? b.obs : [];
+  const validUnitTypes = ['division', 'department', 'subsidiary', 'managed_team', 'scrum_team', 'volunteer_team', 'other'];
   out.obs = obs.map(n => {
     const kind = (n.kind as string) === 'org' ? 'organization'
       : (n.kind as string) === 'resource' ? 'individual'
       : n.kind;
-    return { ...n, kind } as ObsNode;
+    const node = { ...n, kind } as ObsNode;
+    if (kind === 'unit' && (!node.unit_type || !validUnitTypes.includes(node.unit_type))) node.unit_type = 'other';
+    return node;
   });
   // Ensure at least one organization, and exactly one home org.
   const orgs = out.obs.filter(n => n.kind === 'organization' && !n.deleted);

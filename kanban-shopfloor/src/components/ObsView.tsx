@@ -4,7 +4,7 @@ import { childrenOf, homeOrg, nodePath, organizations, rootOrg } from '../lib/bo
 import { addCustomerAbove, addObs, deleteObs, updateObs } from '../lib/mutations';
 
 const TREATMENTS: ObsTreatment[] = ['solid', 'dashed', 'dotted', 'double', 'monogram'];
-const UNIT_TYPES: UnitType[] = ['unit', 'managed_team', 'scrum_team'];
+const UNIT_TYPES: UnitType[] = ['division', 'department', 'subsidiary', 'managed_team', 'scrum_team', 'volunteer_team', 'other'];
 
 type Common = {
   board: Board;
@@ -38,7 +38,7 @@ function HomeNode({ board, node, actor, apply, depth }: Common & { node: ObsNode
         {isOrg && <input className="obs-code" value={node.org_code ?? ''} placeholder="CODE" onChange={e => apply(b => updateObs(b, node.id, { org_code: e.target.value.toUpperCase() }, actor))} />}
         <input className="obs-name" value={node.name} onChange={e => apply(b => updateObs(b, node.id, { name: e.target.value }, actor))} />
         {isUnit && (
-          <select value={node.unit_type ?? 'unit'} onChange={e => apply(b => updateObs(b, node.id, { unit_type: e.target.value as UnitType }, actor))}>
+          <select value={node.unit_type ?? 'department'} onChange={e => apply(b => updateObs(b, node.id, { unit_type: e.target.value as UnitType }, actor))}>
             {UNIT_TYPES.map(t => <option key={t} value={t}>{UNIT_TYPE_LABELS[t]}</option>)}
           </select>
         )}
