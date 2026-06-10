@@ -1,9 +1,10 @@
-export type ViewId = 'project' | 'obs' | 'board';
+export type ViewId = 'project' | 'obs' | 'diagram' | 'board';
 
 const STEPS: { id: ViewId; n: number; label: string; hint: string }[] = [
   { id: 'project', n: 1, label: 'Project', hint: 'Name, estimates, WIP, DoR / DoD' },
   { id: 'obs', n: 2, label: 'Organization', hint: 'Who does the work (OBS)' },
-  { id: 'board', n: 3, label: 'Board', hint: 'The work, as cards' },
+  { id: 'diagram', n: 3, label: 'OBS diagram', hint: 'Picture of the structure · export' },
+  { id: 'board', n: 4, label: 'Kanban board', hint: 'The work, as cards' },
 ];
 
 export default function Sidebar({ view, onNavigate }: { view: ViewId; onNavigate: (v: ViewId) => void }) {
