@@ -43,8 +43,8 @@ export function buildDemo(): Board {
   };
 
   const office = obs('unit', home.id, 'Project Office');
-  const theresa = obs('individual', office, 'Theresa Vogel', { info: 'Project planner — the user of this board', contact: { email: 't.vogel@steinbrecher-bau.example' } });
-  obs('individual', office, 'Markus Steinbrecher', { info: 'Project manager' });
+  const theresa = obs('individual', office, 'Theresa Vogel', { info: 'Project manager — the user of this board', contact: { email: 't.vogel@steinbrecher-bau.example' } });
+  obs('individual', office, 'Markus Steinbrecher', { info: 'Managing director (owner)' });
   const robert = obs('individual', office, 'Robert Kuhn', { info: 'Commercial manager — claims & change orders' });
   const siteOps = obs('unit', home.id, 'Site Operations', { unit_type: 'managed_team' });
   const aylin = obs('individual', siteOps, 'Aylin Demir', { info: 'Site manager' });
@@ -72,6 +72,10 @@ export function buildDemo(): Board {
   // ── Subcontractors (tier 3) ──
   const brd = obs('organization', hlz, 'Brandl Scaffolding Ltd.', { org_code: 'BRD', color: '#c98a18', contract_label: 'SC-7 (time & material)', treatment: 'dotted', industry: 'Scaffolding & access' });
   obs('individual', brd, 'Hannes Brandl', { info: 'Foreman' });
+  const fts = obs('organization', hlz, 'Falk Timber Supply Ltd.', { org_code: 'FTS', color: '#7a6f1f', contract_label: 'SC-8 (supply)', industry: 'Structural timber supply' });
+  obs('individual', fts, 'Greta Falk', { info: 'Sales lead' });
+  const adl = obs('organization', hlz, 'Adler Sheet Metal Inc.', { org_code: 'ADL', color: '#9e4f6b', contract_label: 'SC-11 (unit price)', industry: 'Roof flashing & metalwork' });
+  obs('individual', adl, 'Bruno Adler', { info: 'Foreman' });
   const gld = obs('organization', frc, 'Goldgrund Gilding Inc.', { org_code: 'GLD', color: '#e0a020', contract_label: 'SC-12 (unit price)', industry: 'Gold leaf & gilding' });
   obs('individual', gld, 'Beate Goldgrund', { info: 'Master gilder' });
   const lft = obs('organization', alp, 'LiftPlan Elevator Technology Ltd.', { org_code: 'LFT', color: '#1f8a8a', contract_label: 'SC-3 (fixed price)', industry: 'Elevator installation' });
