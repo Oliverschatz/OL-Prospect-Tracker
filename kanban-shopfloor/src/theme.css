@@ -472,6 +472,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .pm-toggle { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: var(--pill); padding: 1px 8px 1px 5px; cursor: pointer; }
 .pm-toggle input { width: auto; margin: 0; }
 .pm-toggle.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.no-pm { color: var(--danger); font-weight: 600; }
 
 /* Report preview */
 .report-actions { display: flex; gap: 8px; margin-bottom: 12px; }

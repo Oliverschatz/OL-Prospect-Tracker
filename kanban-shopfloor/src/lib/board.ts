@@ -112,6 +112,11 @@ export function nodePath(board: Board, id: string | null): string {
   return parts.join(' ▸ ');
 }
 
+// The individual flagged as an organization's Project Manager, if any.
+export function projectManagerOf(board: Board, org: ObsNode): ObsNode | undefined {
+  return liveObs(board).find(n => n.kind === 'individual' && n.is_pm && orgOf(board, n)?.id === org.id);
+}
+
 // The topmost organization in the contract chain (the end customer / owner).
 export function rootOrg(board: Board): ObsNode | undefined {
   let cur = homeOrg(board);

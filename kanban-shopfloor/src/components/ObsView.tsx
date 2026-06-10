@@ -90,7 +90,10 @@ function ExternalOrg({ board, org, actor, apply }: Common & { org: ObsNode }) {
       </div>
       <ContactFields board={board} node={org} actor={actor} apply={apply} />
       <div className="ext-people">
-        <div className="muted small">Known people (structure otherwise unknown):</div>
+        <div className="muted small">
+          Known people (structure otherwise unknown):
+          {!people.some(p => p.is_pm) && <span className="no-pm"> ⚠ no project manager set</span>}
+        </div>
         {people.map(p => (
           <div className="ext-person" id={`obs-node-${p.id}`} key={p.id}>
             <div className="obs-line">

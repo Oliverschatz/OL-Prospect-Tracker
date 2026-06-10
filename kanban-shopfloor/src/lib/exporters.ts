@@ -5,7 +5,7 @@
 
 import { Board } from '../types';
 import {
-  assigneeLabel, cardsInColumn, liveStories, nodePath, organizations, storyById, subtasksOf,
+  assigneeLabel, cardsInColumn, liveStories, nodePath, organizations, projectManagerOf, storyById, subtasksOf,
 } from './board';
 import { formatEstimate } from './estimate';
 import { cardWarnings } from './dates';
@@ -101,10 +101,14 @@ export function buildResultBody(board: Board, diagramImg: string): string {
     ${dod.length ? `<h3>Definition of Done</h3><ul>${dod.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}` : '';
 
   const orgs = organizations(board);
-  const obsRows = orgs.map(o => `<tr><td><strong>${esc(o.org_code || '')}</strong> ${esc(o.name)}${o.is_home ? ' <span class="muted">(home)</span>' : ''}</td><td>${esc(o.industry || '')}</td><td>${esc(nodePath(board, o.parent_id))}</td><td>${esc(o.contract_label || '')}</td></tr>`).join('');
+  const pmCell = (o: typeof orgs[number]) => {
+    const pm = projectManagerOf(board, o);
+    return pm ? esc(pm.name || '(unnamed)') : '<span class="muted">?</span>';
+  };
+  const obsRows = orgs.map(o => `<tr><td><strong>${esc(o.org_code || '')}</strong> ${esc(o.name)}${o.is_home ? ' <span class="muted">(home)</span>' : ''}</td><td>${esc(o.industry || '')}</td><td>${pmCell(o)}</td><td>${esc(nodePath(board, o.parent_id))}</td><td>${esc(o.contract_label || '')}</td></tr>`).join('');
   const obs = `<h2>Organization (OBS)</h2>
     ${diagramImg ? `<div class="diagram">${diagramImg}</div>` : ''}
-    <table><thead><tr><th>Organization</th><th>Industry / function</th><th>Engaged by</th><th>Contract / PO</th></tr></thead><tbody>${obsRows || '<tr><td colspan="4" class="muted">None</td></tr>'}</tbody></table>`;
+    <table><thead><tr><th>Organization</th><th>Industry / function</th><th>Project manager</th><th>Engaged by</th><th>Contract / PO</th></tr></thead><tbody>${obsRows || '<tr><td colspan="5" class="muted">None</td></tr>'}</tbody></table>`;
 
   const stories = liveStories(board);
   const storyHtml = stories.length ? `<h2>User stories</h2><table><thead><tr><th>Story</th><th>As a / I want / so that</th><th>Cards</th></tr></thead><tbody>${stories.map(s => `<tr><td><strong>${esc(s.title)}</strong></td><td>${esc([s.role, s.goal, s.benefit].filter(Boolean).join(' / '))}</td><td>${board.cards.filter(c => !c.deleted && c.story_id === s.id).length}</td></tr>`).join('')}</tbody></table>` : '';
