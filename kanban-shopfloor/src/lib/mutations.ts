@@ -7,7 +7,7 @@ import {
   Assignee, Board, Card, CardConstraint, CardEvent, CardEventType,
   ConstraintDef, ObsKind, ObsNode, Story, UnitType,
 } from '../types';
-import { cardsInColumn, nextObsColor, orgOf, stamp, uid } from './board';
+import { cardsInColumn, nextObsColor, stamp, uid } from './board';
 
 function ev(type: CardEventType, by: string, extra: Partial<CardEvent> = {}): CardEvent {
   return { id: uid(), type, at: new Date().toISOString(), by, ...extra };
@@ -186,20 +186,14 @@ export function addObs(
   return { board: { ...stamp(board, actor), obs: [...board.obs, node] }, id };
 }
 
-// Mark an individual as their organization's Project Manager (one PM per org;
-// toggles off if they already are). Clears the flag on siblings in the same org.
+// Toggle whether an individual is a Project Manager of their organization.
+// Multiple PMs per organization are allowed.
 export function setProjectManager(board: Board, personId: string, actor: string): Board {
   const person = board.obs.find(n => n.id === personId);
-  if (!person) return board;
-  const orgId = orgOf(board, person)?.id;
-  const turningOn = !person.is_pm;
+  if (!person || person.kind !== 'individual') return board;
   return {
     ...stamp(board, actor),
-    obs: board.obs.map(n => {
-      if (n.kind !== 'individual' || orgOf(board, n)?.id !== orgId) return n;
-      const want = turningOn && n.id === personId;
-      return !!n.is_pm === want ? n : stamp({ ...n, is_pm: want }, actor);
-    }),
+    obs: board.obs.map(n => (n.id === personId ? stamp({ ...n, is_pm: !n.is_pm }, actor) : n)),
   };
 }
 

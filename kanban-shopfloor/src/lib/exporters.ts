@@ -5,7 +5,7 @@
 
 import { Board } from '../types';
 import {
-  assigneeLabel, cardsInColumn, liveStories, nodePath, organizations, projectManagerOf, storyById, subtasksOf,
+  assigneeLabel, cardsInColumn, liveStories, nodePath, organizations, projectManagersOf, storyById, subtasksOf,
 } from './board';
 import { formatEstimate } from './estimate';
 import { cardWarnings } from './dates';
@@ -102,8 +102,8 @@ export function buildResultBody(board: Board, diagramImg: string): string {
 
   const orgs = organizations(board);
   const pmCell = (o: typeof orgs[number]) => {
-    const pm = projectManagerOf(board, o);
-    return pm ? esc(pm.name || '(unnamed)') : '<span class="muted">?</span>';
+    const pms = projectManagersOf(board, o);
+    return pms.length ? esc(pms.map(p => p.name || '(unnamed)').join(', ')) : '<span class="muted">?</span>';
   };
   const obsRows = orgs.map(o => `<tr><td><strong>${esc(o.org_code || '')}</strong> ${esc(o.name)}${o.is_home ? ' <span class="muted">(home)</span>' : ''}</td><td>${esc(o.industry || '')}</td><td>${pmCell(o)}</td><td>${esc(nodePath(board, o.parent_id))}</td><td>${esc(o.contract_label || '')}</td></tr>`).join('');
   const obs = `<h2>Organization (OBS)</h2>
