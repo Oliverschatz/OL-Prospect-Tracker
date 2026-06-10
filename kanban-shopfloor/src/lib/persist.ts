@@ -1,4 +1,5 @@
 import { Board, BoardFile, FILE_VERSION, SCHEMA } from '../types';
+import { normalizeBoard } from './board';
 import { BoardMergeResult, mergeBoards } from './merge';
 
 const STORAGE_KEY = 'kanban-shopfloor:board';
@@ -7,7 +8,7 @@ const STORAGE_KEY = 'kanban-shopfloor:board';
 export function loadLocal(): Board | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Board) : null;
+    return raw ? normalizeBoard(JSON.parse(raw) as Board) : null;
   } catch {
     return null;
   }
@@ -71,8 +72,10 @@ export function downloadBoard(board: Board, actor: string): void {
 }
 
 // Open & MERGE an imported file into the current board (never a blind replace).
+// Both sides are normalised first so older (v1) files upgrade cleanly.
 export function openAndMerge(current: Board, file: BoardFile): BoardMergeResult {
-  return mergeBoards(current, file.board);
+  const result = mergeBoards(normalizeBoard(current), normalizeBoard(file.board));
+  return { ...result, board: normalizeBoard(result.board) };
 }
 
 export function summaryText(r: BoardMergeResult): string {

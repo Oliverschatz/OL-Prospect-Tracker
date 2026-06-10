@@ -1,4 +1,4 @@
-import { Board, Card, CardEvent, ObsNode, Versioned } from '../types';
+import { Board, Card, CardEvent, ObsNode, Story, Versioned } from '../types';
 
 // ─── Conflict-safe merge of two board documents ─────────────────────────────
 // Strategy: last-writer-wins per entity, keyed by id, ordered by (rev,
@@ -65,6 +65,7 @@ export interface BoardMergeResult {
   board: Board;
   obs: MergeSummary;
   cards: MergeSummary;
+  stories: MergeSummary;
   /** true when the incoming file's board scalars are older than ours. */
   incomingIsStale: boolean;
 }
@@ -72,6 +73,7 @@ export interface BoardMergeResult {
 export function mergeBoards(local: Board, incoming: Board): BoardMergeResult {
   const obs = mergeEntities<ObsNode>(local.obs, incoming.obs);
   const cards = mergeEntities<Card>(local.cards, incoming.cards, combineCard);
+  const stories = mergeEntities<Story>(local.stories ?? [], incoming.stories ?? []);
 
   // Board-level scalars (name, subtitle, settings) use the same LWW rule.
   const scalarWinner = pickNewer(local, incoming);
@@ -81,12 +83,13 @@ export function mergeBoards(local: Board, incoming: Board): BoardMergeResult {
     ...scalarWinner,
     obs: obs.merged,
     cards: cards.merged,
+    stories: stories.merged,
     // The merged document supersedes both inputs.
     rev: Math.max(local.rev, incoming.rev),
     updated_at: new Date().toISOString(),
   };
 
-  return { board, obs: obs.summary, cards: cards.summary, incomingIsStale };
+  return { board, obs: obs.summary, cards: cards.summary, stories: stories.summary, incomingIsStale };
 }
 
 // Count of live (non-tombstoned) entities, for "X kept-both / Y added" displays.

@@ -1,38 +1,36 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Assignee, Board, Card, CardType, ObsNode, ThreePoint } from '../types';
 import {
-  ANON_PREFIX, Assignee, Board, Card, CardType, Story, ThreePoint,
-} from '../types';
-import { liveCards, organizations, resources, uid } from '../lib/board';
+  assigneeLabel, childrenOf, liveStories, storyById, subtasksOf, uid,
+} from '../lib/board';
 import { pertExpected, pertStdDev, tshirtScaleFor } from '../lib/estimate';
 import { cardWarnings } from '../lib/dates';
-import { cloneCard, deleteCard, patchCard, setAssignees, splitCard } from '../lib/mutations';
-import { pillClass } from './ObsLegend';
+import {
+  addStory, addSubtask, cloneCard, deleteCard, patchCard, setAssignees,
+  setConstraintNote, splitCard, toggleConstraint, updateStory,
+} from '../lib/mutations';
 
-const EMPTY_STORY: Story = { role: '', goal: '', benefit: '', acceptance: [] };
 const EMPTY_TRI: ThreePoint = { o: 0, m: 0, p: 0 };
 const CARD_TYPES: CardType[] = ['task', 'story', 'bug'];
 const DIMENSIONS: { key: 'time' | 'workload' | 'cost'; label: string }[] = [
-  { key: 'time', label: 'Time' },
-  { key: 'workload', label: 'Workload' },
-  { key: 'cost', label: 'Cost' },
+  { key: 'time', label: 'Time' }, { key: 'workload', label: 'Workload' }, { key: 'cost', label: 'Cost' },
 ];
 
-function dateValue(iso: string | null | undefined): string {
-  return iso ? iso.slice(0, 10) : '';
-}
-function num(v: string): number {
-  return v === '' ? 0 : Number(v);
-}
+const dateValue = (iso: string | null | undefined) => (iso ? iso.slice(0, 10) : '');
+const num = (v: string) => (v === '' ? 0 : Number(v));
+const round = (n: number) => Math.round(n * 100) / 100;
 
 export default function CardModal({
-  board, card, actor, apply, onClose,
+  board, card, actor, apply, onClose, onOpenCard,
 }: {
   board: Board;
   card: Card;
   actor: string;
   apply: (fn: (b: Board) => Board) => void;
   onClose: () => void;
+  onOpenCard: (id: string) => void;
 }) {
+  const [newSub, setNewSub] = useState('');
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -40,27 +38,43 @@ export default function CardModal({
   }, [onClose]);
 
   const method = board.settings.estimate_method;
-  const story = card.story ?? EMPTY_STORY;
   const est = card.estimate ?? {};
-  const orgs = organizations(board);
-  const res = resources(board);
-  const siblings = card.split_group
-    ? liveCards(board).filter(c => c.split_group === card.split_group && c.id !== card.id)
-    : [];
+  const story = storyById(board, card.story_id);
+  const stories = liveStories(board);
+  const subs = subtasksOf(board, card.id);
   const warns = cardWarnings(card);
 
   const set = (patch: Partial<Card>) => apply(b => patchCard(b, card.id, patch, actor));
-  const setStory = (p: Partial<Story>) => set({ story: { ...story, ...p } });
   const setEst = (p: Partial<typeof est>) => set({ estimate: { ...est, ...p } });
   const setTri = (dim: 'time' | 'workload' | 'cost', key: keyof ThreePoint, v: number) =>
     setEst({ [dim]: { ...(est[dim] ?? EMPTY_TRI), [key]: v } });
 
   const toggleAssignee = (a: Assignee) => {
-    const next = card.assignees.includes(a)
-      ? card.assignees.filter(x => x !== a)
-      : [...card.assignees, a];
+    const next = card.assignees.includes(a) ? card.assignees.filter(x => x !== a) : [...card.assignees, a];
     apply(b => setAssignees(b, card.id, next, actor));
   };
+
+  const onStorySelect = (value: string) => {
+    if (value === '__new__') {
+      apply(b => {
+        const r = addStory(b, actor, { title: 'New story' });
+        return patchCard(r.board, card.id, { story_id: r.id }, actor);
+      });
+    } else {
+      set({ story_id: value || null });
+    }
+  };
+
+  // Render the OBS as an indented checkbox tree for assignment.
+  const renderObs = (parentId: string | null, depth: number): JSX.Element[] =>
+    childrenOf(board, parentId).flatMap((n: ObsNode) => [
+      <label className="chk obs-pick" key={n.id} style={{ paddingLeft: depth * 16 }}>
+        <input type="checkbox" checked={card.assignees.includes(n.id)} onChange={() => toggleAssignee(n.id)} />
+        <span className={`obs-kind k-${n.kind}`}>{n.kind === 'organization' ? '▣' : n.kind === 'unit' ? '▤' : '•'}</span>
+        {n.name || '(unnamed)'}
+      </label>,
+      ...renderObs(n.id, depth + 1),
+    ]);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -69,70 +83,50 @@ export default function CardModal({
           <select className="type-select" value={card.type} onChange={e => set({ type: e.target.value as CardType })}>
             {CARD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
-          <input
-            className="title-input"
-            value={card.title}
-            onChange={e => set({ title: e.target.value })}
-          />
+          <input className="title-input" value={card.title} onChange={e => set({ title: e.target.value })} />
           <button className="icon-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
         <div className="modal-body">
-          {warns.length > 0 && (
-            <div className="note note-danger">
-              {warns.map(w => <div key={w.kind}>⚠ {w.message}</div>)}
-            </div>
-          )}
+          {warns.length > 0 && <div className="note note-danger">{warns.map(w => <div key={w.kind}>⚠ {w.message}</div>)}</div>}
 
-          {/* User story */}
+          {/* User story (shared across cards) */}
           <div className="field">
             <label>User story</label>
-            <div className="story-grid">
-              <input placeholder="As a … (role)" value={story.role} onChange={e => setStory({ role: e.target.value })} />
-              <input placeholder="I want … (goal)" value={story.goal} onChange={e => setStory({ goal: e.target.value })} />
-              <input placeholder="so that … (benefit)" value={story.benefit} onChange={e => setStory({ benefit: e.target.value })} />
-            </div>
-          </div>
-
-          {/* Acceptance criteria */}
-          <div className="field">
-            <label>Acceptance criteria</label>
-            {story.acceptance.map((a, i) => (
-              <div className="link-row" key={i}>
-                <input
-                  value={a}
-                  onChange={e => setStory({ acceptance: story.acceptance.map((x, j) => (j === i ? e.target.value : x)) })}
-                />
-                <button className="icon-btn danger" aria-label="Remove" onClick={() => setStory({ acceptance: story.acceptance.filter((_, j) => j !== i) })}>✕</button>
+            <select value={card.story_id ?? ''} onChange={e => onStorySelect(e.target.value)}>
+              <option value="">— none —</option>
+              {stories.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+              <option value="__new__">+ New story…</option>
+            </select>
+            {story && (
+              <div className="story-box">
+                <input className="story-title" value={story.title} onChange={e => apply(b => updateStory(b, story.id, { title: e.target.value }, actor))} placeholder="Story title" />
+                <div className="story-grid">
+                  <input placeholder="As a … (role)" value={story.role} onChange={e => apply(b => updateStory(b, story.id, { role: e.target.value }, actor))} />
+                  <input placeholder="I want … (goal)" value={story.goal} onChange={e => apply(b => updateStory(b, story.id, { goal: e.target.value }, actor))} />
+                  <input placeholder="so that … (benefit)" value={story.benefit} onChange={e => apply(b => updateStory(b, story.id, { benefit: e.target.value }, actor))} />
+                </div>
+                <div className="muted small">Shared by {board.cards.filter(c => !c.deleted && c.story_id === story.id).length} card(s).</div>
               </div>
-            ))}
-            <button className="linklike" onClick={() => setStory({ acceptance: [...story.acceptance, ''] })}>+ Add criterion</button>
+            )}
           </div>
 
-          {/* Notes / body */}
+          {/* Notes */}
           <div className="field">
             <label>Notes</label>
             <textarea rows={2} value={card.body} onChange={e => set({ body: e.target.value })} />
           </div>
 
-          {/* Estimate (method-aware) */}
+          {/* Estimate */}
           <div className="field">
             <label>Estimate · {method}</label>
             {method === 'points' && (
-              <input
-                type="number" min={0} style={{ width: 120 }}
-                value={est.points ?? ''}
-                onChange={e => setEst({ points: e.target.value === '' ? null : num(e.target.value) })}
-              />
+              <input type="number" min={0} style={{ width: 120 }} value={est.points ?? ''} onChange={e => setEst({ points: e.target.value === '' ? null : num(e.target.value) })} />
             )}
             {(method === 'tshirt5' || method === 'tshirt7') && (
               <div className="seg">
                 {tshirtScaleFor(method).map(s => (
-                  <button
-                    key={s}
-                    className={`seg-btn${est.size === s ? ' active' : ''}`}
-                    onClick={() => setEst({ size: est.size === s ? null : s })}
-                  >{s}</button>
+                  <button key={s} className={`seg-btn${est.size === s ? ' active' : ''}`} onClick={() => setEst({ size: est.size === s ? null : s })}>{s}</button>
                 ))}
               </div>
             )}
@@ -146,13 +140,9 @@ export default function CardModal({
                       <tr key={d.key}>
                         <td>{d.label}</td>
                         {(['o', 'm', 'p'] as const).map(k => (
-                          <td key={k}>
-                            <input type="number" min={0} value={tri ? tri[k] : ''} onChange={e => setTri(d.key, k, num(e.target.value))} />
-                          </td>
+                          <td key={k}><input type="number" min={0} value={tri ? tri[k] : ''} onChange={e => setTri(d.key, k, num(e.target.value))} /></td>
                         ))}
-                        <td className="tri-exp">
-                          {tri ? `${Math.round(pertExpected(tri) * 100) / 100} ±${Math.round(pertStdDev(tri) * 100) / 100}` : '—'}
-                        </td>
+                        <td className="tri-exp">{tri ? `${round(pertExpected(tri))} ±${round(pertStdDev(tri))}` : '—'}</td>
                       </tr>
                     );
                   })}
@@ -163,37 +153,31 @@ export default function CardModal({
 
           {/* Dual dates */}
           <div className="field-2">
-            <div className="field">
-              <label>Milestone (planned)</label>
-              <input type="date" value={dateValue(card.milestone)} onChange={e => set({ milestone: e.target.value || null })} />
-            </div>
-            <div className="field">
-              <label>Deadline (latest)</label>
-              <input type="date" value={dateValue(card.deadline)} onChange={e => set({ deadline: e.target.value || null })} />
-            </div>
+            <div className="field"><label>Milestone (planned)</label><input type="date" value={dateValue(card.milestone)} onChange={e => set({ milestone: e.target.value || null })} /></div>
+            <div className="field"><label>Deadline (latest)</label><input type="date" value={dateValue(card.deadline)} onChange={e => set({ deadline: e.target.value || null })} /></div>
           </div>
 
-          {/* Assignees */}
+          {/* Assignees (OBS) */}
           <div className="field">
-            <label>Assignees (OBS)</label>
-            {orgs.length === 0 && <p className="muted">No organizations yet — add some under “Manage OBS”.</p>}
-            {orgs.map(org => {
-              const anon = `${ANON_PREFIX}${org.id}`;
+            <label>Assigned to (OBS) — individual = own work · unit/org = delegated / procured</label>
+            <div className="obs-tree">{renderObs(null, 0)}</div>
+          </div>
+
+          {/* Constraints */}
+          <div className="field">
+            <label>Constraints</label>
+            {board.settings.constraints.map(def => {
+              const active = card.constraints.find(x => x.id === def.id);
               return (
-                <div className="assign-org" key={org.id}>
-                  <span className={pillClass(org.treatment)} style={{ borderColor: org.color }}>
-                    <strong>{org.org_code ?? '—'}</strong>&nbsp;{org.name}
-                  </span>
+                <div className="constraint-row" key={def.id}>
                   <label className="chk">
-                    <input type="checkbox" checked={card.assignees.includes(anon)} onChange={() => toggleAssignee(anon)} />
-                    ⊘ anon
+                    <input type="checkbox" checked={!!active} onChange={() => apply(b => toggleConstraint(b, card.id, def.id, actor))} />
+                    {def.label}
                   </label>
-                  {res.filter(r => r.parent_id === org.id).map(r => (
-                    <label className="chk" key={r.id}>
-                      <input type="checkbox" checked={card.assignees.includes(r.id)} onChange={() => toggleAssignee(r.id)} />
-                      {r.name}
-                    </label>
-                  ))}
+                  {active && (
+                    <input className="constraint-note" placeholder="Explanation…" value={active.note}
+                      onChange={e => apply(b => setConstraintNote(b, card.id, def.id, e.target.value, actor))} />
+                  )}
                 </div>
               );
             })}
@@ -212,28 +196,36 @@ export default function CardModal({
             <button className="linklike" onClick={() => set({ links: [...card.links, { id: uid(), label: '', url: '' }] })}>+ Add link</button>
           </div>
 
-          {/* Split linkage */}
-          {siblings.length > 0 && (
-            <div className="note">
-              <strong>Split group</strong> — linked with {siblings.map((s, i) => <span key={s.id}>{i > 0 ? ', ' : ''}{s.title}</span>)}.
+          {/* Subtasks (decomposition) */}
+          <div className="field">
+            <label>Subtasks ({subs.length})</label>
+            {subs.map(s => (
+              <div className="sub-row" key={s.id} onClick={() => onOpenCard(s.id)}>
+                <span className="sub-col">{board.settings.columns.find(c => c.id === s.column)?.label ?? s.column}</span>
+                <span className="sub-title">{s.title}</span>
+              </div>
+            ))}
+            <div className="link-row">
+              <input placeholder="New subtask…" value={newSub} onChange={e => setNewSub(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && newSub.trim()) { apply(b => addSubtask(b, card.id, newSub, actor)); setNewSub(''); } }} />
+              <button className="btn btn-secondary btn-sm" onClick={() => { if (newSub.trim()) { apply(b => addSubtask(b, card.id, newSub, actor)); setNewSub(''); } }}>Add</button>
             </div>
-          )}
+          </div>
 
-          {/* Flow history */}
           {card.events.length > 0 && (
             <details className="history">
               <summary>Flow history ({card.events.length})</summary>
               <ul>
                 {[...card.events].slice(-8).reverse().map(e => (
-                  <li key={e.id}>
-                    <span className="ev-type">{e.type}</span>
-                    {e.from && e.to ? ` ${e.from} → ${e.to}` : ''}
-                    <span className="muted"> · {new Date(e.at).toLocaleString()} · {e.by}</span>
-                  </li>
+                  <li key={e.id}><span className="ev-type">{e.type}</span>{e.from && e.to ? ` ${e.from} → ${e.to}` : ''}<span className="muted"> · {new Date(e.at).toLocaleString()}</span></li>
                 ))}
               </ul>
             </details>
           )}
+          {card.assignees.length > 0 && (
+            <p className="muted small">Assigned: {card.assignees.map(a => assigneeLabel(board, a)).join(', ')}</p>
+          )}
+          {card.parent_id && <p className="muted small">Subtask of: {board.cards.find(c => c.id === card.parent_id)?.title ?? '—'}</p>}
         </div>
 
         <div className="modal-foot">
