@@ -12,7 +12,26 @@ under `project-business.org/tools/kanban-shopfloor`.
 npm install
 npm run dev      # local dev server
 npm run build    # static build → dist/ (relative asset paths, embeddable)
+npm run embed    # build + emit two embeddable artifacts (see below)
 ```
+
+## Embedding (project-business.org)
+`npm run embed` writes to `dist/embed/`:
+
+- **`kanban-shopfloor.html`** — one self-contained file (CSS + JS inlined, no
+  external requests). Use it directly:
+  ```html
+  <iframe src="kanban-shopfloor.html" style="width:100%;height:860px;border:0"></iframe>
+  ```
+- **`kanban-shopfloor.embed.js`** — a widget you call from any page; it mounts
+  the app inside a **style-isolated iframe** (via `srcdoc`), so the family-chrome
+  CSS can never collide with the host page:
+  ```html
+  <div id="kanban"></div>
+  <script src="kanban-shopfloor.embed.js"></script>
+  <script>KanbanShopfloor.mount('#kanban', { height: '860px' });</script>
+  ```
+  `srcdoc` keeps the host origin, so `localStorage` persistence still works.
 
 ## Architecture
 - `src/types.ts` — domain model (board, OBS, cards, estimates, events). Every
