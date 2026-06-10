@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Board } from '../types';
 import {
-  assigneeLabel, canEnterWip, cardsInColumn, priorityOf, storyById, subtasksOf,
+  assigneeLabel, canEnterWip, cardsInColumn, pointsRollup, priorityOf, storyById, subtasksOf,
   wipCount, wipIsFull,
 } from '../lib/board';
 import { cardWarnings } from '../lib/dates';
@@ -130,7 +130,9 @@ export default function BoardView({
                       </div>
                     )}
                     <div className="kard-meta">
-                      <span>{formatEstimate(card.estimate, board.settings.estimate_method)}</span>
+                      <span>{board.settings.estimate_method === 'points' && subs.length > 0
+                        ? `${pointsRollup(board, card) ?? 0} pts ⊞`
+                        : formatEstimate(card.estimate, board.settings.estimate_method)}</span>
                       {subs.length > 0 && <span title="Subtasks done / total">⊟ {subsDone}/{subs.length}</span>}
                       {card.links.length > 0 && <span title={`${card.links.length} link(s)`}>🔗 {card.links.length}</span>}
                       {card.constraints.map(c => (

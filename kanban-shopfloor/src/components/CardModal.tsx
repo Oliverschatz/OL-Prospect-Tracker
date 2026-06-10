@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Assignee, Board, Card, CardType, ObsNode, ThreePoint } from '../types';
+import { Assignee, Board, Card, CardType, ObsNode, POINTS_SCALE, ThreePoint } from '../types';
 import {
-  assigneeLabel, childrenOf, liveStories, storyById, subtasksOf, uid,
+  assigneeLabel, childrenOf, liveStories, pointsRollup, storyById, subtasksOf, uid,
 } from '../lib/board';
 import { pertExpected, pertStdDev, tshirtScaleFor } from '../lib/estimate';
 import { cardWarnings } from '../lib/dates';
@@ -31,6 +31,8 @@ export default function CardModal({
   onOpenCard: (id: string) => void;
 }) {
   const [newSub, setNewSub] = useState('');
+  const [dorDraft, setDorDraft] = useState('');
+  const [dodDraft, setDodDraft] = useState('');
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -117,11 +119,51 @@ export default function CardModal({
             <textarea rows={2} value={card.body} onChange={e => set({ body: e.target.value })} />
           </div>
 
+          {/* Per-task Definition of Ready / Done */}
+          <div className="field-2">
+            <div className="field">
+              <label>Definition of Ready (this task)</label>
+              {card.dor.map((x, i) => (
+                <div className="link-row" key={i}>
+                  <input value={x} onChange={e => set({ dor: card.dor.map((v, j) => (j === i ? e.target.value : v)) })} />
+                  <button className="icon-btn danger" aria-label="Remove" onClick={() => set({ dor: card.dor.filter((_, j) => j !== i) })}>✕</button>
+                </div>
+              ))}
+              <div className="link-row">
+                <input placeholder="Ready when…" value={dorDraft} onChange={e => setDorDraft(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && dorDraft.trim()) { set({ dor: [...card.dor, dorDraft.trim()] }); setDorDraft(''); } }} />
+                <button className="btn btn-secondary btn-sm" onClick={() => { if (dorDraft.trim()) { set({ dor: [...card.dor, dorDraft.trim()] }); setDorDraft(''); } }}>Add</button>
+              </div>
+            </div>
+            <div className="field">
+              <label>Definition of Done (this task)</label>
+              {card.dod.map((x, i) => (
+                <div className="link-row" key={i}>
+                  <input value={x} onChange={e => set({ dod: card.dod.map((v, j) => (j === i ? e.target.value : v)) })} />
+                  <button className="icon-btn danger" aria-label="Remove" onClick={() => set({ dod: card.dod.filter((_, j) => j !== i) })}>✕</button>
+                </div>
+              ))}
+              <div className="link-row">
+                <input placeholder="Done when…" value={dodDraft} onChange={e => setDodDraft(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && dodDraft.trim()) { set({ dod: [...card.dod, dodDraft.trim()] }); setDodDraft(''); } }} />
+                <button className="btn btn-secondary btn-sm" onClick={() => { if (dodDraft.trim()) { set({ dod: [...card.dod, dodDraft.trim()] }); setDodDraft(''); } }}>Add</button>
+              </div>
+            </div>
+          </div>
+
           {/* Estimate */}
           <div className="field">
             <label>Estimate · {method}</label>
             {method === 'points' && (
-              <input type="number" min={0} style={{ width: 120 }} value={est.points ?? ''} onChange={e => setEst({ points: e.target.value === '' ? null : num(e.target.value) })} />
+              subs.length > 0 ? (
+                <p className="rollup-note">Rolled up from {subs.length} subtask(s): <strong>{pointsRollup(board, card) ?? 0} pts</strong></p>
+              ) : (
+                <div className="seg">
+                  {POINTS_SCALE.map(p => (
+                    <button key={p} className={`seg-btn${est.points === p ? ' active' : ''}`} onClick={() => setEst({ points: est.points === p ? null : p })}>{p}</button>
+                  ))}
+                </div>
+              )
             )}
             {(method === 'tshirt5' || method === 'tshirt7') && (
               <div className="seg">

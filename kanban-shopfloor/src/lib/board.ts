@@ -223,6 +223,8 @@ export function normalizeBoard(b: Board): Board {
       assignees: Array.isArray(c.assignees) ? c.assignees : [],
       links: Array.isArray(c.links) ? c.links : [],
       constraints: Array.isArray((c as Card).constraints) ? (c as Card).constraints : [],
+      dor: Array.isArray((c as Card).dor) ? (c as Card).dor : [],
+      dod: Array.isArray((c as Card).dod) ? (c as Card).dod : [],
       events: Array.isArray(c.events) ? c.events : [],
       story_id: c.story_id ?? null,
       parent_id: c.parent_id ?? null,
@@ -230,4 +232,14 @@ export function normalizeBoard(b: Board): Board {
   });
 
   return out;
+}
+
+// Effective story points: when a card has subtasks, its points are the sum of
+// the subtasks' (recursively rolled-up) points; otherwise its own points.
+export function pointsRollup(board: Board, card: Card): number | null {
+  const subs = subtasksOf(board, card.id);
+  if (subs.length) {
+    return subs.reduce((sum, s) => sum + (pointsRollup(board, s) ?? 0), 0);
+  }
+  return card.estimate?.points ?? null;
 }

@@ -115,6 +115,8 @@ export interface Card extends Versioned {
   assignees: Assignee[];
   links: CardLink[];
   constraints: CardConstraint[];
+  dor: string[];            // per-task Definition of Ready
+  dod: string[];            // per-task Definition of Done
   events: CardEvent[];
 }
 
@@ -174,8 +176,11 @@ export const DEFAULT_CONSTRAINTS: ConstraintDef[] = [
   { id: 'no_ai', label: 'No AI development' },
 ];
 
+// Story points use a pseudo-Fibonacci scale.
+export const POINTS_SCALE = [1, 2, 3, 5, 8, 13, 20, 30, 50] as const;
+
 export const UNIT_TYPE_LABELS: Record<UnitType, string> = {
-  unit: 'Unit',
+  unit: 'Business unit',
   managed_team: 'Managed team',
   scrum_team: 'Self-managed (Scrum) team',
 };

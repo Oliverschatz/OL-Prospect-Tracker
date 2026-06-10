@@ -1,4 +1,4 @@
-import { Board, Contact, ObsNode, ObsTreatment, UnitType } from '../types';
+import { Board, Contact, ObsNode, ObsTreatment, UNIT_TYPE_LABELS, UnitType } from '../types';
 import { childrenOf, homeOrg, nodePath, organizations } from '../lib/board';
 import { addCustomerAbove, addObs, deleteObs, updateObs } from '../lib/mutations';
 
@@ -38,7 +38,7 @@ function HomeNode({ board, node, actor, apply, depth }: Common & { node: ObsNode
         <input className="obs-name" value={node.name} onChange={e => apply(b => updateObs(b, node.id, { name: e.target.value }, actor))} />
         {isUnit && (
           <select value={node.unit_type ?? 'unit'} onChange={e => apply(b => updateObs(b, node.id, { unit_type: e.target.value as UnitType }, actor))}>
-            {UNIT_TYPES.map(t => <option key={t} value={t}>{t === 'unit' ? 'Unit' : t === 'managed_team' ? 'Managed team' : 'Scrum team'}</option>)}
+            {UNIT_TYPES.map(t => <option key={t} value={t}>{UNIT_TYPE_LABELS[t]}</option>)}
           </select>
         )}
         {isOrg && (
@@ -46,7 +46,7 @@ function HomeNode({ board, node, actor, apply, depth }: Common & { node: ObsNode
             {TREATMENTS.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         )}
-        {canContain && <button className="btn btn-secondary btn-sm" onClick={() => apply(b => addObs(b, { kind: 'unit', parent_id: node.id }, actor).board)}>+ unit</button>}
+        {canContain && <button className="btn btn-secondary btn-sm" onClick={() => apply(b => addObs(b, { kind: 'unit', parent_id: node.id }, actor).board)}>+ business unit</button>}
         {canContain && <button className="btn btn-secondary btn-sm" onClick={() => apply(b => addObs(b, { kind: 'individual', parent_id: node.id }, actor).board)}>+ person</button>}
         {!node.is_home && <button className="icon-btn danger" title="Delete" onClick={() => apply(b => deleteObs(b, node.id, actor))}>✕</button>}
       </div>

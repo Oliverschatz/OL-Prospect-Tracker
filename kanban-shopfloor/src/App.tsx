@@ -11,6 +11,7 @@ import ProjectView from './components/ProjectView';
 import ObsView from './components/ObsView';
 import ObsDiagram from './components/ObsDiagram';
 import BoardView from './components/BoardView';
+import SwimlaneView from './components/SwimlaneView';
 import CardModal from './components/CardModal';
 import Metrics from './components/Metrics';
 import Coach from './components/Coach';
@@ -30,6 +31,7 @@ const COACH: Record<ViewId, ReactNode> = {
   obs: <>Detail <strong>your own organization</strong> in full (units → people). Add <strong>contractors</strong> and <strong>subcontractors</strong> as opaque boxes — for those you only record the people you know.</>,
   diagram: <>A generated picture of the structure. Export it as <strong>PNG</strong>, or the whole project as a <strong>PDF / Word</strong> report.</>,
   board: <>Add cards and drag them across the flow. Assign each to an OBS node: an <strong>individual</strong> (own work), a <strong>unit/team</strong> (delegated), or an <strong>organization</strong> (procured).</>,
+  swim: null,
 };
 
 export default function App() {
@@ -120,13 +122,14 @@ export default function App() {
         <aside className={`sidebar${drawerOpen ? ' open' : ''}`}><Sidebar view={view} onNavigate={go} /></aside>
 
         <main className="view-main">
-          {view !== 'diagram' && (
+          {view !== 'diagram' && view !== 'swim' && (
             <div className="coach-slot"><Coach id={view} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach}>{COACH[view]}</Coach></div>
           )}
           {view === 'project' && <ProjectView board={board} actor={actor} apply={apply} />}
           {view === 'obs' && <ObsView board={board} actor={actor} apply={apply} />}
           {view === 'diagram' && <ObsDiagram board={board} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach} />}
           {view === 'board' && <BoardView board={board} actor={actor} apply={apply} onOpenCard={setOpenId} onShowMetrics={() => setShowMetrics(true)} />}
+          {view === 'swim' && <SwimlaneView board={board} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach} onOpenCard={setOpenId} />}
         </main>
       </div>
 

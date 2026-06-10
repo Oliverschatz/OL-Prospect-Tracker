@@ -31,7 +31,7 @@ export function addCard(board: Board, opts: { title: string; column?: string; pa
   const card: Card = stamp({
     id: uid(), type: 'task', title: opts.title.trim() || 'Untitled', column: opts.column ?? 'todo',
     sort_order: Date.now(), body: '', story_id: null, parent_id: opts.parent_id ?? null,
-    assignees: [], links: [], constraints: [],
+    assignees: [], links: [], constraints: [], dor: [], dod: [],
     events: [ev('created', actor)], rev: 0, actor, updated_at: now,
   } as Card, actor);
   return { ...stamp(board, actor), cards: [...board.cards, card] };
@@ -116,7 +116,7 @@ export function addSubtask(board: Board, parentId: string, title: string, actor:
   const child: Card = stamp({
     id: uid(), type: 'task', title: title.trim() || 'Subtask', column: parent.column,
     sort_order: Date.now(), body: '', story_id: parent.story_id ?? null, parent_id: parentId,
-    assignees: [], links: [], constraints: [],
+    assignees: [], links: [], constraints: [], dor: [], dod: [],
     events: [ev('created', actor)], rev: 0, actor, updated_at: now,
   } as Card, actor);
   return {

@@ -1,6 +1,6 @@
 import { Board } from '../types';
-import { assigneeLabel, cardsInColumn, liveCards, nodeById, orgOf, organizations } from '../lib/board';
-import { pointsTotal, threePointTotals, tshirtDistribution } from '../lib/estimate';
+import { assigneeLabel, cardsInColumn, liveCards, nodeById, orgOf, organizations, pointsRollup } from '../lib/board';
+import { threePointTotals, tshirtDistribution } from '../lib/estimate';
 import { cardWarnings } from '../lib/dates';
 
 const round = (n: number) => Math.round(n * 100) / 100;
@@ -58,7 +58,7 @@ export default function Metrics({ board, onClose }: { board: Board; onClose: () 
           </div>
 
           <h3 className="metric-h">Estimate rollup ({method})</h3>
-          {method === 'points' && <p className="metric-line">Total story points: <strong>{pointsTotal(cards)}</strong></p>}
+          {method === 'points' && <p className="metric-line">Total story points: <strong>{cards.reduce((s, c) => s + (pointsRollup(board, c) ?? 0), 0)}</strong></p>}
           {method === 'three_point' && <p className="metric-line">Expected (PERT) — time <strong>{round(tp.time)}</strong> · workload <strong>{round(tp.workload)}</strong> · cost <strong>{round(tp.cost)}</strong></p>}
           {(method === 'tshirt5' || method === 'tshirt7') && (
             <div className="bars">
