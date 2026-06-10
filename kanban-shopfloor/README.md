@@ -25,6 +25,9 @@ npm run build    # static build → dist/ (relative asset paths, embeddable)
 - `src/lib/dates.ts` — deadline (latest) vs milestone (planned) warnings.
 - `src/lib/board.ts` — columns, per-column priority, WIP limit, OBS resolution.
 - `src/lib/persist.ts` — localStorage + JSON file import (merge) / export.
+- `src/lib/mutations.ts` — merge-safe board edits (stamp + tombstone + append-only
+  card events): move/place, split, clone, delete, assignees, OBS, settings.
+- `src/components/` — `CardModal`, `ObsManager`, `ObsLegend`, `Metrics`.
 - `src/theme.css` + `DESIGN.md` — PBF family chrome + the Shopfloor accent.
 
 ## Status
@@ -32,5 +35,15 @@ Increment 1: data model, merge engine, estimates/dates libs, persistence, and a
 themed board shell (add card, move via column select, Save/Load/Reset, WIP limit,
 priority numbers, OBS pills, schedule warnings).
 
-Next: drag-and-drop, card detail modal (story/estimate/dates/assignees/links),
-OBS tree editor + legend, and the board-wide Kanban metrics view.
+Increment 2: **drag-and-drop** across/within columns (WIP-enforced, priority via
+order); **card detail modal** — type, user story + acceptance criteria, notes,
+method-aware estimate (T-shirt / points / 3-point PERT with expected ± σ), dual
+**milestone/deadline** dates with warnings, OBS **assignees** (incl. `⊘ anon`),
+labelled **links**, **split** (linked sibling) / **clone** (independent copy) /
+delete, and a read-only **flow history**; an **OBS tree editor** (orgs → resources,
+code/colour/treatment) with a colour **legend**; and a board-wide **Metrics**
+panel (flow distribution, estimate rollup, workload by organization, schedule
+warnings). All edits stay merge-safe so Save/Load still merges without overwrites.
+
+Next: OBS-driven actor switching (act-as), column configuration, and CFD/flow
+metrics over the event log.
