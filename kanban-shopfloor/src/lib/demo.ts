@@ -1,72 +1,132 @@
 import { Board, Card, Estimate } from '../types';
 import { createBoard, homeOrg } from './board';
-import { addCard, addObs, addStory, addSubtask, patchCard, setAssignees, toggleConstraint, updateObs, updateSettings } from './mutations';
+import {
+  addCard, addCustomerAbove, addObs, addStory, addSubtask, patchBoardMeta, patchCard,
+  setAssignees, setConstraintNote, toggleConstraint, updateObs, updateSettings,
+} from './mutations';
+import { uid } from './board';
 
 const A = 'system';
 
-// A fully populated cross-corporate example (owner + units/people, two
-// contractors and a subcontractor, stories, and cards across the flow).
+// "Castle Falkenhorst" — a four-tier cross-corporate conversion project. The
+// home org (STB) is fully detailed; everyone else is opaque (box + known people).
 export function buildDemo(): Board {
-  let b = createBoard({ name: 'Sample: Plant Upgrade' });
-  b = updateSettings(b, {
-    definition_of_ready: ['Acceptance criteria agreed', 'Estimated', 'Owner/assignee identified'],
-    definition_of_done: ['Work reviewed', 'Accepted by the customer', 'Documentation updated'],
+  let b = createBoard({ name: 'Sample: Castle Falkenhorst Hotel' });
+  b = patchBoardMeta(b, {
+    description: 'Conversion of the 16th-century Falkenhorst Castle into a 48-room boutique hotel — a cross-corporate project with an owner, a general contractor, specialist contractors, and their subcontractors.',
+    start_date: '2026-03-02',
+    end_date: '2027-04-30',
   }, A);
 
+  b = updateSettings(b, {
+    estimate_method: 'tshirt5',
+    wip_limit: 6,
+    definition_of_ready: ['Acceptance criteria agreed', 'Estimated', 'Heritage clearance checked', 'Owner/assignee identified'],
+    definition_of_done: ['Work reviewed on site', 'Accepted by the customer', 'As-built documentation updated'],
+    constraints: [
+      { id: 'safety_critical', label: 'Safety-critical' },
+      { id: 'heritage', label: 'Heritage-protected (approval required)' },
+      { id: 'customer_decision', label: 'Customer decision required' },
+    ],
+  }, A);
+
+  // ── Home org (tier 1) ──
   const home = homeOrg(b)!;
-  b = updateObs(b, home.id, { name: 'Northwind Owner', org_code: 'NWO' }, A);
+  b = updateObs(b, home.id, { name: 'Steinbrecher Bau & Restaurierung GmbH', org_code: 'STB', color: '#1a2744' }, A);
 
-  // Home internal structure: one unit with three sub-units + people.
-  let r = addObs(b, { kind: 'unit', parent_id: home.id, name: 'Project Office' }, A); b = r.board; const office = r.id;
-  r = addObs(b, { kind: 'unit', parent_id: office, name: 'Engineering', unit_type: 'managed_team' }, A); b = r.board; const eng = r.id;
-  r = addObs(b, { kind: 'unit', parent_id: office, name: 'Procurement' }, A); b = r.board; const proc = r.id;
-  r = addObs(b, { kind: 'unit', parent_id: office, name: 'Commissioning', unit_type: 'scrum_team' }, A); b = r.board; const comm = r.id;
-  r = addObs(b, { kind: 'individual', parent_id: office, name: 'Dana (PM)' }, A); b = r.board; const dana = r.id;
-  r = addObs(b, { kind: 'individual', parent_id: eng, name: 'Ravi' }, A); b = r.board; const ravi = r.id;
-  r = addObs(b, { kind: 'individual', parent_id: eng, name: 'Mei' }, A); b = r.board;
-  r = addObs(b, { kind: 'individual', parent_id: comm, name: 'Tom' }, A); b = r.board; const tom = r.id;
+  const obs = (kind: 'organization' | 'unit' | 'individual', parent: string, name: string, extra?: Partial<Parameters<typeof updateObs>[2]>): string => {
+    const r = addObs(b, { kind, parent_id: parent, name, unit_type: kind === 'unit' ? 'unit' : undefined }, A);
+    b = r.board;
+    if (extra) b = updateObs(b, r.id, extra, A);
+    return r.id;
+  };
 
-  // External organizations (opaque) joined by contracts.
-  r = addObs(b, { kind: 'organization', parent_id: home.id, name: 'BuildCo', is_home: false }, A); b = r.board; const buildco = r.id;
-  b = updateObs(b, buildco, { org_code: 'BLD', contract_label: 'C-2024-017', color: '#9b1d8f' }, A);
-  r = addObs(b, { kind: 'individual', parent_id: buildco, name: 'Site lead' }, A); b = r.board;
-  r = addObs(b, { kind: 'individual', parent_id: buildco, name: 'Foreman' }, A); b = r.board;
+  const office = obs('unit', home.id, 'Project Office');
+  const theresa = obs('individual', office, 'Theresa Vogel', { info: 'Project planner — the user of this board', contact: { email: 't.vogel@steinbrecher-bau.example' } });
+  obs('individual', office, 'Markus Steinbrecher', { info: 'Project manager' });
+  const robert = obs('individual', office, 'Robert Kuhn', { info: 'Commercial manager — claims & change orders' });
+  const siteOps = obs('unit', home.id, 'Site Operations', { unit_type: 'managed_team' });
+  const aylin = obs('individual', siteOps, 'Aylin Demir', { info: 'Site manager' });
+  const qadoc = obs('unit', home.id, 'Quality & Documentation');
+  obs('individual', qadoc, 'Sofia Marek', { info: 'QA / heritage documentation' });
 
-  r = addObs(b, { kind: 'organization', parent_id: home.id, name: 'MechCorp', is_home: false }, A); b = r.board; const mech = r.id;
-  b = updateObs(b, mech, { org_code: 'MEC', contract_label: 'C-2024-022', color: '#0e6b7a' }, A);
-  r = addObs(b, { kind: 'organization', parent_id: mech, name: 'WeldPro', is_home: false }, A); b = r.board; const weld = r.id;
-  b = updateObs(b, weld, { org_code: 'WLD', contract_label: 'SC-9', color: '#e0a020' }, A);
-  r = addObs(b, { kind: 'individual', parent_id: weld, name: 'Welder A' }, A); b = r.board;
-  r = addObs(b, { kind: 'individual', parent_id: weld, name: 'Welder B' }, A); b = r.board;
+  // ── Customer above (tier 0) ──
+  b = addCustomerAbove(b, home.id, A);
+  const customerId = homeOrg(b)!.parent_id!;
+  b = updateObs(b, customerId, { name: 'Falkenhorst Hospitality GmbH', org_code: 'FHG', color: '#7a4fb0', contract_label: 'GC-2026-001 (general contract)' }, A);
+  const jonas = obs('individual', customerId, 'Jonas Brandt', { info: "Owner's representative — acceptance decisions" });
+  const priya = obs('individual', customerId, 'Priya Raman', { info: 'Interior & brand concept — sample selections' });
+  const eilers = obs('individual', customerId, 'Dr. Konrad Eilers', { info: 'State heritage conservator. No contract with any contractor — approval authority only. Reachable via the owner\'s rep.' });
 
-  // Stories.
-  let s = addStory(b, A, { title: 'Reduce downtime during upgrade', role: 'plant manager', goal: 'minimal production downtime', benefit: 'we keep delivering to customers' }); b = s.board; const story1 = s.id;
-  s = addStory(b, A, { title: 'Meet new safety regulation', role: 'safety officer', goal: 'the line to pass the 2026 audit', benefit: 'we stay compliant' }); b = s.board; const story2 = s.id;
+  // ── Contractors (tier 2) ──
+  const frc = obs('organization', home.id, 'Atelier Fresco Conservazione S.r.l.', { org_code: 'FRC', color: '#b0532f', contract_label: 'C-2026-031 (unit price)', treatment: 'dashed' });
+  obs('individual', frc, 'Giulia Ferraro', { info: 'Lead conservator' });
+  obs('individual', frc, 'Tomas Hlaváček', { info: 'Stonemason' });
+  const alp = obs('organization', home.id, 'AlpenTech Gebäudetechnik GmbH', { org_code: 'ALP', color: '#2f6fb0', contract_label: 'C-2026-027 (fixed price)' });
+  obs('individual', alp, 'Stefan Maier', { info: 'Lead MEP engineer' });
+  obs('individual', alp, 'Fatima El-Sayed', { info: 'Electrical foreman' });
+  const hlz = obs('organization', home.id, 'Holzer Dach & Zimmerei KG', { org_code: 'HLZ', color: '#2f9e6f', contract_label: 'C-2026-019 (fixed price)' });
+  const lorenz = obs('individual', hlz, 'Lorenz Holzer', { info: 'Master carpenter, owner' });
 
+  // ── Subcontractors (tier 3) ──
+  const brd = obs('organization', hlz, 'Gerüstbau Brandl GmbH', { org_code: 'BRD', color: '#c98a18', contract_label: 'SC-7 (time & material)', treatment: 'dotted' });
+  obs('individual', brd, 'Hannes Brandl', { info: 'Foreman' });
+  const gld = obs('organization', frc, 'Goldgrund Vergolderei', { org_code: 'GLD', color: '#e0a020', contract_label: 'SC-12 (unit price)' });
+  obs('individual', gld, 'Beate Goldgrund', { info: 'Master gilder' });
+  const lft = obs('organization', alp, 'LiftPlan Aufzugstechnik GmbH', { org_code: 'LFT', color: '#1f8a8a', contract_label: 'SC-3 (fixed price)' });
+  obs('individual', lft, 'Daniel Roth', { info: 'Installation lead' });
+
+  // ── Stories ──
+  let s = addStory(b, A, { title: 'Open as a 48-room boutique hotel', role: 'hotel owner', goal: 'the castle converted on schedule for the 2027 season', benefit: 'bookings can open in spring' }); b = s.board; const hotel = s.id;
+  s = addStory(b, A, { title: 'Pass heritage compliance', role: "owner's representative", goal: 'every intervention on protected fabric approved and documented', benefit: 'the operating permit is not at risk' }); b = s.board; const heritage = s.id;
+
+  // ── Cards ──
   const tshirt = (size: Estimate['size']): Estimate => ({ size });
-  function card(opts: { title: string; column: string; story_id?: string; assignees?: string[]; size?: Estimate['size']; milestone?: string; deadline?: string; constraint?: string }): string {
-    b = addCard(b, { title: opts.title, column: opts.column }, A);
+  function card(o: {
+    title: string; column: string; assignees?: string[]; size?: Estimate['size']; story_id?: string;
+    flags?: { id: string; note?: string }[]; deadline?: string; milestone?: string;
+    links?: { label: string; url: string }[]; dod?: string[];
+  }): string {
+    b = addCard(b, { title: o.title, column: o.column }, A);
     const id = b.cards[b.cards.length - 1].id;
     const patch: Partial<Card> = {};
-    if (opts.story_id) patch.story_id = opts.story_id;
-    if (opts.size) patch.estimate = tshirt(opts.size);
-    if (opts.milestone) patch.milestone = opts.milestone;
-    if (opts.deadline) patch.deadline = opts.deadline;
+    if (o.size) patch.estimate = tshirt(o.size);
+    if (o.story_id) patch.story_id = o.story_id;
+    if (o.deadline) patch.deadline = o.deadline;
+    if (o.milestone) patch.milestone = o.milestone;
+    if (o.links) patch.links = o.links.map(l => ({ id: uid(), ...l }));
+    if (o.dod) patch.dod = o.dod;
     b = patchCard(b, id, patch, A);
-    if (opts.assignees) b = setAssignees(b, id, opts.assignees, A);
-    if (opts.constraint) b = toggleConstraint(b, id, opts.constraint, A);
+    if (o.assignees) b = setAssignees(b, id, o.assignees, A);
+    for (const f of o.flags ?? []) { b = toggleConstraint(b, id, f.id, A); if (f.note) b = setConstraintNote(b, id, f.id, f.note, A); }
     return id;
   }
 
-  card({ title: 'Survey existing line', column: 'done', assignees: [eng], size: 'M', story_id: story1 });
-  card({ title: 'Procure long-lead valves', column: 'wip', assignees: [proc], size: 'L', deadline: '2026-08-01', story_id: story1 });
-  const install = card({ title: 'Install new conveyor', column: 'wip', assignees: [buildco], size: 'XL', story_id: story1 });
-  b = addSubtask(b, install, 'Pour foundation', A);
-  b = addSubtask(b, install, 'Anchor frame', A);
-  card({ title: 'Weld pressure manifold', column: 'todo', assignees: [weld], size: 'L', constraint: 'safety_critical', story_id: story2 });
-  card({ title: 'Commission control software', column: 'todo', assignees: [comm, tom], size: 'M', constraint: 'no_ai', story_id: story2 });
-  card({ title: 'Safety sign-off', column: 'review', assignees: [dana], size: 'S', deadline: '2026-09-15', constraint: 'safety_critical', story_id: story2 });
-  card({ title: 'Punch-list fixes', column: 'todo', assignees: [ravi, mech], size: 'S' });
+  card({ title: 'Survey & 3D scan of existing fabric', column: 'done', assignees: [qadoc], size: 'M', story_id: hotel });
+  card({ title: 'Winterization of open roof sections', column: 'done', assignees: [aylin], size: 'S' });
+  card({ title: 'Renovation master schedule v3', column: 'wip', assignees: [theresa], size: 'S', story_id: hotel });
+
+  const truss = card({ title: 'Roof truss replacement, north wing', column: 'wip', assignees: [hlz], size: 'XL', story_id: hotel, flags: [{ id: 'safety_critical' }] });
+  b = addSubtask(b, truss, 'Erect scaffolding, north facade', A);
+  let subId = b.cards[b.cards.length - 1].id; b = setAssignees(b, subId, [brd], A);
+  b = addSubtask(b, truss, 'Replace truss segments 4–9', A);
+  subId = b.cards[b.cards.length - 1].id; b = setAssignees(b, subId, [lorenz], A);
+
+  card({ title: 'Electrical riser routing, west wing', column: 'wip', assignees: [alp], size: 'L', story_id: hotel });
+
+  card({
+    title: 'Fresco cleaning method statement, banquet hall', column: 'review', assignees: [frc, eilers], size: 'M', story_id: heritage,
+    flags: [{ id: 'heritage' }], deadline: '2026-06-01',
+    links: [{ label: 'Method statement v2', url: 'https://example.org/falkenhorst/ms-fresco-v2' }],
+    dod: ['Conservator counter-signature on file'],
+  });
+  card({ title: 'Mock-up room 204 acceptance', column: 'review', assignees: [jonas], size: 'S', story_id: hotel, flags: [{ id: 'customer_decision' }], milestone: '2026-06-22' });
+
+  card({ title: 'Elevator shaft core drilling', column: 'todo', assignees: [lft], size: 'L', story_id: heritage, flags: [{ id: 'safety_critical' }, { id: 'heritage' }] });
+  card({ title: 'Gilding sample boards for ballroom', column: 'todo', assignees: [gld], size: 'S', story_id: heritage, flags: [{ id: 'customer_decision', note: "Waiting on Priya Raman's selection" }] });
+  card({ title: 'Select gilding sample', column: 'todo', assignees: [priya], size: 'XS', story_id: heritage, flags: [{ id: 'customer_decision' }] });
+  card({ title: 'Change order: walled-up staircase discovered, east wing', column: 'todo', assignees: [robert], size: 'M', story_id: hotel });
+  card({ title: 'Bat colony relocation, attic', column: 'todo', size: 'S', story_id: heritage, flags: [{ id: 'heritage' }], deadline: '2026-09-30' });
 
   return b;
 }
