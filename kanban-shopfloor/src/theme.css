@@ -35,6 +35,8 @@
 
 * { box-sizing: border-box; }
 
+html, body, #root { height: 100%; }
+
 body {
   margin: 0;
   font-family: var(--font-body);
@@ -45,6 +47,13 @@ body {
 }
 
 h1, h2, h3, h4 { font-family: var(--font-head); margin: 0; }
+
+/* Full-height app shell: chrome stays put, only the board scrolls. This means
+   there is a SINGLE scroll region (no nested page + app scrollbars), and the
+   fixed-position modals always centre in the visible area — important when
+   embedded in an <iframe>. */
+.app-shell { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.app-bar, .toolbar, .legend-bar, .msg-bar, .app-footer { flex: 0 0 auto; }
 
 /* ─── Top bar ──────────────────────────────────────────────────────────── */
 .app-bar {
@@ -101,7 +110,7 @@ h1, h2, h3, h4 { font-family: var(--font-head); margin: 0; }
 }
 
 /* ─── Board columns with signature separators ─────────────────────────── */
-.board { display: flex; gap: 0; padding: 16px 20px; align-items: flex-start; }
+.board { display: flex; gap: 0; padding: 16px 20px; align-items: flex-start; flex: 1 1 auto; min-height: 0; overflow: auto; }
 .column { flex: 1; min-width: 240px; padding: 0 14px; position: relative; }
 .column + .column { border-left: 1px solid var(--border); } /* separator rule */
 .column + .column::before {                                  /* accent tick */

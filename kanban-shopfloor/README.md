@@ -21,7 +21,7 @@ npm run embed    # build + emit two embeddable artifacts (see below)
 - **`kanban-shopfloor.html`** — one self-contained file (CSS + JS inlined, no
   external requests). Use it directly:
   ```html
-  <iframe src="kanban-shopfloor.html" style="width:100%;height:860px;border:0"></iframe>
+  <iframe src="kanban-shopfloor.html" style="width:100%;height:100dvh;border:0"></iframe>
   ```
 - **`kanban-shopfloor.embed.js`** — a widget you call from any page; it mounts
   the app inside a **style-isolated iframe** (via `srcdoc`), so the family-chrome
@@ -29,9 +29,17 @@ npm run embed    # build + emit two embeddable artifacts (see below)
   ```html
   <div id="kanban"></div>
   <script src="kanban-shopfloor.embed.js"></script>
-  <script>KanbanShopfloor.mount('#kanban', { height: '860px' });</script>
+  <script>KanbanShopfloor.mount('#kanban'); // height defaults to 100dvh</script>
   ```
   `srcdoc` keeps the host origin, so `localStorage` persistence still works.
+
+**Single scrollbar.** The app is a full-height shell: the top bar / toolbar /
+legend stay fixed and only the **board** scrolls (vertically for tall columns,
+horizontally for many columns). Size the iframe to the space it occupies so the
+board is the *only* scroll region — there is no nested page-vs-app scrollbar.
+The default height is `100dvh`; if the host page has its own header, pass a
+height like `{ height: 'calc(100dvh - 80px)' }` (widget) or set it on the
+`<iframe>` so the iframe fits without forcing the page to scroll too.
 
 ## Architecture
 - `src/types.ts` — domain model (board, OBS, cards, estimates, events). Every

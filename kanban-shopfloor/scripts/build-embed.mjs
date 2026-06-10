@@ -60,8 +60,12 @@ const embed = `/*! Kanban Shopfloor — embeddable widget (Project Business Foun
     if (!el) throw new Error('KanbanShopfloor.mount: target "' + target + '" not found');
     var iframe = document.createElement('iframe');
     iframe.title = 'Kanban Shopfloor';
+    iframe.style.display = 'block';
     iframe.style.width = opts.width || '100%';
-    iframe.style.height = opts.height || '800px';
+    // Fill the viewport by default so the board (which scrolls internally) is
+    // the only scroll region — no second, page-level scrollbar beside it. Pass
+    // e.g. { height: 'calc(100dvh - 80px)' } if the host page has its own header.
+    iframe.style.height = opts.height || '100dvh';
     iframe.style.border = opts.border || '0';
     iframe.setAttribute('loading', 'lazy');
     iframe.srcdoc = HTML;

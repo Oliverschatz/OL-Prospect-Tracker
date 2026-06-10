@@ -103,7 +103,7 @@ export default function App() {
   }
 
   return (
-    <div>
+    <div className="app-shell">
       <header className="app-bar">
         <div className="app-id">
           <div className="name-row">
