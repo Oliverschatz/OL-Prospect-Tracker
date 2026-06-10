@@ -42,7 +42,7 @@ export interface Estimate {
 // the full unit→sub-unit→individual breakdown. Every other organization is
 // opaque — a box plus whatever individuals you happen to know.
 export type ObsKind = 'organization' | 'unit' | 'individual';
-export type UnitType = 'division' | 'department' | 'subsidiary' | 'managed_team' | 'scrum_team' | 'volunteer_team' | 'other';
+export type UnitType = 'division' | 'department' | 'subsidiary' | 'managed_team' | 'scrum_team' | 'task_force' | 'tribe' | 'volunteer_team' | 'other';
 export type ObsTreatment = 'solid' | 'dashed' | 'dotted' | 'double' | 'monogram';
 
 export interface Contact {
@@ -187,6 +187,8 @@ export const UNIT_TYPE_LABELS: Record<UnitType, string> = {
   subsidiary: 'Subsidiary',
   managed_team: 'Managed project team',
   scrum_team: 'Self-managed Scrum team',
+  task_force: 'Task force',
+  tribe: 'Tribe',
   volunteer_team: 'Volunteer team',
   other: 'Other',
 };

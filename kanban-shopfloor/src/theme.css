@@ -468,6 +468,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .img-pick { cursor: pointer; }
 .img-preview { display: block; margin-top: 8px; max-height: 160px; max-width: 100%; border: 1px solid var(--border); border-radius: var(--radius); }
 .industry-input { flex: 1; min-width: 160px; font-size: 12px; padding: 4px 8px; }
+.unit-other { flex: 1; min-width: 140px; font-size: 12px; padding: 4px 8px; }
 
 /* Report preview */
 .report-actions { display: flex; gap: 8px; margin-bottom: 12px; }

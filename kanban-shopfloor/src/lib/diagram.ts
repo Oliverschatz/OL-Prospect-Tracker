@@ -109,7 +109,6 @@ function renderNested(n: Nest, x: number, y: number, isRoot: boolean): string {
   const sw = isRoot ? 3 : 1.5;
   const cx = x + n.w / 2;
   let out = `<rect x="${x}" y="${y}" width="${n.w}" height="${n.h}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="${sw}"/>`;
-  if (n.tier >= 0) out += tierTag(n.tier, x, y);
   out += titleSvg(n.titleLines, cx, y + 17, TITLE_FS, TITLE_LH, 700, '#1c2636');
   const contentY = y + n.titleH;
   if (n.people.length) out += peopleRow(n.people, cx, contentY + 2);
@@ -147,34 +146,33 @@ function edge(x1: number, y1: number, x2: number, y2: number): string {
   return out;
 }
 
-// Small "Tier N" tag pinned to the top-left inside an org box.
-function tierTag(t: number, x: number, y: number): string {
-  return `<rect x="${x + 8}" y="${y + 8}" width="40" height="15" rx="7" fill="#eef1f6" stroke="#c7cedb" stroke-width="0.75"/>` +
-    `<text x="${x + 28}" y="${y + 19}" text-anchor="middle" font-size="9" font-weight="700" fill="#3a4250">Tier ${t}</text>`;
-}
-
-function renderExternal(e: Ext, x: number, y: number): string {
+// Render an external org box. Horizontal position is subtree-driven (x); the
+// vertical position comes from the tier band (tierY[tier]) so that all boxes of
+// the same tier line up — the tier is shown once on the left, not per box.
+function renderExternal(e: Ext, x: number, tierY: number[], tier: number): string {
+  const y = tierY[tier];
   const boxX = x + (e.w - e.boxW) / 2;
   const stroke = e.org.color || '#2f6fb0';
   const cx = boxX + e.boxW / 2;
   let out = `<rect x="${boxX}" y="${y}" width="${e.boxW}" height="${e.eh}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="2.5"/>`;
-  out += tierTag(e.tier, boxX, y);
   out += titleSvg(e.titleLines, cx, y + 19, EXT_TITLE_FS, EXT_TITLE_LH, 700, stroke);
   let cur = y + 8 + e.titleLines.length * EXT_TITLE_LH + 4;
   if (e.hasIndustry) { out += `<text x="${cx}" y="${cur + 9}" text-anchor="middle" font-size="9.5" font-style="italic" fill="#6b7686">${esc(truncate(e.org.industry!, e.boxW - 8))}</text>`; cur += 14; }
   if (e.people.length) out += peopleRow(e.people, cx, cur);
   if (e.subs.length) {
-    const subsY = y + e.eh + EXT_VGAP;
     const subsW = e.subs.reduce((s, k) => s + k.w, 0) + EXT_HGAP * Math.max(0, e.subs.length - 1);
     let sx = x + (e.w - subsW) / 2;
     for (const sub of e.subs) {
-      out += edge(cx, y + e.eh, sx + sub.w / 2, subsY);
-      out += renderExternal(sub, sx, subsY);
+      out += edge(cx, y + e.eh, sx + sub.w / 2, tierY[tier + 1]);
+      out += renderExternal(sub, sx, tierY, tier + 1);
       sx += sub.w + EXT_HGAP;
     }
   }
   return `<g data-node-id="${e.org.id}">${out}</g>`;
 }
+
+// Faint background tint for a tier band (cycles by tier).
+const TIER_TINTS = ['#eef3f8', '#f3eef8', '#eef8f1', '#f8f4ee', '#f8eef1', '#eef7f8', '#f6f8ee'];
 
 // An organization rendered as a single box (no downward subs) — used for the
 // chain of customers/owners stacked above the home org.
@@ -189,6 +187,8 @@ function standaloneExt(board: Board, org: ObsNode): Ext {
 
 export interface DiagramResult { svg: string; width: number; height: number; empty: boolean; }
 
+const GUTTER = 80; // left margin reserved for tier labels/bands
+
 export function buildObsDiagram(board: Board): DiagramResult {
   const home = homeOrg(board);
   if (!home) return { svg: '', width: 0, height: 0, empty: true };
@@ -196,42 +196,60 @@ export function buildObsDiagram(board: Board): DiagramResult {
   const homeLay = layNested(board, home);
   const contractors = childrenOf(board, home.id).filter(k => k.kind === 'organization').map(o => layExternal(board, o));
   const ancestors = ancestorsAboveHome(board).map(a => standaloneExt(board, a)); // top (root) → bottom
+  const homeTier = ancestors.length;
+
+  // Tallest box per tier → vertical band heights.
+  const maxH: number[] = [];
+  const note = (t: number, h: number) => { maxH[t] = Math.max(maxH[t] ?? 0, h); };
+  ancestors.forEach((a, i) => note(i, a.eh));
+  note(homeTier, homeLay.h);
+  const walkExt = (e: Ext, t: number) => { note(t, e.eh); e.subs.forEach(s => walkExt(s, t + 1)); };
+  contractors.forEach(c => walkExt(c, homeTier + 1));
+  const maxTier = maxH.length - 1;
+
+  const tierY: number[] = [];
+  let yy = MARGIN;
+  for (let t = 0; t <= maxTier; t++) { tierY[t] = yy; yy += (maxH[t] ?? 0) + EXT_VGAP; }
+  const height = (maxTier >= 0 ? tierY[maxTier] + (maxH[maxTier] ?? 0) : MARGIN) + MARGIN;
 
   const contractorsW = contractors.reduce((s, c) => s + c.w, 0) + EXT_HGAP * Math.max(0, contractors.length - 1);
   const ancW = ancestors.length ? Math.max(...ancestors.map(a => a.boxW)) : 0;
   const rootW = Math.max(homeLay.w, contractorsW, ancW);
-  const centerX = MARGIN + rootW / 2;
+  const centerX = GUTTER + MARGIN + rootW / 2;
+  const width = GUTTER + MARGIN + rootW + MARGIN;
+
+  let bands = '';
+  for (let t = 0; t <= maxTier; t++) {
+    if (maxH[t] == null) continue;
+    const by = tierY[t] - 8, bh = maxH[t] + 16;
+    bands += `<rect x="0" y="${by}" width="${width}" height="${bh}" fill="${TIER_TINTS[t % TIER_TINTS.length]}"/>`;
+    bands += `<text x="${GUTTER / 2}" y="${by + bh / 2 - 4}" text-anchor="middle" font-size="11" font-weight="800" fill="#5a6573">Tier</text>`;
+    bands += `<text x="${GUTTER / 2}" y="${by + bh / 2 + 12}" text-anchor="middle" font-size="15" font-weight="800" fill="#3a4250">${t}</text>`;
+  }
+  bands += `<line x1="${GUTTER}" y1="0" x2="${GUTTER}" y2="${height}" stroke="#d7dce5" stroke-width="1"/>`;
 
   let body = '';
-  let yCursor = MARGIN;
+  // Ancestors: one per tier, single column, linked downward.
+  ancestors.forEach((anc, i) => {
+    body += renderExternal(anc, centerX - anc.w / 2, tierY, i);
+    body += edge(centerX, tierY[i] + anc.eh, centerX, tierY[i + 1]);
+  });
 
-  // Chain of organizations above the home org (customers/owners), each linked by
-  // a straight Contract edge down to the next tier.
-  for (const anc of ancestors) {
-    body += renderExternal(anc, centerX - anc.boxW / 2, yCursor);
-    body += edge(centerX, yCursor + anc.eh, centerX, yCursor + anc.eh + EXT_VGAP);
-    yCursor += anc.eh + EXT_VGAP;
-  }
+  // Home org (nested) at its tier.
+  body += renderNested(homeLay, centerX - homeLay.w / 2, tierY[homeTier], true);
 
-  const homeY = yCursor;
-  body += renderNested(homeLay, centerX - homeLay.w / 2, homeY, true);
-  yCursor += homeLay.h;
-
+  // Contractors (and, recursively, subcontractors) below home.
   if (contractors.length) {
-    const cy = yCursor + EXT_VGAP;
     let sx = centerX - contractorsW / 2;
     for (const c of contractors) {
-      body += edge(centerX, homeY + homeLay.h, sx + c.w / 2, cy);
-      body += renderExternal(c, sx, cy);
+      body += edge(centerX, tierY[homeTier] + homeLay.h, sx + c.w / 2, tierY[homeTier + 1]);
+      body += renderExternal(c, sx, tierY, homeTier + 1);
       sx += c.w + EXT_HGAP;
     }
-    yCursor = cy + Math.max(...contractors.map(c => c.h));
   }
 
-  const width = rootW + MARGIN * 2;
-  const height = yCursor + MARGIN;
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" font-family="'Source Sans 3', system-ui, sans-serif">` +
-    `<rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff"/>` + body + `</svg>`;
+    `<rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff"/>` + bands + body + `</svg>`;
   return { svg, width, height, empty: false };
 }

@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { Board, Contact, ObsNode, ObsTreatment, UNIT_TYPE_LABELS, UnitType } from '../types';
-import { childrenOf, homeOrg, nodePath, organizations, rootOrg } from '../lib/board';
+import { childrenOf, homeOrg, nodeById, organizations, rootOrg } from '../lib/board';
 import { addCustomerAbove, addObs, deleteObs, updateObs } from '../lib/mutations';
 
 const TREATMENTS: ObsTreatment[] = ['solid', 'dashed', 'dotted', 'double', 'monogram'];
-const UNIT_TYPES: UnitType[] = ['division', 'department', 'subsidiary', 'managed_team', 'scrum_team', 'volunteer_team', 'other'];
+const UNIT_TYPES: UnitType[] = ['division', 'department', 'subsidiary', 'managed_team', 'scrum_team', 'task_force', 'tribe', 'volunteer_team', 'other'];
 
 type Common = {
   board: Board;
@@ -42,6 +42,9 @@ function HomeNode({ board, node, actor, apply, depth }: Common & { node: ObsNode
             {UNIT_TYPES.map(t => <option key={t} value={t}>{UNIT_TYPE_LABELS[t]}</option>)}
           </select>
         )}
+        {isUnit && node.unit_type === 'other' && (
+          <input className="unit-other" placeholder="Describe this unit type" value={node.info ?? ''} onChange={e => apply(b => updateObs(b, node.id, { info: e.target.value }, actor))} />
+        )}
         {isOrg && (
           <select value={node.treatment ?? 'solid'} title="Non-colour cue" onChange={e => apply(b => updateObs(b, node.id, { treatment: e.target.value as ObsTreatment }, actor))}>
             {TREATMENTS.map(t => <option key={t} value={t}>{t}</option>)}
@@ -65,7 +68,8 @@ function HomeNode({ board, node, actor, apply, depth }: Common & { node: ObsNode
 // Opaque editor for an EXTERNAL organization: box + contract + known people.
 function ExternalOrg({ board, org, actor, apply }: Common & { org: ObsNode }) {
   const people = childrenOf(board, org.id).filter(n => n.kind === 'individual');
-  const parentName = org.parent_id ? nodePath(board, org.parent_id) : '';
+  const parent = org.parent_id ? nodeById(board, org.parent_id) : undefined;
+  const parentName = parent ? `${parent.org_code ? parent.org_code + ' · ' : ''}${parent.name}` : '';
   return (
     <div className="ext-org" id={`obs-node-${org.id}`} style={{ borderColor: org.color }}>
       <div className="obs-line">

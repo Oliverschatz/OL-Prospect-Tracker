@@ -240,7 +240,7 @@ export function normalizeBoard(b: Board): Board {
 
   // OBS: rename legacy kinds ('org' → organization, 'resource' → individual).
   const obs = Array.isArray(b.obs) ? b.obs : [];
-  const validUnitTypes = ['division', 'department', 'subsidiary', 'managed_team', 'scrum_team', 'volunteer_team', 'other'];
+  const validUnitTypes = ['division', 'department', 'subsidiary', 'managed_team', 'scrum_team', 'task_force', 'tribe', 'volunteer_team', 'other'];
   out.obs = obs.map(n => {
     const kind = (n.kind as string) === 'org' ? 'organization'
       : (n.kind as string) === 'resource' ? 'individual'
