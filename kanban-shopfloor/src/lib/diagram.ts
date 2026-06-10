@@ -13,7 +13,7 @@ const ICON = 16, ICON_GAP = 10;
 const NAME_FS = 9.5, PEOPLE_H = ICON + 16;
 const GAP = 14;          // gap between sibling boxes (nested)
 const MIN_W = 120;
-const EXT_W = 156, EXT_H = 70, EXT_VGAP = 48, EXT_HGAP = 26;
+const EXT_W = 160, EXT_H = 84, EXT_VGAP = 48, EXT_HGAP = 26;
 const MARGIN = 24;
 
 function esc(s: string): string {
@@ -115,8 +115,10 @@ function renderExternal(e: Ext, x: number, y: number): string {
   const stroke = e.org.color || '#2f6fb0';
   let out = `<rect x="${boxX}" y="${y}" width="${boxW}" height="${EXT_H}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="2.5"/>`;
   const cx = boxX + boxW / 2;
-  out += `<text x="${cx}" y="${y + 18}" text-anchor="middle" font-size="12.5" font-weight="700" fill="${stroke}">${esc(`${e.org.org_code ? e.org.org_code + ' · ' : ''}${e.org.name}`)}</text>`;
-  if (e.people.length) out += peopleRow(e.people, cx, y + 26);
+  out += `<text x="${cx}" y="${y + 17}" text-anchor="middle" font-size="12" font-weight="700" fill="${stroke}">${esc(truncate(`${e.org.org_code ? e.org.org_code + ' · ' : ''}${e.org.name}`, boxW - 8))}</text>`;
+  const hasIndustry = !!(e.org.industry && e.org.industry.trim());
+  if (hasIndustry) out += `<text x="${cx}" y="${y + 31}" text-anchor="middle" font-size="9.5" font-style="italic" fill="#6b7686">${esc(truncate(e.org.industry!, boxW - 8))}</text>`;
+  if (e.people.length) out += peopleRow(e.people, cx, y + (hasIndustry ? 42 : 30));
   if (e.subs.length) {
     const subsY = y + EXT_H + EXT_VGAP;
     const subsW = e.subs.reduce((s, k) => s + k.w, 0) + EXT_HGAP * Math.max(0, e.subs.length - 1);

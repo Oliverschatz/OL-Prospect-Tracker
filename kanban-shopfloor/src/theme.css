@@ -460,3 +460,10 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .swim-lane.clickable { cursor: pointer; }
 .swim-lane.clickable:hover { background: var(--bg); text-decoration: underline; }
 .obs-focus { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--radius); background: var(--accent-soft); transition: background .3s; }
+
+/* Project picture field + contractor industry field */
+.img-field { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.img-url { flex: 1; min-width: 200px; }
+.img-pick { cursor: pointer; }
+.img-preview { display: block; margin-top: 8px; max-height: 160px; max-width: 100%; border: 1px solid var(--border); border-radius: var(--radius); }
+.industry-input { flex: 1; min-width: 160px; font-size: 12px; padding: 4px 8px; }

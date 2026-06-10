@@ -64,6 +64,7 @@ const DOC_CSS = `
   .meta{display:flex;gap:24px;flex-wrap:wrap;background:#f4f6f9;border:1px solid #e1e6ee;border-radius:6px;padding:10px 14px;margin:8px 0 4px}
   .muted{color:#6b7686}
   .diagram{margin:10px 0}.diagram img{max-width:100%;height:auto;border:1px solid #e1e6ee;border-radius:6px}
+  .project-img img{max-width:60%;height:auto;border:1px solid #e1e6ee;border-radius:6px;margin:8px 0}
   ul{margin:4px 0 10px 18px}
   .tag{display:inline-block;border:1px solid #c0392b;color:#c0392b;border-radius:10px;padding:0 7px;font-size:10px;font-weight:700;margin-right:4px}
   .foot{margin-top:28px;border-top:1px solid #e1e6ee;padding-top:10px;color:#6b7686;font-size:11px;text-align:center}
@@ -91,7 +92,7 @@ export function buildResultBody(board: Board, diagramImg: string): string {
     <div><strong>Dates:</strong> ${fmtDate(board.start_date)} – ${fmtDate(board.end_date)}</div>
     <div><strong>Estimation:</strong> ${esc(board.settings.estimate_method)}</div>
     <div><strong>WIP limit:</strong> ${board.settings.wip_limit ?? '∞'}</div>
-  </div>${board.description ? `<p>${esc(board.description)}</p>` : ''}`;
+  </div>${board.image ? `<div class="project-img"><img src="${board.image}" alt="Project picture"></div>` : ''}${board.description ? `<p>${esc(board.description)}</p>` : ''}`;
 
   const dor = board.settings.definition_of_ready, dod = board.settings.definition_of_done;
   const policies = (dor.length || dod.length) ? `
@@ -100,10 +101,10 @@ export function buildResultBody(board: Board, diagramImg: string): string {
     ${dod.length ? `<h3>Definition of Done</h3><ul>${dod.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}` : '';
 
   const orgs = organizations(board);
-  const obsRows = orgs.map(o => `<tr><td><strong>${esc(o.org_code || '')}</strong> ${esc(o.name)}${o.is_home ? ' <span class="muted">(home)</span>' : ''}</td><td>${esc(nodePath(board, o.parent_id))}</td><td>${esc(o.contract_label || '')}</td></tr>`).join('');
+  const obsRows = orgs.map(o => `<tr><td><strong>${esc(o.org_code || '')}</strong> ${esc(o.name)}${o.is_home ? ' <span class="muted">(home)</span>' : ''}</td><td>${esc(o.industry || '')}</td><td>${esc(nodePath(board, o.parent_id))}</td><td>${esc(o.contract_label || '')}</td></tr>`).join('');
   const obs = `<h2>Organization (OBS)</h2>
     ${diagramImg ? `<div class="diagram">${diagramImg}</div>` : ''}
-    <table><thead><tr><th>Organization</th><th>Engaged by</th><th>Contract / PO</th></tr></thead><tbody>${obsRows || '<tr><td colspan="3" class="muted">None</td></tr>'}</tbody></table>`;
+    <table><thead><tr><th>Organization</th><th>Industry / function</th><th>Engaged by</th><th>Contract / PO</th></tr></thead><tbody>${obsRows || '<tr><td colspan="4" class="muted">None</td></tr>'}</tbody></table>`;
 
   const stories = liveStories(board);
   const storyHtml = stories.length ? `<h2>User stories</h2><table><thead><tr><th>Story</th><th>As a / I want / so that</th><th>Cards</th></tr></thead><tbody>${stories.map(s => `<tr><td><strong>${esc(s.title)}</strong></td><td>${esc([s.role, s.goal, s.benefit].filter(Boolean).join(' / '))}</td><td>${board.cards.filter(c => !c.deleted && c.story_id === s.id).length}</td></tr>`).join('')}</tbody></table>` : '';

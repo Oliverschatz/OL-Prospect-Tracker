@@ -59,6 +59,7 @@ export interface ObsNode extends Versioned {
   is_home?: boolean;        // organizations: exactly one is the own ("home") org
   org_code?: string;        // organizations: short label shown on pills
   contract_label?: string;  // external orgs: the contract/PO they were engaged under
+  industry?: string;        // organizations: what the company does (its name may not say)
   unit_type?: UnitType;     // units
   color?: string;
   treatment?: ObsTreatment; // organizations: non-colour cue
@@ -139,6 +140,7 @@ export interface Board extends Versioned {
   name: string;
   subtitle: string;
   description?: string;
+  image?: string;           // project picture (URL or data URL), shown in reports
   start_date?: string | null;
   end_date?: string | null;
   created_at: string;

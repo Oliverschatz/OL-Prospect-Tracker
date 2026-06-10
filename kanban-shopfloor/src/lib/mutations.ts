@@ -227,7 +227,7 @@ export function updateSettings(board: Board, patch: Partial<Board['settings']>, 
   return stamp({ ...board, settings: { ...board.settings, ...patch } }, actor);
 }
 
-export function patchBoardMeta(board: Board, patch: Partial<Pick<Board, 'name' | 'description' | 'start_date' | 'end_date'>>, actor: string): Board {
+export function patchBoardMeta(board: Board, patch: Partial<Pick<Board, 'name' | 'description' | 'image' | 'start_date' | 'end_date'>>, actor: string): Board {
   return stamp({ ...board, ...patch }, actor);
 }
 

@@ -36,6 +36,16 @@ function StringList({ items, onChange, placeholder }: { items: string[]; onChang
 export default function ProjectView({ board, actor, apply }: Common) {
   const s = board.settings;
   const [newConstraint, setNewConstraint] = useState('');
+
+  function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => apply(b => patchBoardMeta(b, { image: String(reader.result) }, actor));
+    reader.readAsDataURL(f);
+    e.target.value = '';
+  }
+
   return (
     <div className="view-scroll">
       <div className="view-head">
@@ -46,6 +56,15 @@ export default function ProjectView({ board, actor, apply }: Common) {
       <section className="panel">
         <div className="field"><label>Project name</label><input value={board.name} onChange={e => apply(b => patchBoardMeta(b, { name: e.target.value }, actor))} /></div>
         <div className="field"><label>Description</label><textarea rows={2} value={board.description ?? ''} onChange={e => apply(b => patchBoardMeta(b, { description: e.target.value }, actor))} /></div>
+        <div className="field">
+          <label>Project picture (shown in reports)</label>
+          <div className="img-field">
+            <input className="img-url" placeholder="Image URL, or choose a file →" value={board.image ?? ''} onChange={e => apply(b => patchBoardMeta(b, { image: e.target.value || undefined }, actor))} />
+            <label className="btn btn-secondary btn-sm img-pick">Choose file<input type="file" accept="image/*" hidden onChange={onPickImage} /></label>
+            {board.image && <button className="btn btn-secondary btn-sm" onClick={() => apply(b => patchBoardMeta(b, { image: undefined }, actor))}>Remove</button>}
+          </div>
+          {board.image && <img className="img-preview" src={board.image} alt="Project picture" />}
+        </div>
         <div className="field-2">
           <div className="field"><label>Start date</label><input type="date" value={board.start_date ?? ''} onChange={e => apply(b => patchBoardMeta(b, { start_date: e.target.value || null }, actor))} /></div>
           <div className="field"><label>End date</label><input type="date" value={board.end_date ?? ''} onChange={e => apply(b => patchBoardMeta(b, { end_date: e.target.value || null }, actor))} /></div>

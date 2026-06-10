@@ -79,6 +79,10 @@ function ExternalOrg({ board, org, actor, apply }: Common & { org: ObsNode }) {
         <input className="contract-label" placeholder="Contract / PO no." value={org.contract_label ?? ''} onChange={e => apply(b => updateObs(b, org.id, { contract_label: e.target.value }, actor))} />
         {parentName && <span className="muted small">engaged by {parentName}</span>}
       </div>
+      <div className="ext-meta">
+        <span className="edge-tag">Industry / function</span>
+        <input className="industry-input" placeholder="What this company does in the project" value={org.industry ?? ''} onChange={e => apply(b => updateObs(b, org.id, { industry: e.target.value }, actor))} />
+      </div>
       <ContactFields board={board} node={org} actor={actor} apply={apply} />
       <div className="ext-people">
         <div className="muted small">Known people (structure otherwise unknown):</div>
