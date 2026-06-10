@@ -8,16 +8,46 @@ import { Board, ObsNode } from '../types';
 import { childrenOf, homeOrg, nodeById } from './board';
 
 const PAD = 14;
-const TITLE_H = 26;
 const ICON = 16, ICON_GAP = 10;
 const NAME_FS = 9.5, PEOPLE_H = ICON + 16;
+const TITLE_FS = 13, TITLE_LH = 16;        // nested (home) box title
+const EXT_TITLE_FS = 12, EXT_TITLE_LH = 15; // external box title
 const GAP = 14;          // gap between sibling boxes (nested)
-const MIN_W = 120;
-const EXT_W = 160, EXT_H = 84, EXT_VGAP = 48, EXT_HGAP = 26;
+const MIN_W = 130;
+const EXT_W = 168, EXT_VGAP = 48, EXT_HGAP = 26;
 const MARGIN = 24;
 
 function esc(s: string): string {
   return (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+}
+
+// Greedy word-wrap to fit a pixel width; hard-breaks over-long single words.
+function wrapText(text: string, maxW: number, fontSize: number, maxLines = 3): string[] {
+  const charW = fontSize * 0.56;
+  const maxChars = Math.max(6, Math.floor(maxW / charW));
+  const words = (text || '').split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let cur = '';
+  const pushWord = (w: string) => {
+    let word = w;
+    while (word.length > maxChars) {
+      if (cur) { lines.push(cur); cur = ''; }
+      lines.push(word.slice(0, maxChars - 1) + '­'); // soft hyphen marker
+      word = word.slice(maxChars - 1);
+      if (lines.length >= maxLines) return;
+    }
+    const tryLine = cur ? cur + ' ' + word : word;
+    if (tryLine.length <= maxChars) cur = tryLine;
+    else { if (cur) lines.push(cur); cur = word; }
+  };
+  for (const w of words) { if (lines.length >= maxLines) break; pushWord(w); }
+  if (cur && lines.length < maxLines) lines.push(cur);
+  if (lines.length > maxLines) lines.length = maxLines;
+  return lines.length ? lines.map(l => l.replace(/­/g, '-')) : [text];
+}
+
+function titleSvg(lines: string[], cx: number, firstBaseline: number, fs: number, lh: number, weight: number, fill: string): string {
+  return lines.map((ln, i) => `<text x="${cx}" y="${firstBaseline + i * lh}" text-anchor="middle" font-size="${fs}" font-weight="${weight}" fill="${fill}">${esc(ln)}</text>`).join('');
 }
 
 // A small black "person" glyph centred horizontally on cx, top edge at `top`.
@@ -36,7 +66,6 @@ function peopleWidth(people: ObsNode[]): number {
   if (!people.length) return 0;
   return people.reduce((s, p) => s + colW(p.name || '?'), 0) + ICON_GAP * (people.length - 1);
 }
-// Render avatars in a centred row, each with its name beneath.
 function peopleRow(people: ObsNode[], cx: number, top: number): string {
   if (!people.length) return '';
   const total = peopleWidth(people);
@@ -52,8 +81,10 @@ function peopleRow(people: ObsNode[], cx: number, top: number): string {
   return out;
 }
 
+function orgLabel(o: ObsNode): string { return `${o.org_code ? o.org_code + ' · ' : ''}${o.name}`; }
+
 // ── Nested layout (home organization side) ──────────────────────────────────
-type Nest = { node: ObsNode; w: number; h: number; kids: Nest[]; people: ObsNode[] };
+type Nest = { node: ObsNode; w: number; h: number; titleLines: string[]; titleH: number; kids: Nest[]; people: ObsNode[] };
 
 function layNested(board: Board, node: ObsNode): Nest {
   const children = childrenOf(board, node.id);
@@ -63,22 +94,22 @@ function layNested(board: Board, node: ObsNode): Nest {
   const kidsW = kids.reduce((s, k) => s + k.w, 0) + GAP * Math.max(0, kids.length - 1);
   const innerW = Math.max(kidsW, peopleWidth(people), MIN_W);
   const w = innerW + PAD * 2;
+  const label = node.kind === 'organization' ? orgLabel(node) : node.name;
+  const titleLines = wrapText(label, w - 16, TITLE_FS);
+  const titleH = titleLines.length * TITLE_LH + 8;
   const peopleH = people.length > 0 ? PEOPLE_H : 0;
   const kidsH = kids.length ? Math.max(...kids.map(k => k.h)) : 0;
-  const h = TITLE_H + peopleH + (kidsH ? kidsH + PAD : 8) + PAD;
-  return { node, w, h, kids, people };
+  const h = titleH + peopleH + (kidsH ? kidsH + PAD : 8) + PAD;
+  return { node, w, h, titleLines, titleH, kids, people };
 }
 
 function renderNested(n: Nest, x: number, y: number, isRoot: boolean): string {
   const stroke = isRoot ? (n.node.color || '#1a2744') : '#9aa3b2';
   const sw = isRoot ? 3 : 1.5;
-  const label = n.node.kind === 'organization'
-    ? `${n.node.org_code ? n.node.org_code + ' · ' : ''}${n.node.name}`
-    : n.node.name;
-  let out = `<rect x="${x}" y="${y}" width="${n.w}" height="${n.h}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="${sw}"/>`;
-  out += `<text x="${x + n.w / 2}" y="${y + 17}" text-anchor="middle" font-size="13" font-weight="700" fill="#1c2636">${esc(label)}</text>`;
   const cx = x + n.w / 2;
-  const contentY = y + TITLE_H;
+  let out = `<rect x="${x}" y="${y}" width="${n.w}" height="${n.h}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="${sw}"/>`;
+  out += titleSvg(n.titleLines, cx, y + 17, TITLE_FS, TITLE_LH, 700, '#1c2636');
+  const contentY = y + n.titleH;
   if (n.people.length) out += peopleRow(n.people, cx, contentY + 2);
   const kidsY = contentY + (n.people.length ? PEOPLE_H : 0);
   const kidsW = n.kids.reduce((s, k) => s + k.w, 0) + GAP * Math.max(0, n.kids.length - 1);
@@ -88,16 +119,20 @@ function renderNested(n: Nest, x: number, y: number, isRoot: boolean): string {
 }
 
 // ── External tree (contractors / subcontractors hang downward) ───────────────
-type Ext = { org: ObsNode; w: number; h: number; subs: Ext[]; people: ObsNode[] };
+type Ext = { org: ObsNode; w: number; h: number; eh: number; boxW: number; titleLines: string[]; hasIndustry: boolean; subs: Ext[]; people: ObsNode[] };
 
 function layExternal(board: Board, org: ObsNode): Ext {
   const subs = childrenOf(board, org.id).filter(k => k.kind === 'organization').map(o => layExternal(board, o));
   const people = childrenOf(board, org.id).filter(k => k.kind === 'individual');
+  const boxW = Math.max(EXT_W, peopleWidth(people) + PAD * 2);
+  const titleLines = wrapText(orgLabel(org), boxW - 12, EXT_TITLE_FS);
+  const hasIndustry = !!(org.industry && org.industry.trim());
+  const eh = 8 + titleLines.length * EXT_TITLE_LH + 4 + (hasIndustry ? 14 : 0) + (people.length ? PEOPLE_H : 4) + 8;
   const subsW = subs.reduce((s, k) => s + k.w, 0) + EXT_HGAP * Math.max(0, subs.length - 1);
-  const w = Math.max(EXT_W, subsW, peopleWidth(people) + PAD * 2);
+  const w = Math.max(boxW, subsW);
   const subsH = subs.length ? Math.max(...subs.map(k => k.h)) : 0;
-  const h = EXT_H + (subs.length ? EXT_VGAP + subsH : 0);
-  return { org, w, h, subs, people };
+  const h = eh + (subs.length ? EXT_VGAP + subsH : 0);
+  return { org, w, h, eh, boxW, titleLines, hasIndustry, subs, people };
 }
 
 function edge(x1: number, y1: number, x2: number, y2: number): string {
@@ -110,21 +145,20 @@ function edge(x1: number, y1: number, x2: number, y2: number): string {
 }
 
 function renderExternal(e: Ext, x: number, y: number): string {
-  const boxW = Math.max(EXT_W, peopleWidth(e.people) + PAD * 2);
-  const boxX = x + (e.w - boxW) / 2;
+  const boxX = x + (e.w - e.boxW) / 2;
   const stroke = e.org.color || '#2f6fb0';
-  let out = `<rect x="${boxX}" y="${y}" width="${boxW}" height="${EXT_H}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="2.5"/>`;
-  const cx = boxX + boxW / 2;
-  out += `<text x="${cx}" y="${y + 17}" text-anchor="middle" font-size="12" font-weight="700" fill="${stroke}">${esc(truncate(`${e.org.org_code ? e.org.org_code + ' · ' : ''}${e.org.name}`, boxW - 8))}</text>`;
-  const hasIndustry = !!(e.org.industry && e.org.industry.trim());
-  if (hasIndustry) out += `<text x="${cx}" y="${y + 31}" text-anchor="middle" font-size="9.5" font-style="italic" fill="#6b7686">${esc(truncate(e.org.industry!, boxW - 8))}</text>`;
-  if (e.people.length) out += peopleRow(e.people, cx, y + (hasIndustry ? 42 : 30));
+  const cx = boxX + e.boxW / 2;
+  let out = `<rect x="${boxX}" y="${y}" width="${e.boxW}" height="${e.eh}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="2.5"/>`;
+  out += titleSvg(e.titleLines, cx, y + 19, EXT_TITLE_FS, EXT_TITLE_LH, 700, stroke);
+  let cur = y + 8 + e.titleLines.length * EXT_TITLE_LH + 4;
+  if (e.hasIndustry) { out += `<text x="${cx}" y="${cur + 9}" text-anchor="middle" font-size="9.5" font-style="italic" fill="#6b7686">${esc(truncate(e.org.industry!, e.boxW - 8))}</text>`; cur += 14; }
+  if (e.people.length) out += peopleRow(e.people, cx, cur);
   if (e.subs.length) {
-    const subsY = y + EXT_H + EXT_VGAP;
+    const subsY = y + e.eh + EXT_VGAP;
     const subsW = e.subs.reduce((s, k) => s + k.w, 0) + EXT_HGAP * Math.max(0, e.subs.length - 1);
     let sx = x + (e.w - subsW) / 2;
     for (const sub of e.subs) {
-      out += edge(cx, y + EXT_H, sx + sub.w / 2, subsY);
+      out += edge(cx, y + e.eh, sx + sub.w / 2, subsY);
       out += renderExternal(sub, sx, subsY);
       sx += sub.w + EXT_HGAP;
     }
@@ -150,13 +184,15 @@ export function buildObsDiagram(board: Board): DiagramResult {
   let yCursor = MARGIN;
 
   if (customer) {
-    const cy = yCursor, boxX = centerX - EXT_W / 2, stroke = customer.color || '#1a2744';
+    const custLines = wrapText(orgLabel(customer), EXT_W - 12, EXT_TITLE_FS);
+    const custH = 8 + custLines.length * EXT_TITLE_LH + 4 + 16 + 8;
+    const boxX = centerX - EXT_W / 2, stroke = customer.color || '#1a2744';
     body += `<g data-node-id="${customer.id}">` +
-      `<rect x="${boxX}" y="${cy}" width="${EXT_W}" height="${EXT_H}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="2.5"/>` +
-      `<text x="${centerX}" y="${cy + 26}" text-anchor="middle" font-size="12.5" font-weight="700" fill="${stroke}">${esc(`${customer.org_code ? customer.org_code + ' · ' : ''}${customer.name}`)}</text>` +
-      `<text x="${centerX}" y="${cy + 44}" text-anchor="middle" font-size="10" fill="#6b7686">Customer</text></g>`;
-    body += edge(centerX, cy + EXT_H, centerX, cy + EXT_H + EXT_VGAP);
-    yCursor += EXT_H + EXT_VGAP;
+      `<rect x="${boxX}" y="${yCursor}" width="${EXT_W}" height="${custH}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="2.5"/>` +
+      titleSvg(custLines, centerX, yCursor + 19, EXT_TITLE_FS, EXT_TITLE_LH, 700, stroke) +
+      `<text x="${centerX}" y="${yCursor + 8 + custLines.length * EXT_TITLE_LH + 16}" text-anchor="middle" font-size="10" fill="#6b7686">Customer</text></g>`;
+    body += edge(centerX, yCursor + custH, centerX, yCursor + custH + EXT_VGAP);
+    yCursor += custH + EXT_VGAP;
   }
 
   const homeY = yCursor;
