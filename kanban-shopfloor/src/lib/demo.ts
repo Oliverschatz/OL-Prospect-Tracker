@@ -80,6 +80,7 @@ export function buildDemo(): Board {
   obs('individual', gld, 'Beate Goldgrund', { info: 'Master gilder / PM', is_pm: true });
   const lft = obs('organization', alp, 'LiftPlan Elevator Technology Ltd.', { org_code: 'LFT', color: '#1f8a8a', contract_label: 'SC-3 (fixed price)', industry: 'Elevator installation' });
   obs('individual', lft, 'Daniel Roth', { info: 'Installation lead / PM', is_pm: true });
+  obs('individual', lft, 'Sabine Vogt', { info: 'Commissioning lead / PM (job-share)', is_pm: true });
 
   // ── Stories ──
   let s = addStory(b, A, { title: 'Open as a 48-room boutique hotel', role: 'hotel owner', goal: 'the castle converted on schedule for the 2027 season', benefit: 'bookings can open in spring' }); b = s.board; const hotel = s.id;
