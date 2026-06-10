@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Board, Contact, ObsNode, ObsTreatment, UNIT_TYPE_LABELS, UnitType } from '../types';
-import { childrenOf, homeOrg, nodePath, organizations } from '../lib/board';
+import { childrenOf, homeOrg, nodePath, organizations, rootOrg } from '../lib/board';
 import { addCustomerAbove, addObs, deleteObs, updateObs } from '../lib/mutations';
 
 const TREATMENTS: ObsTreatment[] = ['solid', 'dashed', 'dotted', 'double', 'monogram'];
@@ -109,7 +109,6 @@ function ExternalOrg({ board, org, actor, apply }: Common & { org: ObsNode }) {
 export default function ObsView({ board, actor, apply, focusId, onFocusHandled }: Common & { focusId?: string | null; onFocusHandled?: () => void }) {
   const home = homeOrg(board);
   const external = organizations(board).filter(o => !o.is_home);
-  const homeHasCustomer = home?.parent_id != null;
 
   // When arriving from a diagram click, scroll to and highlight the node.
   useEffect(() => {
@@ -135,8 +134,8 @@ export default function ObsView({ board, actor, apply, focusId, onFocusHandled }
       <section className="panel">
         <div className="panel-head">
           <h3>Your organization {home && <span className="home-tag">home</span>}</h3>
-          {home && !homeHasCustomer && (
-            <button className="btn btn-secondary btn-sm" onClick={() => apply(b => addCustomerAbove(b, home.id, actor))}>+ Customer above</button>
+          {home && (
+            <button className="btn btn-secondary btn-sm" title="Insert an organization one tier above the current top of the chain (the customer/owner)" onClick={() => apply(b => addCustomerAbove(b, rootOrg(b)!.id, actor))}>+ Tier above (customer)</button>
           )}
           {home && (
             <button className="btn btn-secondary btn-sm" onClick={() => apply(b => addObs(b, { kind: 'organization', parent_id: home.id }, actor).board)}>+ Contractor</button>

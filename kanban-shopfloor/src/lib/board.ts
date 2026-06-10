@@ -112,6 +112,47 @@ export function nodePath(board: Board, id: string | null): string {
   return parts.join(' ▸ ');
 }
 
+// The topmost organization in the contract chain (the end customer / owner).
+export function rootOrg(board: Board): ObsNode | undefined {
+  let cur = homeOrg(board);
+  let guard = 0;
+  while (cur && cur.parent_id && guard++ < 64) {
+    const parent = nodeById(board, cur.parent_id);
+    if (!parent || parent.kind !== 'organization') break;
+    cur = parent;
+  }
+  return cur;
+}
+
+// Tier of an organization: 0 = end customer/owner at the top of the chain,
+// increasing by one with each contract step downward.
+export function orgTier(board: Board, org: ObsNode): number {
+  let tier = 0;
+  let cur: ObsNode | undefined = org;
+  let guard = 0;
+  while (cur && cur.parent_id && guard++ < 64) {
+    const parent = nodeById(board, cur.parent_id);
+    if (!parent || parent.kind !== 'organization') break;
+    tier += 1;
+    cur = parent;
+  }
+  return tier;
+}
+
+// The organization ancestors of the home org, ordered top (root) → bottom.
+export function ancestorsAboveHome(board: Board): ObsNode[] {
+  const chain: ObsNode[] = [];
+  let cur = homeOrg(board);
+  let guard = 0;
+  while (cur && cur.parent_id && guard++ < 64) {
+    const parent = nodeById(board, cur.parent_id);
+    if (!parent || parent.kind !== 'organization') break;
+    chain.unshift(parent);
+    cur = parent;
+  }
+  return chain;
+}
+
 // Short, human label for an assignee: "ORG ▸ Name" (org/unit ⇒ "anonymous in").
 export function assigneeLabel(board: Board, assignee: Assignee): string {
   const node = nodeById(board, assignee);

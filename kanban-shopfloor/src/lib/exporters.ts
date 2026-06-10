@@ -131,6 +131,11 @@ export function buildResultBody(board: Board, diagramImg: string): string {
   return `<div class="eyebrow">Kanban Shopfloor — Project report</div><h1>${esc(board.name)}</h1>${meta}${policies}${obs}${storyHtml}${board_}`;
 }
 
+// The full report as a standalone HTML document (for the in-app preview iframe).
+export function resultHtml(board: Board, diagramImg: string): string {
+  return docShell(`${board.name} — Kanban Shopfloor`, buildResultBody(board, diagramImg), false);
+}
+
 export function exportResultPdf(board: Board, diagramImg: string): void {
   const win = window.open('', '_blank');
   if (!win) { alert('The export window could not be opened. Allow pop-ups for this page and try again.'); return; }

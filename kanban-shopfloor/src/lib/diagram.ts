@@ -5,7 +5,7 @@
 // both injected into the DOM and rasterised to PNG.
 
 import { Board, ObsNode } from '../types';
-import { childrenOf, homeOrg, nodeById } from './board';
+import { ancestorsAboveHome, childrenOf, homeOrg, orgTier } from './board';
 
 const PAD = 14;
 const ICON = 16, ICON_GAP = 10;
@@ -84,7 +84,7 @@ function peopleRow(people: ObsNode[], cx: number, top: number): string {
 function orgLabel(o: ObsNode): string { return `${o.org_code ? o.org_code + ' · ' : ''}${o.name}`; }
 
 // ── Nested layout (home organization side) ──────────────────────────────────
-type Nest = { node: ObsNode; w: number; h: number; titleLines: string[]; titleH: number; kids: Nest[]; people: ObsNode[] };
+type Nest = { node: ObsNode; w: number; h: number; titleLines: string[]; titleH: number; tier: number; kids: Nest[]; people: ObsNode[] };
 
 function layNested(board: Board, node: ObsNode): Nest {
   const children = childrenOf(board, node.id);
@@ -100,7 +100,8 @@ function layNested(board: Board, node: ObsNode): Nest {
   const peopleH = people.length > 0 ? PEOPLE_H : 0;
   const kidsH = kids.length ? Math.max(...kids.map(k => k.h)) : 0;
   const h = titleH + peopleH + (kidsH ? kidsH + PAD : 8) + PAD;
-  return { node, w, h, titleLines, titleH, kids, people };
+  const tier = node.kind === 'organization' ? orgTier(board, node) : -1;
+  return { node, w, h, titleLines, titleH, tier, kids, people };
 }
 
 function renderNested(n: Nest, x: number, y: number, isRoot: boolean): string {
@@ -108,6 +109,7 @@ function renderNested(n: Nest, x: number, y: number, isRoot: boolean): string {
   const sw = isRoot ? 3 : 1.5;
   const cx = x + n.w / 2;
   let out = `<rect x="${x}" y="${y}" width="${n.w}" height="${n.h}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="${sw}"/>`;
+  if (n.tier >= 0) out += tierTag(n.tier, x, y);
   out += titleSvg(n.titleLines, cx, y + 17, TITLE_FS, TITLE_LH, 700, '#1c2636');
   const contentY = y + n.titleH;
   if (n.people.length) out += peopleRow(n.people, cx, contentY + 2);
@@ -119,7 +121,7 @@ function renderNested(n: Nest, x: number, y: number, isRoot: boolean): string {
 }
 
 // ── External tree (contractors / subcontractors hang downward) ───────────────
-type Ext = { org: ObsNode; w: number; h: number; eh: number; boxW: number; titleLines: string[]; hasIndustry: boolean; subs: Ext[]; people: ObsNode[] };
+type Ext = { org: ObsNode; w: number; h: number; eh: number; boxW: number; titleLines: string[]; hasIndustry: boolean; tier: number; subs: Ext[]; people: ObsNode[] };
 
 function layExternal(board: Board, org: ObsNode): Ext {
   const subs = childrenOf(board, org.id).filter(k => k.kind === 'organization').map(o => layExternal(board, o));
@@ -132,16 +134,23 @@ function layExternal(board: Board, org: ObsNode): Ext {
   const w = Math.max(boxW, subsW);
   const subsH = subs.length ? Math.max(...subs.map(k => k.h)) : 0;
   const h = eh + (subs.length ? EXT_VGAP + subsH : 0);
-  return { org, w, h, eh, boxW, titleLines, hasIndustry, subs, people };
+  return { org, w, h, eh, boxW, titleLines, hasIndustry, tier: orgTier(board, org), subs, people };
 }
 
+// A straight connector with a centred "Contract" label (clearer than elbows
+// when several edges fan out from one parent point).
 function edge(x1: number, y1: number, x2: number, y2: number): string {
-  const my = (y1 + y2) / 2;
-  let out = `<path d="M ${x1} ${y1} L ${x1} ${my} L ${x2} ${my} L ${x2} ${y2}" fill="none" stroke="#6b7686" stroke-width="1.5"/>`;
-  const lx = (x1 + x2) / 2, lw = 62;
-  out += `<rect x="${lx - lw / 2}" y="${my - 9}" width="${lw}" height="18" rx="3" fill="#ffffff" stroke="#6b7686" stroke-width="1"/>`;
-  out += `<text x="${lx}" y="${my + 4}" text-anchor="middle" font-size="10.5" font-weight="600" fill="#3a4250">Contract</text>`;
+  let out = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#6b7686" stroke-width="1.5"/>`;
+  const lx = (x1 + x2) / 2, ly = (y1 + y2) / 2, lw = 62;
+  out += `<rect x="${lx - lw / 2}" y="${ly - 9}" width="${lw}" height="18" rx="3" fill="#ffffff" stroke="#6b7686" stroke-width="1"/>`;
+  out += `<text x="${lx}" y="${ly + 4}" text-anchor="middle" font-size="10.5" font-weight="600" fill="#3a4250">Contract</text>`;
   return out;
+}
+
+// Small "Tier N" tag pinned to the top-left inside an org box.
+function tierTag(t: number, x: number, y: number): string {
+  return `<rect x="${x + 8}" y="${y + 8}" width="40" height="15" rx="7" fill="#eef1f6" stroke="#c7cedb" stroke-width="0.75"/>` +
+    `<text x="${x + 28}" y="${y + 19}" text-anchor="middle" font-size="9" font-weight="700" fill="#3a4250">Tier ${t}</text>`;
 }
 
 function renderExternal(e: Ext, x: number, y: number): string {
@@ -149,6 +158,7 @@ function renderExternal(e: Ext, x: number, y: number): string {
   const stroke = e.org.color || '#2f6fb0';
   const cx = boxX + e.boxW / 2;
   let out = `<rect x="${boxX}" y="${y}" width="${e.boxW}" height="${e.eh}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="2.5"/>`;
+  out += tierTag(e.tier, boxX, y);
   out += titleSvg(e.titleLines, cx, y + 19, EXT_TITLE_FS, EXT_TITLE_LH, 700, stroke);
   let cur = y + 8 + e.titleLines.length * EXT_TITLE_LH + 4;
   if (e.hasIndustry) { out += `<text x="${cx}" y="${cur + 9}" text-anchor="middle" font-size="9.5" font-style="italic" fill="#6b7686">${esc(truncate(e.org.industry!, e.boxW - 8))}</text>`; cur += 14; }
@@ -166,6 +176,17 @@ function renderExternal(e: Ext, x: number, y: number): string {
   return `<g data-node-id="${e.org.id}">${out}</g>`;
 }
 
+// An organization rendered as a single box (no downward subs) — used for the
+// chain of customers/owners stacked above the home org.
+function standaloneExt(board: Board, org: ObsNode): Ext {
+  const people = childrenOf(board, org.id).filter(k => k.kind === 'individual');
+  const boxW = Math.max(EXT_W, peopleWidth(people) + PAD * 2);
+  const titleLines = wrapText(orgLabel(org), boxW - 12, EXT_TITLE_FS);
+  const hasIndustry = !!(org.industry && org.industry.trim());
+  const eh = 8 + titleLines.length * EXT_TITLE_LH + 4 + (hasIndustry ? 14 : 0) + (people.length ? PEOPLE_H : 4) + 8;
+  return { org, w: boxW, h: eh, eh, boxW, titleLines, hasIndustry, tier: orgTier(board, org), subs: [], people };
+}
+
 export interface DiagramResult { svg: string; width: number; height: number; empty: boolean; }
 
 export function buildObsDiagram(board: Board): DiagramResult {
@@ -174,25 +195,22 @@ export function buildObsDiagram(board: Board): DiagramResult {
 
   const homeLay = layNested(board, home);
   const contractors = childrenOf(board, home.id).filter(k => k.kind === 'organization').map(o => layExternal(board, o));
-  const customer = home.parent_id ? nodeById(board, home.parent_id) : undefined;
+  const ancestors = ancestorsAboveHome(board).map(a => standaloneExt(board, a)); // top (root) → bottom
 
   const contractorsW = contractors.reduce((s, c) => s + c.w, 0) + EXT_HGAP * Math.max(0, contractors.length - 1);
-  const rootW = Math.max(homeLay.w, contractorsW, customer ? EXT_W : 0);
+  const ancW = ancestors.length ? Math.max(...ancestors.map(a => a.boxW)) : 0;
+  const rootW = Math.max(homeLay.w, contractorsW, ancW);
   const centerX = MARGIN + rootW / 2;
 
   let body = '';
   let yCursor = MARGIN;
 
-  if (customer) {
-    const custLines = wrapText(orgLabel(customer), EXT_W - 12, EXT_TITLE_FS);
-    const custH = 8 + custLines.length * EXT_TITLE_LH + 4 + 16 + 8;
-    const boxX = centerX - EXT_W / 2, stroke = customer.color || '#1a2744';
-    body += `<g data-node-id="${customer.id}">` +
-      `<rect x="${boxX}" y="${yCursor}" width="${EXT_W}" height="${custH}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="2.5"/>` +
-      titleSvg(custLines, centerX, yCursor + 19, EXT_TITLE_FS, EXT_TITLE_LH, 700, stroke) +
-      `<text x="${centerX}" y="${yCursor + 8 + custLines.length * EXT_TITLE_LH + 16}" text-anchor="middle" font-size="10" fill="#6b7686">Customer</text></g>`;
-    body += edge(centerX, yCursor + custH, centerX, yCursor + custH + EXT_VGAP);
-    yCursor += custH + EXT_VGAP;
+  // Chain of organizations above the home org (customers/owners), each linked by
+  // a straight Contract edge down to the next tier.
+  for (const anc of ancestors) {
+    body += renderExternal(anc, centerX - anc.boxW / 2, yCursor);
+    body += edge(centerX, yCursor + anc.eh, centerX, yCursor + anc.eh + EXT_VGAP);
+    yCursor += anc.eh + EXT_VGAP;
   }
 
   const homeY = yCursor;
