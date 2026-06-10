@@ -65,6 +65,7 @@ export interface ObsNode extends Versioned {
   treatment?: ObsTreatment; // organizations: non-colour cue
   contact?: Contact;        // contact person details
   info?: string;            // free-text catch-all (esp. for external individuals)
+  is_pm?: boolean;          // individuals: this person is their organization's Project Manager
 }
 
 // An assignee is an ObsNode id. Assigning to a unit/organization means "someone

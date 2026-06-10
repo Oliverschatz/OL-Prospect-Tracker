@@ -50,32 +50,43 @@ function titleSvg(lines: string[], cx: number, firstBaseline: number, fs: number
   return lines.map((ln, i) => `<text x="${cx}" y="${firstBaseline + i * lh}" text-anchor="middle" font-size="${fs}" font-weight="${weight}" fill="${fill}">${esc(ln)}</text>`).join('');
 }
 
-// A small black "person" glyph centred horizontally on cx, top edge at `top`.
-function person(cx: number, top: number, s = ICON): string {
+const PM_COLOR = '#e07b2c';
+
+// A small "person" glyph centred horizontally on cx, top edge at `top`.
+function person(cx: number, top: number, color = '#1c1c1c', s = ICON): string {
   const hr = s * 0.26, hy = top + hr;
-  return `<circle cx="${cx}" cy="${hy}" r="${hr}" fill="#1c1c1c"/>` +
-    `<path d="M ${cx - s * 0.46} ${top + s} a ${s * 0.46} ${s * 0.5} 0 0 1 ${s * 0.92} 0 Z" fill="#1c1c1c"/>`;
+  return `<circle cx="${cx}" cy="${hy}" r="${hr}" fill="${color}"/>` +
+    `<path d="M ${cx - s * 0.46} ${top + s} a ${s * 0.46} ${s * 0.5} 0 0 1 ${s * 0.92} 0 Z" fill="${color}"/>`;
 }
 
-function colW(name: string): number { return Math.min(104, Math.max(ICON + 8, name.length * 5.4 + 10)); }
+const personName = (p: ObsNode): string => (p.is_pm ? `${p.name || '(unnamed)'} (PM)` : (p.name || '(unnamed)'));
+
+function colW(name: string): number { return Math.min(116, Math.max(ICON + 8, name.length * 5.4 + 10)); }
 function truncate(name: string, w: number): string {
   const max = Math.floor((w - 6) / 5.2);
   return name.length > max ? name.slice(0, Math.max(1, max - 1)) + '…' : name;
 }
 function peopleWidth(people: ObsNode[]): number {
   if (!people.length) return 0;
-  return people.reduce((s, p) => s + colW(p.name || '?'), 0) + ICON_GAP * (people.length - 1);
+  return people.reduce((s, p) => s + colW(personName(p)), 0) + ICON_GAP * (people.length - 1);
 }
-function peopleRow(people: ObsNode[], cx: number, top: number): string {
-  if (!people.length) return '';
+// PMs first so the highlighted Project Manager reads as the lead of the box.
+function sortPeople(people: ObsNode[]): ObsNode[] {
+  return [...people].sort((a, b) => (a.is_pm === b.is_pm ? 0 : a.is_pm ? -1 : 1));
+}
+function peopleRow(peopleIn: ObsNode[], cx: number, top: number): string {
+  if (!peopleIn.length) return '';
+  const people = sortPeople(peopleIn);
   const total = peopleWidth(people);
   let x = cx - total / 2;
   let out = '';
   for (const p of people) {
-    const w = colW(p.name || '?');
+    const label = personName(p);
+    const w = colW(label);
     const ccx = x + w / 2;
-    out += `<g data-node-id="${p.id}">` + person(ccx, top) +
-      `<text x="${ccx}" y="${top + ICON + 10}" text-anchor="middle" font-size="${NAME_FS}" fill="#3a4250">${esc(truncate(p.name || '(unnamed)', w))}</text></g>`;
+    const nameAttrs = p.is_pm ? `font-weight="700" fill="${PM_COLOR}"` : `fill="#3a4250"`;
+    out += `<g data-node-id="${p.id}">` + person(ccx, top, p.is_pm ? PM_COLOR : '#1c1c1c') +
+      `<text x="${ccx}" y="${top + ICON + 10}" text-anchor="middle" font-size="${NAME_FS}" ${nameAttrs}>${esc(truncate(label, w))}</text></g>`;
     x += w + ICON_GAP;
   }
   return out;

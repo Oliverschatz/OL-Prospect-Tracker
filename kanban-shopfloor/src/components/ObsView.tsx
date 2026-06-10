@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Board, Contact, ObsNode, ObsTreatment, UNIT_TYPE_LABELS, UnitType } from '../types';
 import { childrenOf, homeOrg, nodeById, organizations, rootOrg } from '../lib/board';
-import { addCustomerAbove, addObs, deleteObs, updateObs } from '../lib/mutations';
+import { addCustomerAbove, addObs, deleteObs, setProjectManager, updateObs } from '../lib/mutations';
 
 const TREATMENTS: ObsTreatment[] = ['solid', 'dashed', 'dotted', 'double', 'monogram'];
 const UNIT_TYPES: UnitType[] = ['division', 'department', 'subsidiary', 'managed_team', 'scrum_team', 'task_force', 'tribe', 'volunteer_team', 'other'];
@@ -52,6 +52,7 @@ function HomeNode({ board, node, actor, apply, depth }: Common & { node: ObsNode
         )}
         {canContain && <button className="btn btn-secondary btn-sm" onClick={() => apply(b => addObs(b, { kind: 'unit', parent_id: node.id }, actor).board)}>+ business unit</button>}
         {canContain && <button className="btn btn-secondary btn-sm" onClick={() => apply(b => addObs(b, { kind: 'individual', parent_id: node.id }, actor).board)}>+ person</button>}
+        {isIndividual && <label className={`pm-toggle${node.is_pm ? ' on' : ''}`} title="Project Manager of this organization"><input type="checkbox" checked={!!node.is_pm} onChange={() => apply(b => setProjectManager(b, node.id, actor))} />PM</label>}
         {!node.is_home && <button className="icon-btn danger" title="Delete" onClick={() => apply(b => deleteObs(b, node.id, actor))}>✕</button>}
       </div>
       <ContactFields board={board} node={node} actor={actor} apply={apply} />
@@ -95,6 +96,7 @@ function ExternalOrg({ board, org, actor, apply }: Common & { org: ObsNode }) {
             <div className="obs-line">
               <span className="obs-kind k-individual">•</span>
               <input className="obs-name" value={p.name} onChange={e => apply(b => updateObs(b, p.id, { name: e.target.value }, actor))} />
+              <label className={`pm-toggle${p.is_pm ? ' on' : ''}`} title="Project Manager of this organization"><input type="checkbox" checked={!!p.is_pm} onChange={() => apply(b => setProjectManager(b, p.id, actor))} />PM</label>
               <button className="icon-btn danger" title="Delete" onClick={() => apply(b => deleteObs(b, p.id, actor))}>✕</button>
             </div>
             <ContactFields board={board} node={p} actor={actor} apply={apply} />

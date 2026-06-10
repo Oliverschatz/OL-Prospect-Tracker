@@ -43,7 +43,7 @@ export function buildDemo(): Board {
   };
 
   const office = obs('unit', home.id, 'Project Office');
-  const theresa = obs('individual', office, 'Theresa Vogel', { info: 'Project manager — the user of this board', contact: { email: 't.vogel@steinbrecher-bau.example' } });
+  const theresa = obs('individual', office, 'Theresa Vogel', { info: 'Project manager — the user of this board', is_pm: true, contact: { email: 't.vogel@steinbrecher-bau.example' } });
   obs('individual', office, 'Markus Steinbrecher', { info: 'Managing director (owner)' });
   const robert = obs('individual', office, 'Robert Kuhn', { info: 'Commercial manager — claims & change orders' });
   const siteOps = obs('unit', home.id, 'Site Operations', { unit_type: 'managed_team' });
@@ -55,31 +55,31 @@ export function buildDemo(): Board {
   b = addCustomerAbove(b, home.id, A);
   const customerId = homeOrg(b)!.parent_id!;
   b = updateObs(b, customerId, { name: 'Falkenhorst Hospitality Inc.', org_code: 'FHG', color: '#7a4fb0', contract_label: 'GC-2026-001 (general contract)', industry: 'Hotel owner & operator' }, A);
-  const jonas = obs('individual', customerId, 'Jonas Brandt', { info: "Owner's representative — acceptance decisions" });
+  const jonas = obs('individual', customerId, 'Jonas Brandt', { info: "Owner's representative & project manager — acceptance decisions", is_pm: true });
   const priya = obs('individual', customerId, 'Priya Raman', { info: 'Interior & brand concept — sample selections' });
   const eilers = obs('individual', customerId, 'Dr. Konrad Eilers', { info: 'State heritage conservator. No contract with any contractor — approval authority only. Reachable via the owner\'s rep.' });
 
   // ── Contractors (tier 2) ──
   const frc = obs('organization', home.id, 'Atelier Fresco Conservation Inc.', { org_code: 'FRC', color: '#b0532f', contract_label: 'C-2026-031 (unit price)', treatment: 'dashed', industry: 'Fresco & decorative-surface conservation' });
-  obs('individual', frc, 'Giulia Ferraro', { info: 'Lead conservator' });
+  obs('individual', frc, 'Giulia Ferraro', { info: 'Lead conservator & PM', is_pm: true });
   obs('individual', frc, 'Tomas Hlaváček', { info: 'Stonemason' });
   const alp = obs('organization', home.id, 'AlpenTech Building Services Ltd.', { org_code: 'ALP', color: '#2f6fb0', contract_label: 'C-2026-027 (fixed price)', industry: 'MEP / building technology' });
-  obs('individual', alp, 'Stefan Maier', { info: 'Lead MEP engineer' });
+  obs('individual', alp, 'Stefan Maier', { info: 'Lead MEP engineer & PM', is_pm: true });
   obs('individual', alp, 'Fatima El-Sayed', { info: 'Electrical foreman' });
   const hlz = obs('organization', home.id, 'Holzer Roofing & Carpentry Ltd.', { org_code: 'HLZ', color: '#2f9e6f', contract_label: 'C-2026-019 (fixed price)', industry: 'Roofing & timber framing' });
-  const lorenz = obs('individual', hlz, 'Lorenz Holzer', { info: 'Master carpenter, owner' });
+  const lorenz = obs('individual', hlz, 'Lorenz Holzer', { info: 'Master carpenter, owner & PM', is_pm: true });
 
   // ── Subcontractors (tier 3) ──
   const brd = obs('organization', hlz, 'Brandl Scaffolding Ltd.', { org_code: 'BRD', color: '#c98a18', contract_label: 'SC-7 (time & material)', treatment: 'dotted', industry: 'Scaffolding & access' });
-  obs('individual', brd, 'Hannes Brandl', { info: 'Foreman' });
+  obs('individual', brd, 'Hannes Brandl', { info: 'Foreman / PM', is_pm: true });
   const fts = obs('organization', hlz, 'Falk Timber Supply Ltd.', { org_code: 'FTS', color: '#7a6f1f', contract_label: 'SC-8 (supply)', industry: 'Structural timber supply' });
-  obs('individual', fts, 'Greta Falk', { info: 'Sales lead' });
+  obs('individual', fts, 'Greta Falk', { info: 'Sales lead / PM', is_pm: true });
   const adl = obs('organization', hlz, 'Adler Sheet Metal Inc.', { org_code: 'ADL', color: '#9e4f6b', contract_label: 'SC-11 (unit price)', industry: 'Roof flashing & metalwork' });
-  obs('individual', adl, 'Bruno Adler', { info: 'Foreman' });
+  obs('individual', adl, 'Bruno Adler', { info: 'Foreman / PM', is_pm: true });
   const gld = obs('organization', frc, 'Goldgrund Gilding Inc.', { org_code: 'GLD', color: '#e0a020', contract_label: 'SC-12 (unit price)', industry: 'Gold leaf & gilding' });
-  obs('individual', gld, 'Beate Goldgrund', { info: 'Master gilder' });
+  obs('individual', gld, 'Beate Goldgrund', { info: 'Master gilder / PM', is_pm: true });
   const lft = obs('organization', alp, 'LiftPlan Elevator Technology Ltd.', { org_code: 'LFT', color: '#1f8a8a', contract_label: 'SC-3 (fixed price)', industry: 'Elevator installation' });
-  obs('individual', lft, 'Daniel Roth', { info: 'Installation lead' });
+  obs('individual', lft, 'Daniel Roth', { info: 'Installation lead / PM', is_pm: true });
 
   // ── Stories ──
   let s = addStory(b, A, { title: 'Open as a 48-room boutique hotel', role: 'hotel owner', goal: 'the castle converted on schedule for the 2027 season', benefit: 'bookings can open in spring' }); b = s.board; const hotel = s.id;
