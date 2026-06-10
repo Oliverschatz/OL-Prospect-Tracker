@@ -61,6 +61,19 @@ function person(cx: number, top: number, color = '#1c1c1c', s = ICON): string {
 
 const personName = (p: ObsNode): string => (p.is_pm ? `${p.name || '(unnamed)'} (PM)` : (p.name || '(unnamed)'));
 
+const PM_UNKNOWN = '__pm_unknown__';
+const placeholderLabel = (p: ObsNode) => (p.id === PM_UNKNOWN ? 'PM ?' : personName(p));
+
+// The people shown in an organization box, with the PM first. Every organization
+// has a Project Manager, so if none of the known people is flagged PM, a "?"
+// placeholder PM is prepended to make the gap explicit.
+function pmPeople(people: ObsNode[]): ObsNode[] {
+  const sorted = sortPeople(people);
+  if (people.some(p => p.is_pm)) return sorted;
+  const unknown = { id: PM_UNKNOWN, kind: 'individual', name: '?', is_pm: true, parent_id: null, rev: 0, actor: '', updated_at: '' } as ObsNode;
+  return [unknown, ...sorted];
+}
+
 function colW(name: string): number { return Math.min(116, Math.max(ICON + 8, name.length * 5.4 + 10)); }
 function truncate(name: string, w: number): string {
   const max = Math.floor((w - 6) / 5.2);
@@ -68,7 +81,7 @@ function truncate(name: string, w: number): string {
 }
 function peopleWidth(people: ObsNode[]): number {
   if (!people.length) return 0;
-  return people.reduce((s, p) => s + colW(personName(p)), 0) + ICON_GAP * (people.length - 1);
+  return people.reduce((s, p) => s + colW(placeholderLabel(p)), 0) + ICON_GAP * (people.length - 1);
 }
 // PMs first so the highlighted Project Manager reads as the lead of the box.
 function sortPeople(people: ObsNode[]): ObsNode[] {
@@ -81,12 +94,19 @@ function peopleRow(peopleIn: ObsNode[], cx: number, top: number): string {
   let x = cx - total / 2;
   let out = '';
   for (const p of people) {
-    const label = personName(p);
+    const label = placeholderLabel(p);
     const w = colW(label);
     const ccx = x + w / 2;
-    const nameAttrs = p.is_pm ? `font-weight="700" fill="${PM_COLOR}"` : `fill="#3a4250"`;
-    out += `<g data-node-id="${p.id}">` + person(ccx, top, p.is_pm ? PM_COLOR : '#1c1c1c') +
-      `<text x="${ccx}" y="${top + ICON + 10}" text-anchor="middle" font-size="${NAME_FS}" ${nameAttrs}>${esc(truncate(label, w))}</text></g>`;
+    if (p.id === PM_UNKNOWN) {
+      const hr = ICON * 0.32;
+      out += `<circle cx="${ccx}" cy="${top + hr + 1}" r="${hr}" fill="#fff" stroke="${PM_COLOR}" stroke-width="1.3" stroke-dasharray="2.5 2"/>` +
+        `<text x="${ccx}" y="${top + ICON - 1}" text-anchor="middle" font-size="12" font-weight="800" fill="${PM_COLOR}">?</text>` +
+        `<text x="${ccx}" y="${top + ICON + 10}" text-anchor="middle" font-size="${NAME_FS}" font-weight="700" fill="${PM_COLOR}">PM ?</text>`;
+    } else {
+      const nameAttrs = p.is_pm ? `font-weight="700" fill="${PM_COLOR}"` : `fill="#3a4250"`;
+      out += `<g data-node-id="${p.id}">` + person(ccx, top, p.is_pm ? PM_COLOR : '#1c1c1c') +
+        `<text x="${ccx}" y="${top + ICON + 10}" text-anchor="middle" font-size="${NAME_FS}" ${nameAttrs}>${esc(truncate(label, w))}</text></g>`;
+    }
     x += w + ICON_GAP;
   }
   return out;
@@ -136,10 +156,10 @@ type Ext = { org: ObsNode; w: number; h: number; eh: number; boxW: number; title
 function layExternal(board: Board, org: ObsNode): Ext {
   const subs = childrenOf(board, org.id).filter(k => k.kind === 'organization').map(o => layExternal(board, o));
   const people = childrenOf(board, org.id).filter(k => k.kind === 'individual');
-  const boxW = Math.max(EXT_W, peopleWidth(people) + PAD * 2);
+  const boxW = Math.max(EXT_W, peopleWidth(pmPeople(people)) + PAD * 2);
   const titleLines = wrapText(orgLabel(org), boxW - 12, EXT_TITLE_FS);
   const hasIndustry = !!(org.industry && org.industry.trim());
-  const eh = 8 + titleLines.length * EXT_TITLE_LH + 4 + (hasIndustry ? 14 : 0) + (people.length ? PEOPLE_H : 4) + 8;
+  const eh = 8 + titleLines.length * EXT_TITLE_LH + 4 + (hasIndustry ? 14 : 0) + PEOPLE_H + 8;
   const subsW = subs.reduce((s, k) => s + k.w, 0) + EXT_HGAP * Math.max(0, subs.length - 1);
   const w = Math.max(boxW, subsW);
   const subsH = subs.length ? Math.max(...subs.map(k => k.h)) : 0;
@@ -169,7 +189,7 @@ function renderExternal(e: Ext, x: number, tierY: number[], tier: number): strin
   out += titleSvg(e.titleLines, cx, y + 19, EXT_TITLE_FS, EXT_TITLE_LH, 700, stroke);
   let cur = y + 8 + e.titleLines.length * EXT_TITLE_LH + 4;
   if (e.hasIndustry) { out += `<text x="${cx}" y="${cur + 9}" text-anchor="middle" font-size="9.5" font-style="italic" fill="#6b7686">${esc(truncate(e.org.industry!, e.boxW - 8))}</text>`; cur += 14; }
-  if (e.people.length) out += peopleRow(e.people, cx, cur);
+  out += peopleRow(pmPeople(e.people), cx, cur);
   if (e.subs.length) {
     const subsW = e.subs.reduce((s, k) => s + k.w, 0) + EXT_HGAP * Math.max(0, e.subs.length - 1);
     let sx = x + (e.w - subsW) / 2;
@@ -189,10 +209,10 @@ const TIER_TINTS = ['#eef3f8', '#f3eef8', '#eef8f1', '#f8f4ee', '#f8eef1', '#eef
 // chain of customers/owners stacked above the home org.
 function standaloneExt(board: Board, org: ObsNode): Ext {
   const people = childrenOf(board, org.id).filter(k => k.kind === 'individual');
-  const boxW = Math.max(EXT_W, peopleWidth(people) + PAD * 2);
+  const boxW = Math.max(EXT_W, peopleWidth(pmPeople(people)) + PAD * 2);
   const titleLines = wrapText(orgLabel(org), boxW - 12, EXT_TITLE_FS);
   const hasIndustry = !!(org.industry && org.industry.trim());
-  const eh = 8 + titleLines.length * EXT_TITLE_LH + 4 + (hasIndustry ? 14 : 0) + (people.length ? PEOPLE_H : 4) + 8;
+  const eh = 8 + titleLines.length * EXT_TITLE_LH + 4 + (hasIndustry ? 14 : 0) + PEOPLE_H + 8;
   return { org, w: boxW, h: eh, eh, boxW, titleLines, hasIndustry, tier: orgTier(board, org), subs: [], people };
 }
 

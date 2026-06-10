@@ -75,7 +75,7 @@ export function buildDemo(): Board {
   const fts = obs('organization', hlz, 'Falk Timber Supply Ltd.', { org_code: 'FTS', color: '#7a6f1f', contract_label: 'SC-8 (supply)', industry: 'Structural timber supply' });
   obs('individual', fts, 'Greta Falk', { info: 'Sales lead / PM', is_pm: true });
   const adl = obs('organization', hlz, 'Adler Sheet Metal Inc.', { org_code: 'ADL', color: '#9e4f6b', contract_label: 'SC-11 (unit price)', industry: 'Roof flashing & metalwork' });
-  obs('individual', adl, 'Bruno Adler', { info: 'Foreman / PM', is_pm: true });
+  obs('individual', adl, 'Bruno Adler', { info: 'Foreman' });
   const gld = obs('organization', frc, 'Goldgrund Gilding Inc.', { org_code: 'GLD', color: '#e0a020', contract_label: 'SC-12 (unit price)', industry: 'Gold leaf & gilding' });
   obs('individual', gld, 'Beate Goldgrund', { info: 'Master gilder / PM', is_pm: true });
   const lft = obs('organization', alp, 'LiftPlan Elevator Technology Ltd.', { org_code: 'LFT', color: '#1f8a8a', contract_label: 'SC-3 (fixed price)', industry: 'Elevator installation' });
