@@ -395,9 +395,9 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .diagram-scroll svg { display: block; max-width: 100%; height: auto; }
 
 /* Splash */
-.splash-container { height: 100%; overflow-y: auto; background: linear-gradient(180deg, var(--navy) 0 220px, var(--bg) 220px); }
+.splash-container { height: 100%; overflow-y: auto; background: var(--bg); border-top: 3px solid var(--accent); }
 .splash-content { max-width: 760px; margin: 0 auto; padding: 28px 20px 40px; }
-.splash-logo { height: 40px; width: auto; display: block; margin: 6px 0 22px; }
+.splash-logo { height: 44px; width: auto; display: block; margin: 4px 0 20px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 10px; }
 .splash-title { font-size: 30px; color: var(--navy); }
 .splash-tagline { font-size: 15px; color: var(--text); max-width: 60ch; margin: 6px 0 18px; }
 .splash-back-link { margin-bottom: 8px; }
