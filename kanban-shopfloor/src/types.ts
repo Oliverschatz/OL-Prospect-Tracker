@@ -1,132 +1,157 @@
-// ─── Kanban Shopfloor — domain model ───────────────────────────────────────
-// Pure data. The whole board is a single JSON document that lives in the
-// browser and travels as a file. Every mergeable entity carries (rev, actor,
-// updated_at) for last-writer-wins merging, and deletes leave a tombstone so
-// re-importing an old file can never resurrect removed items.
+// ─── Kanban Shopfloor — domain model (v2) ───────────────────────────────────
+// Pure data; the whole board is a single JSON document that lives in the
+// browser and travels as a file. Every mergeable entity carries
+// (rev, actor, updated_at) for last-writer-wins merging; deletes are tombstones.
+//
+// v2 reworks the OBS into an asymmetric tree (one detailed "home" organization;
+// other organizations are opaque boxes with only the people you know), promotes
+// user stories to first-class entities (many cards per story), adds card
+// decomposition (subtasks), board-level Definition of Ready / Done, and an
+// extensible per-card constraints list.
 
 export const SCHEMA = 'kanban-shopfloor' as const;
-export const FILE_VERSION = 1;
+export const FILE_VERSION = 2;
 
-// ─── Merge metadata mixed into every mergeable entity ───────────────────────
 export interface Versioned {
-  rev: number;          // Lamport-style counter, bumped on each local change
-  actor: string;        // OBS path of who made the change (e.g. "ACME ▸ Anna")
-  updated_at: string;   // ISO timestamp (merge tiebreaker after rev)
-  deleted?: boolean;    // tombstone
+  rev: number;
+  actor: string;
+  updated_at: string;
+  deleted?: boolean;
 }
 
-// ─── Estimation ─────────────────────────────────────────────────────────────
+// ─── Estimation ──────────────────────────────────────────────────────────────
 export type EstimateMethod = 'tshirt5' | 'tshirt7' | 'points' | 'three_point';
-
 export const TSHIRT5 = ['XS', 'S', 'M', 'L', 'XL'] as const;
 export const TSHIRT7 = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
 export type TshirtSize = (typeof TSHIRT7)[number];
-
-// One PERT triple. expected = (o + 4m + p) / 6.
 export interface ThreePoint { o: number; m: number; p: number; }
-
-// A card stores whatever the board's active method needs; unused fields stay null.
 export interface Estimate {
-  size?: TshirtSize | null;     // tshirt5 / tshirt7
-  points?: number | null;       // story points (Fibonacci)
-  time?: ThreePoint | null;     // 3-point duration
-  workload?: ThreePoint | null; // 3-point effort
-  cost?: ThreePoint | null;     // 3-point cost
+  size?: TshirtSize | null;
+  points?: number | null;
+  time?: ThreePoint | null;
+  workload?: ThreePoint | null;
+  cost?: ThreePoint | null;
 }
 
 // ─── OBS (Organizational Breakdown Structure) ───────────────────────────────
-// A tree of two node kinds. Orgs nest; resources are named leaves under one org.
-// Each org has an implicit "anonymous" assignee referenced as `anon:<orgId>`.
-export type ObsKind = 'org' | 'resource';
-
-// Non-colour cue so orgs are distinguishable in greyscale / for colour-blind users.
+// Three node kinds joined into one tree. The edge to a node's parent is a
+// "contract" when the node is an organization (crosses an org boundary) and an
+// "internal agreement" (assignment / self-assignment) otherwise.
+//
+// Exactly one organization is the "home" org: only it and its descendants get
+// the full unit→sub-unit→individual breakdown. Every other organization is
+// opaque — a box plus whatever individuals you happen to know.
+export type ObsKind = 'organization' | 'unit' | 'individual';
+export type UnitType = 'unit' | 'managed_team' | 'scrum_team';
 export type ObsTreatment = 'solid' | 'dashed' | 'dotted' | 'double' | 'monogram';
+
+export interface Contact {
+  email?: string;
+  phone?: string;     // phone / WhatsApp
+  linkedin?: string;
+}
 
 export interface ObsNode extends Versioned {
   id: string;
   kind: ObsKind;
   name: string;
-  org_code?: string;            // orgs only — short label shown on pills (e.g. "ACME")
-  parent_id: string | null;     // resource → org; org → parent org or null (root)
+  parent_id: string | null;
+  is_home?: boolean;        // organizations: exactly one is the own ("home") org
+  org_code?: string;        // organizations: short label shown on pills
+  contract_label?: string;  // external orgs: the contract/PO they were engaged under
+  unit_type?: UnitType;     // units
   color?: string;
-  treatment?: ObsTreatment;     // orgs only
+  treatment?: ObsTreatment; // organizations: non-colour cue
+  contact?: Contact;        // contact person details
+  info?: string;            // free-text catch-all (esp. for external individuals)
 }
 
-export const ANON_PREFIX = 'anon:';
-export type Assignee = string; // an ObsNode id, or `anon:<orgId>`
+// An assignee is an ObsNode id. Assigning to a unit/organization means "someone
+// in there" (anonymous); assigning to an individual names the person.
+export type Assignee = string;
 
-// ─── Cards ───────────────────────────────────────────────────────────────────
-export type CardType = 'task' | 'story' | 'bug';
-
-export interface Story {
+// ─── User stories (one story → many cards) ──────────────────────────────────
+export interface Story extends Versioned {
+  id: string;
+  title: string;
   role: string;
   goal: string;
   benefit: string;
   acceptance: string[];
 }
 
+// ─── Cards (work packages) ───────────────────────────────────────────────────
+export type CardType = 'task' | 'story' | 'bug';
 export interface CardLink { id: string; label: string; url: string; }
 
 export type CardEventType =
   | 'created' | 'moved' | 'assigned' | 'unassigned'
-  | 'estimated' | 'edited' | 'split' | 'cloned';
+  | 'estimated' | 'edited' | 'split' | 'cloned' | 'decomposed';
 
-// Append-only, machine-readable — the substrate for flow metrics. Merged by union.
 export interface CardEvent {
   id: string;
   type: CardEventType;
-  from?: string;     // e.g. previous column id
-  to?: string;       // e.g. new column id / assignee
-  at: string;        // ISO timestamp
-  by: string;        // actor OBS path
+  from?: string;
+  to?: string;
+  at: string;
+  by: string;
 }
+
+// An active constraint on a card; `id` references a BoardSettings.constraints def.
+export interface CardConstraint { id: string; note: string; }
 
 export interface Card extends Versioned {
   id: string;
   type: CardType;
   title: string;
-  column: string;                 // column id
-  sort_order: number;             // position within column → priority (1 = top)
+  column: string;
+  sort_order: number;       // position within column → priority (1 = top)
   body: string;
-  story?: Story | null;
+  story_id?: string | null; // link to a Story (many cards may share one)
+  parent_id?: string | null;// decomposition: this card is a subtask of parent_id
   estimate?: Estimate | null;
-  deadline?: string | null;       // ISO date — latest acceptable
-  milestone?: string | null;      // ISO date — planned / expected
+  deadline?: string | null; // ISO date — latest acceptable
+  milestone?: string | null;// ISO date — planned / expected
   assignees: Assignee[];
-  contract?: { name: string; url?: string } | null;
   links: CardLink[];
-  split_group?: string | null;    // links split siblings (clones leave this null)
+  constraints: CardConstraint[];
   events: CardEvent[];
 }
 
 // ─── Board ─────────────────────────────────────────────────────────────────
 export interface Column { id: string; label: string; }
+export interface ConstraintDef { id: string; label: string; }
 
 export interface BoardSettings {
   estimate_method: EstimateMethod;
-  wip_column_id: string;          // which column the WIP limit applies to
-  wip_limit: number | null;       // null = no limit
+  wip_column_id: string;
+  wip_limit: number | null;
   columns: Column[];
-  theme?: string;
+  definition_of_ready: string[];
+  definition_of_done: string[];
+  constraints: ConstraintDef[];
 }
 
 export interface Board extends Versioned {
   id: string;
   name: string;
   subtitle: string;
+  description?: string;
+  start_date?: string | null;
+  end_date?: string | null;
   created_at: string;
   settings: BoardSettings;
   obs: ObsNode[];
+  stories: Story[];
   cards: Card[];
 }
 
-// ─── The file envelope written to / read from disk ──────────────────────────
 export interface BoardFile {
   schema: typeof SCHEMA;
   file_version: number;
   exported_at: string;
-  exported_by: string;            // actor OBS path
-  base_hash?: string;             // hash of the ancestor this file derived from
+  exported_by: string;
+  base_hash?: string;
   board: Board;
 }
 
@@ -137,9 +162,20 @@ export const DEFAULT_COLUMNS: Column[] = [
   { id: 'done', label: 'Done' },
 ];
 
-// Flow-metric clock anchors (standard definitions, board-wide):
+// Flow-metric clock anchors (board-wide):
 //   lead time  = enters first column ("todo") → enters "done"
 //   cycle time = enters "wip"                 → enters "done"
 export const COMMIT_COLUMN = 'todo';
 export const START_COLUMN = 'wip';
 export const DONE_COLUMN = 'done';
+
+export const DEFAULT_CONSTRAINTS: ConstraintDef[] = [
+  { id: 'safety_critical', label: 'Safety-critical' },
+  { id: 'no_ai', label: 'No AI development' },
+];
+
+export const UNIT_TYPE_LABELS: Record<UnitType, string> = {
+  unit: 'Unit',
+  managed_team: 'Managed team',
+  scrum_team: 'Self-managed (Scrum) team',
+};

@@ -1,19 +1,18 @@
 // ─── Merge-safe board mutations ─────────────────────────────────────────────
 // Every mutation returns a NEW board and obeys the merge contract: bump the
-// Lamport rev via stamp(), delete by tombstone (never array removal), and
-// append to the append-only card event log for structural/flow events. Field
-// edits only stamp (they are not flow events, so they don't flood the log).
+// Lamport rev via stamp(), delete by tombstone, and append to the append-only
+// card event log for structural/flow events. Field edits only stamp.
 
-import { Assignee, Board, Card, CardEvent, CardEventType, ObsKind, ObsNode } from '../types';
-import { ANON_PREFIX } from '../types';
-import { cardsInColumn, stamp, uid } from './board';
+import {
+  Assignee, Board, Card, CardConstraint, CardEvent, CardEventType,
+  ConstraintDef, ObsKind, ObsNode, Story, UnitType,
+} from '../types';
+import { cardsInColumn, nextObsColor, stamp, uid } from './board';
 
 function ev(type: CardEventType, by: string, extra: Partial<CardEvent> = {}): CardEvent {
   return { id: uid(), type, at: new Date().toISOString(), by, ...extra };
 }
 
-// Find the sort_order that drops a card before `beforeId` (or at the end when
-// null) within `toColumn`, ignoring the card being moved.
 function sortOrderFor(board: Board, toColumn: string, beforeId: string | null, excludeId: string): number {
   const list = cardsInColumn(board, toColumn).filter(c => c.id !== excludeId);
   const idx = beforeId ? list.findIndex(c => c.id === beforeId) : list.length;
@@ -26,7 +25,18 @@ function sortOrderFor(board: Board, toColumn: string, beforeId: string | null, e
   return (prev + next) / 2;
 }
 
-// ─── Card field edits (stamp only, no event) ─────────────────────────────────
+// ─── Cards ─────────────────────────────────────────────────────────────────
+export function addCard(board: Board, opts: { title: string; column?: string; parent_id?: string | null }, actor: string): Board {
+  const now = new Date().toISOString();
+  const card: Card = stamp({
+    id: uid(), type: 'task', title: opts.title.trim() || 'Untitled', column: opts.column ?? 'todo',
+    sort_order: Date.now(), body: '', story_id: null, parent_id: opts.parent_id ?? null,
+    assignees: [], links: [], constraints: [],
+    events: [ev('created', actor)], rev: 0, actor, updated_at: now,
+  } as Card, actor);
+  return { ...stamp(board, actor), cards: [...board.cards, card] };
+}
+
 export function patchCard(board: Board, id: string, patch: Partial<Card>, actor: string): Board {
   return {
     ...stamp(board, actor),
@@ -34,23 +44,18 @@ export function patchCard(board: Board, id: string, patch: Partial<Card>, actor:
   };
 }
 
-// ─── Drag / move (records a 'moved' flow event on column change) ─────────────
 export function placeCard(board: Board, id: string, toColumn: string, beforeId: string | null, actor: string): Board {
   const card = board.cards.find(c => c.id === id);
   if (!card) return board;
   const movedColumn = card.column !== toColumn;
   const sort_order = sortOrderFor(board, toColumn, beforeId, id);
-  const events = movedColumn
-    ? [...card.events, ev('moved', actor, { from: card.column, to: toColumn })]
-    : card.events;
+  const events = movedColumn ? [...card.events, ev('moved', actor, { from: card.column, to: toColumn })] : card.events;
   return {
     ...stamp(board, actor),
-    cards: board.cards.map(c =>
-      c.id === id ? stamp({ ...c, column: toColumn, sort_order, events }, actor) : c),
+    cards: board.cards.map(c => (c.id === id ? stamp({ ...c, column: toColumn, sort_order, events }, actor) : c)),
   };
 }
 
-// ─── Assignees ───────────────────────────────────────────────────────────────
 export function setAssignees(board: Board, id: string, assignees: Assignee[], actor: string): Board {
   const card = board.cards.find(c => c.id === id);
   if (!card) return board;
@@ -65,79 +70,120 @@ export function setAssignees(board: Board, id: string, assignees: Assignee[], ac
   };
 }
 
-// ─── Split (linked sibling) & clone (independent copy) ───────────────────────
+export function toggleConstraint(board: Board, cardId: string, defId: string, actor: string): Board {
+  const card = board.cards.find(c => c.id === cardId);
+  if (!card) return board;
+  const has = card.constraints.some(x => x.id === defId);
+  const constraints: CardConstraint[] = has
+    ? card.constraints.filter(x => x.id !== defId)
+    : [...card.constraints, { id: defId, note: '' }];
+  return patchCard(board, cardId, { constraints }, actor);
+}
+
+export function setConstraintNote(board: Board, cardId: string, defId: string, note: string, actor: string): Board {
+  const card = board.cards.find(c => c.id === cardId);
+  if (!card) return board;
+  const constraints = card.constraints.map(x => (x.id === defId ? { ...x, note } : x));
+  return patchCard(board, cardId, { constraints }, actor);
+}
+
+function freshCopy(src: Card, actor: string, overrides: Partial<Card>): Card {
+  const now = new Date().toISOString();
+  return stamp({
+    ...src, id: uid(), sort_order: src.sort_order + 0.5,
+    events: [ev('created', actor)], rev: 0, actor, updated_at: now, ...overrides,
+  } as Card, actor);
+}
+
 export function splitCard(board: Board, id: string, actor: string): Board {
   const src = board.cards.find(c => c.id === id);
   if (!src) return board;
-  const group = src.split_group ?? uid();
-  const now = new Date().toISOString();
-  const sibling: Card = stamp({
-    ...src,
-    id: uid(),
-    title: `${src.title} (split)`,
-    split_group: group,
-    sort_order: src.sort_order + 0.5,
-    events: [ev('created', actor), ev('split', actor)],
-    rev: 0, actor, updated_at: now,
-  } as Card, actor);
-  return {
-    ...stamp(board, actor),
-    cards: [
-      ...board.cards.map(c =>
-        c.id === src.id
-          ? stamp({ ...c, split_group: group, events: [...c.events, ev('split', actor)] }, actor)
-          : c),
-      sibling,
-    ],
-  };
+  const sibling = freshCopy(src, actor, { title: `${src.title} (split)`, events: [ev('created', actor), ev('split', actor)] });
+  return { ...stamp(board, actor), cards: [...board.cards, sibling] };
 }
 
 export function cloneCard(board: Board, id: string, actor: string): Board {
   const src = board.cards.find(c => c.id === id);
   if (!src) return board;
+  const copy = freshCopy(src, actor, { title: `${src.title} (copy)`, events: [ev('created', actor), ev('cloned', actor)] });
+  return { ...stamp(board, actor), cards: [...board.cards, copy] };
+}
+
+export function addSubtask(board: Board, parentId: string, title: string, actor: string): Board {
+  const parent = board.cards.find(c => c.id === parentId);
+  if (!parent) return board;
   const now = new Date().toISOString();
-  const copy: Card = stamp({
-    ...src,
-    id: uid(),
-    title: `${src.title} (copy)`,
-    split_group: null, // a clone is independent, not a split sibling
-    sort_order: src.sort_order + 0.5,
-    events: [ev('created', actor), ev('cloned', actor)],
-    rev: 0, actor, updated_at: now,
+  const child: Card = stamp({
+    id: uid(), type: 'task', title: title.trim() || 'Subtask', column: parent.column,
+    sort_order: Date.now(), body: '', story_id: parent.story_id ?? null, parent_id: parentId,
+    assignees: [], links: [], constraints: [],
+    events: [ev('created', actor)], rev: 0, actor, updated_at: now,
   } as Card, actor);
   return {
     ...stamp(board, actor),
-    cards: [...board.cards.map(c => (c.id === src.id ? stamp({ ...c, events: [...c.events, ev('cloned', actor)] }, actor) : c)), copy],
+    cards: [...board.cards.map(c => (c.id === parentId ? stamp({ ...c, events: [...c.events, ev('decomposed', actor)] }, actor) : c)), child],
   };
 }
 
-// ─── Delete (tombstone) ──────────────────────────────────────────────────────
+// Delete a card; orphaned subtasks are promoted to top-level (parent_id cleared).
 export function deleteCard(board: Board, id: string, actor: string): Board {
   return {
     ...stamp(board, actor),
-    cards: board.cards.map(c => (c.id === id ? stamp({ ...c, deleted: true }, actor) : c)),
+    cards: board.cards.map(c => {
+      if (c.id === id) return stamp({ ...c, deleted: true }, actor);
+      if (c.parent_id === id) return stamp({ ...c, parent_id: null }, actor);
+      return c;
+    }),
   };
 }
 
-// ─── OBS mutations ───────────────────────────────────────────────────────────
-const OBS_COLORS = ['#1a2744', '#e07b2c', '#2f6fb0', '#2f9e6f', '#7a4fb0', '#b0532f', '#c0392b', '#1f8a8a'];
+// ─── Stories ─────────────────────────────────────────────────────────────────
+export function addStory(board: Board, actor: string, init: Partial<Story> = {}): { board: Board; id: string } {
+  const now = new Date().toISOString();
+  const story: Story = stamp({
+    id: uid(), title: init.title ?? 'New story', role: init.role ?? '', goal: init.goal ?? '',
+    benefit: init.benefit ?? '', acceptance: init.acceptance ?? [],
+    rev: 0, actor, updated_at: now,
+  } as Story, actor);
+  return { board: { ...stamp(board, actor), stories: [...board.stories, story] }, id: story.id };
+}
 
+export function updateStory(board: Board, id: string, patch: Partial<Story>, actor: string): Board {
+  return {
+    ...stamp(board, actor),
+    stories: board.stories.map(s => (s.id === id ? stamp({ ...s, ...patch }, actor) : s)),
+  };
+}
+
+// Tombstone a story and unlink any cards that referenced it.
+export function deleteStory(board: Board, id: string, actor: string): Board {
+  return {
+    ...stamp(board, actor),
+    stories: board.stories.map(s => (s.id === id ? stamp({ ...s, deleted: true }, actor) : s)),
+    cards: board.cards.map(c => (c.story_id === id ? stamp({ ...c, story_id: null }, actor) : c)),
+  };
+}
+
+// ─── OBS ──────────────────────────────────────────────────────────────────────
 export function addObs(
   board: Board,
-  opts: { kind: ObsKind; parent_id: string | null; name?: string },
+  opts: { kind: ObsKind; parent_id: string | null; name?: string; unit_type?: UnitType; is_home?: boolean },
   actor: string,
-): Board {
+): { board: Board; id: string } {
+  const id = uid();
   const node: ObsNode = stamp({
-    id: uid(),
+    id,
     kind: opts.kind,
-    name: opts.name ?? (opts.kind === 'org' ? 'New organization' : 'New resource'),
-    org_code: opts.kind === 'org' ? 'ORG' : undefined,
+    name: opts.name ?? (opts.kind === 'organization' ? 'New organization' : opts.kind === 'unit' ? 'New unit' : 'New person'),
     parent_id: opts.parent_id,
-    color: OBS_COLORS[board.obs.length % OBS_COLORS.length],
-    treatment: opts.kind === 'org' ? 'solid' : undefined,
+    is_home: opts.kind === 'organization' ? !!opts.is_home : undefined,
+    org_code: opts.kind === 'organization' ? 'ORG' : undefined,
+    unit_type: opts.kind === 'unit' ? (opts.unit_type ?? 'unit') : undefined,
+    color: nextObsColor(board),
+    treatment: opts.kind === 'organization' ? 'solid' : undefined,
     rev: 0, actor, updated_at: new Date().toISOString(),
   } as ObsNode, actor);
-  return { ...stamp(board, actor), obs: [...board.obs, node] };
+  return { board: { ...stamp(board, actor), obs: [...board.obs, node] }, id };
 }
 
 export function updateObs(board: Board, id: string, patch: Partial<ObsNode>, actor: string): Board {
@@ -147,32 +193,55 @@ export function updateObs(board: Board, id: string, patch: Partial<ObsNode>, act
   };
 }
 
-// Tombstone a node (and, for an org, its resource children), then strip any
-// assignee references to the removed ids from every card.
+// Insert a customer organization above the home org (home becomes its child).
+export function addCustomerAbove(board: Board, homeId: string, actor: string): Board {
+  const home = board.obs.find(n => n.id === homeId);
+  if (!home) return board;
+  const { board: withCustomer, id } = addObs(board, { kind: 'organization', parent_id: home.parent_id, name: 'Customer' }, actor);
+  return {
+    ...withCustomer,
+    obs: withCustomer.obs.map(n => (n.id === homeId ? stamp({ ...n, parent_id: id }, actor) : n)),
+  };
+}
+
+// Tombstone a node and all its descendants; strip assignees that referenced them.
 export function deleteObs(board: Board, id: string, actor: string): Board {
-  const node = board.obs.find(n => n.id === id);
-  if (!node) return board;
-  const removedIds = new Set<string>([id]);
-  if (node.kind === 'org') {
-    for (const n of board.obs) if (n.parent_id === id && n.kind === 'resource') removedIds.add(n.id);
-  }
-  const strip = (a: Assignee) =>
-    !removedIds.has(a) && !(a.startsWith(ANON_PREFIX) && removedIds.has(a.slice(ANON_PREFIX.length)));
+  const removed = new Set<string>();
+  const collect = (nid: string) => {
+    removed.add(nid);
+    for (const n of board.obs) if (n.parent_id === nid && !removed.has(n.id)) collect(n.id);
+  };
+  collect(id);
   return {
     ...stamp(board, actor),
-    obs: board.obs.map(n => (removedIds.has(n.id) ? stamp({ ...n, deleted: true }, actor) : n)),
+    obs: board.obs.map(n => (removed.has(n.id) ? stamp({ ...n, deleted: true }, actor) : n)),
     cards: board.cards.map(c => {
-      const kept = c.assignees.filter(strip);
+      const kept = c.assignees.filter(a => !removed.has(a));
       return kept.length === c.assignees.length ? c : stamp({ ...c, assignees: kept }, actor);
     }),
   };
 }
 
-// ─── Board settings ──────────────────────────────────────────────────────────
+// ─── Board settings & meta ────────────────────────────────────────────────────
 export function updateSettings(board: Board, patch: Partial<Board['settings']>, actor: string): Board {
   return stamp({ ...board, settings: { ...board.settings, ...patch } }, actor);
 }
 
-export function renameBoard(board: Board, name: string, actor: string): Board {
-  return stamp({ ...board, name }, actor);
+export function patchBoardMeta(board: Board, patch: Partial<Pick<Board, 'name' | 'description' | 'start_date' | 'end_date'>>, actor: string): Board {
+  return stamp({ ...board, ...patch }, actor);
+}
+
+export function addConstraintDef(board: Board, label: string, actor: string): Board {
+  const def: ConstraintDef = { id: uid(), label: label.trim() || 'Constraint' };
+  return updateSettings(board, { constraints: [...board.settings.constraints, def] }, actor);
+}
+export function updateConstraintDef(board: Board, id: string, label: string, actor: string): Board {
+  return updateSettings(board, { constraints: board.settings.constraints.map(c => (c.id === id ? { ...c, label } : c)) }, actor);
+}
+export function removeConstraintDef(board: Board, id: string, actor: string): Board {
+  const b = updateSettings(board, { constraints: board.settings.constraints.filter(c => c.id !== id) }, actor);
+  return { ...b, cards: b.cards.map(c => {
+    const kept = c.constraints.filter(x => x.id !== id);
+    return kept.length === c.constraints.length ? c : stamp({ ...c, constraints: kept }, actor);
+  }) };
 }
