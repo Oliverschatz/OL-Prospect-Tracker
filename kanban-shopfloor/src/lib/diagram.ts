@@ -45,8 +45,8 @@ function peopleRow(people: ObsNode[], cx: number, top: number): string {
   for (const p of people) {
     const w = colW(p.name || '?');
     const ccx = x + w / 2;
-    out += person(ccx, top);
-    out += `<text x="${ccx}" y="${top + ICON + 10}" text-anchor="middle" font-size="${NAME_FS}" fill="#3a4250">${esc(truncate(p.name || '(unnamed)', w))}</text>`;
+    out += `<g data-node-id="${p.id}">` + person(ccx, top) +
+      `<text x="${ccx}" y="${top + ICON + 10}" text-anchor="middle" font-size="${NAME_FS}" fill="#3a4250">${esc(truncate(p.name || '(unnamed)', w))}</text></g>`;
     x += w + ICON_GAP;
   }
   return out;
@@ -84,7 +84,7 @@ function renderNested(n: Nest, x: number, y: number, isRoot: boolean): string {
   const kidsW = n.kids.reduce((s, k) => s + k.w, 0) + GAP * Math.max(0, n.kids.length - 1);
   let kx = cx - kidsW / 2;
   for (const k of n.kids) { out += renderNested(k, kx, kidsY, false); kx += k.w + GAP; }
-  return out;
+  return `<g data-node-id="${n.node.id}">${out}</g>`;
 }
 
 // ── External tree (contractors / subcontractors hang downward) ───────────────
@@ -127,7 +127,7 @@ function renderExternal(e: Ext, x: number, y: number): string {
       sx += sub.w + EXT_HGAP;
     }
   }
-  return out;
+  return `<g data-node-id="${e.org.id}">${out}</g>`;
 }
 
 export interface DiagramResult { svg: string; width: number; height: number; empty: boolean; }
@@ -149,9 +149,10 @@ export function buildObsDiagram(board: Board): DiagramResult {
 
   if (customer) {
     const cy = yCursor, boxX = centerX - EXT_W / 2, stroke = customer.color || '#1a2744';
-    body += `<rect x="${boxX}" y="${cy}" width="${EXT_W}" height="${EXT_H}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="2.5"/>`;
-    body += `<text x="${centerX}" y="${cy + 26}" text-anchor="middle" font-size="12.5" font-weight="700" fill="${stroke}">${esc(`${customer.org_code ? customer.org_code + ' · ' : ''}${customer.name}`)}</text>`;
-    body += `<text x="${centerX}" y="${cy + 44}" text-anchor="middle" font-size="10" fill="#6b7686">Customer</text>`;
+    body += `<g data-node-id="${customer.id}">` +
+      `<rect x="${boxX}" y="${cy}" width="${EXT_W}" height="${EXT_H}" rx="12" fill="#ffffff" stroke="${stroke}" stroke-width="2.5"/>` +
+      `<text x="${centerX}" y="${cy + 26}" text-anchor="middle" font-size="12.5" font-weight="700" fill="${stroke}">${esc(`${customer.org_code ? customer.org_code + ' · ' : ''}${customer.name}`)}</text>` +
+      `<text x="${centerX}" y="${cy + 44}" text-anchor="middle" font-size="10" fill="#6b7686">Customer</text></g>`;
     body += edge(centerX, cy + EXT_H, centerX, cy + EXT_H + EXT_VGAP);
     yCursor += EXT_H + EXT_VGAP;
   }

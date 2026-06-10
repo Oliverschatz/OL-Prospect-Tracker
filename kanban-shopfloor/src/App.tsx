@@ -41,8 +41,12 @@ export default function App() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [showMetrics, setShowMetrics] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [obsFocus, setObsFocus] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
+
+  // Jump to the Organization step and focus a node for editing (from diagrams).
+  const editNode = (id: string) => { setObsFocus(id); setView('obs'); setDrawerOpen(false); };
 
   const apply = (fn: (b: Board) => Board) => setBoard(b => { const next = fn(b); saveLocal(next); return next; });
   const setPrefs = (patch: Partial<UiPrefs>) => setPrefsState(p => { const next = { ...p, ...patch }; savePrefs(next); return next; });
@@ -126,10 +130,10 @@ export default function App() {
             <div className="coach-slot"><Coach id={view} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach}>{COACH[view]}</Coach></div>
           )}
           {view === 'project' && <ProjectView board={board} actor={actor} apply={apply} />}
-          {view === 'obs' && <ObsView board={board} actor={actor} apply={apply} />}
-          {view === 'diagram' && <ObsDiagram board={board} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach} />}
+          {view === 'obs' && <ObsView board={board} actor={actor} apply={apply} focusId={obsFocus} onFocusHandled={() => setObsFocus(null)} />}
+          {view === 'diagram' && <ObsDiagram board={board} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach} onEditNode={editNode} />}
           {view === 'board' && <BoardView board={board} actor={actor} apply={apply} onOpenCard={setOpenId} onShowMetrics={() => setShowMetrics(true)} />}
-          {view === 'swim' && <SwimlaneView board={board} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach} onOpenCard={setOpenId} />}
+          {view === 'swim' && <SwimlaneView board={board} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach} onOpenCard={setOpenId} onEditNode={editNode} />}
         </main>
       </div>
 

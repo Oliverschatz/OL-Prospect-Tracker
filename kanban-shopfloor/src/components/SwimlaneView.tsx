@@ -11,11 +11,12 @@ type Props = {
   dismissed: Record<string, boolean>;
   onDismiss: (id: string) => void;
   onOpenCard: (id: string) => void;
+  onEditNode: (id: string) => void;
 };
 
 type Lane = { id: string; name: string; kind: ObsNode['kind'] | 'unassigned'; depth: number };
 
-export default function SwimlaneView({ board, mode, dismissed, onDismiss, onOpenCard }: Props) {
+export default function SwimlaneView({ board, mode, dismissed, onDismiss, onOpenCard, onEditNode }: Props) {
   // Lanes: a depth-first walk of the OBS (orgs → business units → individuals).
   const lanes: Lane[] = [];
   const walk = (parentId: string | null, depth: number) => {
@@ -65,7 +66,7 @@ export default function SwimlaneView({ board, mode, dismissed, onDismiss, onOpen
                 <div className="swim-head" key={t.id}><span className="swim-prio">#{i + 1}</span><span className="swim-col">{colLabel(t.column)}</span></div>
               ))}
               {lanes.map(lane => (
-                <RowFragment key={lane.id} lane={lane} tasks={tasks} inLane={inLane} estLabel={estLabel} onOpenCard={onOpenCard} />
+                <RowFragment key={lane.id} lane={lane} tasks={tasks} inLane={inLane} estLabel={estLabel} onOpenCard={onOpenCard} onEditNode={onEditNode} />
               ))}
             </div>
           </div>
@@ -76,17 +77,24 @@ export default function SwimlaneView({ board, mode, dismissed, onDismiss, onOpen
 }
 
 function RowFragment({
-  lane, tasks, inLane, estLabel, onOpenCard,
+  lane, tasks, inLane, estLabel, onOpenCard, onEditNode,
 }: {
   lane: Lane;
   tasks: Card[];
   inLane: (lane: Lane, t: Card) => boolean;
   estLabel: (c: Card) => string;
   onOpenCard: (id: string) => void;
+  onEditNode: (id: string) => void;
 }) {
+  const editable = lane.kind !== 'unassigned';
   return (
     <>
-      <div className={`swim-lane k-${lane.kind}`} style={{ paddingLeft: 8 + lane.depth * 16 }} title={lane.name}>
+      <div
+        className={`swim-lane k-${lane.kind}${editable ? ' clickable' : ''}`}
+        style={{ paddingLeft: 8 + lane.depth * 16 }}
+        title={editable ? `${lane.name} — click to edit` : lane.name}
+        onClick={editable ? () => onEditNode(lane.id) : undefined}
+      >
         <span className="swim-lane-mark">{lane.kind === 'organization' ? '▣' : lane.kind === 'unit' ? '▤' : lane.kind === 'individual' ? '•' : '∅'}</span>
         {lane.name}
       </div>

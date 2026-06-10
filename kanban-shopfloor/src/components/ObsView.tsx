@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Board, Contact, ObsNode, ObsTreatment, UNIT_TYPE_LABELS, UnitType } from '../types';
 import { childrenOf, homeOrg, nodePath, organizations } from '../lib/board';
 import { addCustomerAbove, addObs, deleteObs, updateObs } from '../lib/mutations';
@@ -30,7 +31,7 @@ function HomeNode({ board, node, actor, apply, depth }: Common & { node: ObsNode
   const isIndividual = node.kind === 'individual';
   const canContain = isOrg || isUnit;
   return (
-    <div className="obs-node" style={{ marginLeft: depth * 18 }}>
+    <div className="obs-node" id={`obs-node-${node.id}`} style={{ marginLeft: depth * 18 }}>
       <div className="obs-line">
         {isOrg && <input type="color" value={node.color ?? '#1a2744'} title="Colour" onChange={e => apply(b => updateObs(b, node.id, { color: e.target.value }, actor))} />}
         <span className={`obs-kind k-${node.kind}`}>{isOrg ? '▣' : isUnit ? '▤' : '•'}</span>
@@ -66,7 +67,7 @@ function ExternalOrg({ board, org, actor, apply }: Common & { org: ObsNode }) {
   const people = childrenOf(board, org.id).filter(n => n.kind === 'individual');
   const parentName = org.parent_id ? nodePath(board, org.parent_id) : '';
   return (
-    <div className="ext-org" style={{ borderColor: org.color }}>
+    <div className="ext-org" id={`obs-node-${org.id}`} style={{ borderColor: org.color }}>
       <div className="obs-line">
         <input type="color" value={org.color ?? '#2f6fb0'} title="Colour" onChange={e => apply(b => updateObs(b, org.id, { color: e.target.value }, actor))} />
         <input className="obs-code" value={org.org_code ?? ''} placeholder="CODE" onChange={e => apply(b => updateObs(b, org.id, { org_code: e.target.value.toUpperCase() }, actor))} />
@@ -82,7 +83,7 @@ function ExternalOrg({ board, org, actor, apply }: Common & { org: ObsNode }) {
       <div className="ext-people">
         <div className="muted small">Known people (structure otherwise unknown):</div>
         {people.map(p => (
-          <div className="ext-person" key={p.id}>
+          <div className="ext-person" id={`obs-node-${p.id}`} key={p.id}>
             <div className="obs-line">
               <span className="obs-kind k-individual">•</span>
               <input className="obs-name" value={p.name} onChange={e => apply(b => updateObs(b, p.id, { name: e.target.value }, actor))} />
@@ -101,10 +102,24 @@ function ExternalOrg({ board, org, actor, apply }: Common & { org: ObsNode }) {
   );
 }
 
-export default function ObsView({ board, actor, apply }: Common) {
+export default function ObsView({ board, actor, apply, focusId, onFocusHandled }: Common & { focusId?: string | null; onFocusHandled?: () => void }) {
   const home = homeOrg(board);
   const external = organizations(board).filter(o => !o.is_home);
   const homeHasCustomer = home?.parent_id != null;
+
+  // When arriving from a diagram click, scroll to and highlight the node.
+  useEffect(() => {
+    if (!focusId) return;
+    const el = document.getElementById(`obs-node-${focusId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('obs-focus');
+      window.setTimeout(() => { (el.querySelector('input.obs-name') as HTMLInputElement | null)?.focus(); }, 300);
+      window.setTimeout(() => el.classList.remove('obs-focus'), 2400);
+    }
+    onFocusHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId]);
 
   return (
     <div className="view-scroll">

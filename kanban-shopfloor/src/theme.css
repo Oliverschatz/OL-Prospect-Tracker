@@ -454,3 +454,9 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .swim-chip:hover { border-color: var(--accent); }
 .swim-chip-title { font-size: 11.5px; font-weight: 600; line-height: 1.2; }
 .swim-chip-est { font-size: 10px; color: var(--muted); }
+
+/* Click-to-edit: diagram nodes and swimlane lanes jump to the OBS editor */
+.diagram-scroll [data-node-id] { cursor: pointer; }
+.swim-lane.clickable { cursor: pointer; }
+.swim-lane.clickable:hover { background: var(--bg); text-decoration: underline; }
+.obs-focus { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--radius); background: var(--accent-soft); transition: background .3s; }

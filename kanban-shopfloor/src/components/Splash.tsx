@@ -38,8 +38,8 @@ export default function Splash({
         <div className="splash-example">
           <div className="splash-example-icon">📘</div>
           <div className="splash-example-text">
-            <strong>See an example — a cross-corporate plant upgrade</strong>
-            <p>A populated board: an owner organization with units and people, two contractors and a subcontractor, user stories, and cards spread across the flow with estimates and constraints. Walk through it, edit freely, or export a report.</p>
+            <strong>See an example — a castle becomes a hotel</strong>
+            <p>A populated cross-corporate board: an owner, a general contractor with units and people, three specialist contractors and their subcontractors, heritage constraints, and cards spread across the flow — including one stuck in approval and one nobody owns.</p>
           </div>
           <button className="splash-example-go" onClick={onLoadDemo} title="Load the sample project">→</button>
         </div>

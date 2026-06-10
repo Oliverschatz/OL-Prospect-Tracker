@@ -10,9 +10,10 @@ type Props = {
   mode: Mode;
   dismissed: Record<string, boolean>;
   onDismiss: (id: string) => void;
+  onEditNode: (id: string) => void;
 };
 
-export default function ObsDiagram({ board, mode, dismissed, onDismiss }: Props) {
+export default function ObsDiagram({ board, mode, dismissed, onDismiss, onEditNode }: Props) {
   const { svg, width, height, empty } = useMemo(() => buildObsDiagram(board), [board]);
   const [busy, setBusy] = useState('');
   const safe = (board.name || 'kanban-shopfloor').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
@@ -48,7 +49,11 @@ export default function ObsDiagram({ board, mode, dismissed, onDismiss }: Props)
       <div className="panel diagram-panel">
         {empty
           ? <p className="muted">Add your organization in the Organization step to see the diagram.</p>
-          : <div className="diagram-scroll" dangerouslySetInnerHTML={{ __html: svg }} />}
+          : <div
+              className="diagram-scroll"
+              onClick={e => { const t = (e.target as Element).closest('[data-node-id]'); const id = t?.getAttribute('data-node-id'); if (id) onEditNode(id); }}
+              dangerouslySetInnerHTML={{ __html: svg }}
+            />}
       </div>
     </div>
   );
