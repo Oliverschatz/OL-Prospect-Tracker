@@ -16,7 +16,7 @@ export default function Metrics({ board, onClose }: { board: Board; onClose: () 
   const cards = liveCards(board).filter(c => !c.parent_id); // top-level work for rollups
   const method = board.settings.estimate_method;
   const cols = board.settings.columns;
-  const maxCol = Math.max(1, ...cols.map(c => cardsInColumn(board, c.id).length));
+  const maxCol = Math.max(1, cardsInColumn(board, 'waiting').length, ...cols.map(c => cardsInColumn(board, c.id).length));
   const warned = liveCards(board).filter(c => cardWarnings(c).length > 0).length;
 
   const orgs = organizations(board);
@@ -55,6 +55,13 @@ export default function Metrics({ board, onClose }: { board: Board; onClose: () 
                 </div>
               );
             })}
+            {cardsInColumn(board, 'waiting').length > 0 && (
+              <div className="bar-row">
+                <span className="bar-label muted">Waiting</span>
+                <span className="bar-track"><span className="bar-fill" style={{ width: `${(cardsInColumn(board, 'waiting').length / maxCol) * 100}%`, background: '#9aa3b2' }} /></span>
+                <span className="bar-val">{cardsInColumn(board, 'waiting').length}</span>
+              </div>
+            )}
           </div>
 
           <h3 className="metric-h">Estimate rollup ({method})</h3>

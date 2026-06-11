@@ -455,6 +455,24 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .swim-chip-body { display: flex; flex-direction: column; gap: 1px; padding: 4px 8px 4px 4px; min-width: 0; }
 .swim-chip-title { font-size: 11.5px; font-weight: 600; line-height: 1.2; }
 .swim-chip-est { font-size: 10px; color: var(--muted); }
+.swim-chip.waiting { border-left: 3px dashed var(--muted); opacity: 0.85; }
+.swim-chip.waiting .swim-chip-prio { background: var(--muted); }
+
+/* Waiting panel (full width, short, above the board columns) */
+.wait-panel { flex: 0 0 auto; background: #fff; border-bottom: 1px solid var(--border); padding: 6px 16px 8px; }
+.wait-panel.drag-over { background: var(--accent-soft); }
+.wait-head { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+.wait-head .label { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--navy); }
+.wait-hint { font-size: 11px; color: var(--muted); }
+.wait-count { font-size: 12px; color: var(--muted); }
+.wait-track { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; max-height: 96px; overflow-y: auto; }
+.wait-card { display: flex; flex-direction: column; gap: 1px; max-width: 220px; border: 1px solid var(--border); border-left: 3px dashed var(--muted); border-radius: var(--radius); background: #fff; padding: 4px 8px; cursor: pointer; }
+.wait-card:hover { border-color: var(--accent); }
+.wait-card.dragging { opacity: 0.4; }
+.wait-card.drop-before { box-shadow: -3px 0 0 -1px var(--accent), var(--shadow); }
+.wait-card-title { font-size: 12px; font-weight: 600; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wait-card-meta { font-size: 10px; color: var(--muted); }
+.wait-empty { font-size: 12px; color: var(--muted); padding: 4px 0; }
 
 /* Click-to-edit: diagram nodes and swimlane lanes jump to the OBS editor */
 .diagram-scroll [data-node-id] { cursor: pointer; }

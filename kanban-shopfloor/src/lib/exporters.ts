@@ -70,6 +70,7 @@ const DOC_CSS = `
   ul{margin:4px 0 10px 18px}
   .tag{display:inline-block;border:1px solid #c0392b;color:#c0392b;border-radius:10px;padding:0 7px;font-size:10px;font-weight:700;margin-right:4px}
   .swl-chip{display:inline-block;border:1px solid #d7dce5;border-left:3px solid #e07b2c;border-radius:5px;padding:2px 7px;margin:2px 4px 2px 0;font-size:11px}
+  .swl-chip.waiting{border-left-color:#9aa3b2;border-style:dashed;color:#6b7686}
   .foot{margin-top:28px;border-top:1px solid #e1e6ee;padding-top:10px;color:#6b7686;font-size:11px;text-align:center}
   @page{size:A4;margin:16mm}
   @media print{.no-print{display:none}}
@@ -116,10 +117,9 @@ export function buildResultBody(board: Board, diagramImg: string): string {
   const stories = liveStories(board);
   const storyHtml = stories.length ? `<h2>User stories</h2><table><thead><tr><th>Story</th><th>As a / I want / so that</th><th>Cards</th></tr></thead><tbody>${stories.map(s => `<tr><td><strong>${esc(s.title)}</strong></td><td>${esc([s.role, s.goal, s.benefit].filter(Boolean).join(' / '))}</td><td>${board.cards.filter(c => !c.deleted && c.story_id === s.id).length}</td></tr>`).join('')}</tbody></table>` : '';
 
-  const board_ = `<h2>Board</h2>` + cols.map(col => {
-    const cards = cardsInColumn(board, col.id).filter(c => !c.parent_id);
-    if (!cards.length) return `<h3>${esc(col.label)} <span class="muted">(0)</span></h3>`;
-    return `<h3>${esc(col.label)} <span class="muted">(${cards.length})</span></h3>
+  const groupTable = (label: string, cards: ReturnType<typeof cardsInColumn>) => {
+    if (!cards.length) return `<h3>${esc(label)} <span class="muted">(0)</span></h3>`;
+    return `<h3>${esc(label)} <span class="muted">(${cards.length})</span></h3>
       <table><thead><tr><th>#</th><th>Title</th><th>Assignees</th><th>Estimate</th><th>Milestone / Deadline</th></tr></thead><tbody>
       ${cards.map((c, i) => {
         const subs = subtasksOf(board, c.id);
@@ -133,7 +133,11 @@ export function buildResultBody(board: Board, diagramImg: string): string {
           <td>${fmtDate(c.milestone)} / ${fmtDate(c.deadline)}</td></tr>`;
       }).join('')}
       </tbody></table>`;
-  }).join('');
+  };
+  const waitingCards = cardsInColumn(board, 'waiting').filter(c => !c.parent_id);
+  const board_ = `<h2>Board</h2>`
+    + (waitingCards.length ? groupTable('⏸ Waiting', waitingCards) : '')
+    + cols.map(col => groupTable(col.label, cardsInColumn(board, col.id).filter(c => !c.parent_id))).join('');
 
   // Swimlanes: each OBS lane with its tasks in priority order.
   const lanes: { id: string; name: string; depth: number; un?: boolean }[] = [];
@@ -143,15 +147,16 @@ export function buildResultBody(board: Board, diagramImg: string): string {
   walk(null, 0);
   lanes.push({ id: '__un__', name: 'Unassigned', depth: 0, un: true });
   const colIndex = new Map(cols.map((c, i) => [c.id, i]));
+  const rank = (c: ReturnType<typeof liveCards>[number]) => (c.column === 'waiting' ? cols.length : colIndex.get(c.column) ?? cols.length);
   const ordered = liveCards(board).filter(c => !c.parent_id)
-    .sort((a, b) => (colIndex.get(a.column)! - colIndex.get(b.column)!) || (a.sort_order - b.sort_order));
+    .sort((a, b) => (rank(a) - rank(b)) || (a.sort_order - b.sort_order));
   const est = (c: typeof ordered[number]) => (board.settings.estimate_method === 'points'
     ? `${pointsRollup(board, c) ?? 0} pts` : formatEstimate(c.estimate, board.settings.estimate_method));
-  const colLabel = (id: string) => cols.find(c => c.id === id)?.label ?? id;
+  const colLabel = (id: string) => (id === 'waiting' ? 'Waiting' : cols.find(c => c.id === id)?.label ?? id);
   const swimRows = lanes.map(lane => {
     const ts = ordered.filter(t => (lane.un ? t.assignees.length === 0 : t.assignees.includes(lane.id)));
     if (!ts.length) return '';
-    const chips = ts.map((t, i) => `<span class="swl-chip"><strong>#${i + 1}</strong> ${esc(t.title)} <span class="muted">(${esc(est(t))} · ${esc(colLabel(t.column))})</span></span>`).join(' ');
+    const chips = ts.map((t, i) => `<span class="swl-chip${t.column === 'waiting' ? ' waiting' : ''}"><strong>${t.column === 'waiting' ? '⏸' : '#' + (i + 1)}</strong> ${esc(t.title)} <span class="muted">(${esc(est(t))} · ${esc(colLabel(t.column))})</span></span>`).join(' ');
     return `<tr><td style="padding-left:${8 + lane.depth * 16}px;white-space:nowrap">${esc(lane.name)}</td><td>${chips}</td></tr>`;
   }).filter(Boolean).join('');
   const swim = `<h2>Swimlanes — assignments by priority</h2>

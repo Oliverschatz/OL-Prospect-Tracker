@@ -35,6 +35,9 @@ export default function BoardView({
     apply(b => addCard(b, { title: t, column: 'todo' }, actor));
     setNewTitle('');
   }
+  function addWaiting() {
+    apply(b => addCard(b, { title: 'New waiting activity', column: 'waiting' }, actor));
+  }
 
   function tryPlace(id: string, toColumn: string, beforeId: string | null) {
     const card = board.cards.find(c => c.id === id && !c.deleted);
@@ -78,6 +81,48 @@ export default function BoardView({
       )}
 
       {msg && <div className="msg-bar">{msg} <button className="btn btn-secondary btn-sm" onClick={() => setMsg('')}>dismiss</button></div>}
+
+      {/* Full-width, short holding area for activities that can't start yet. */}
+      <section
+        className={`wait-panel${dropTarget?.column === 'waiting' && dragId != null ? ' drag-over' : ''}`}
+        onDragOver={e => { if (dragId) { e.preventDefault(); setDropTarget({ column: 'waiting', beforeId: null }); } }}
+        onDrop={e => { if (dragId) { e.preventDefault(); onDrop('waiting', null); } }}
+      >
+        <div className="wait-head">
+          <span className="label">⏸ Waiting</span>
+          <span className="wait-hint">blocked until something happens — drag into “To do” when ready</span>
+          <span className="spacer" />
+          <span className="wait-count">{cardsInColumn(board, 'waiting').length}</span>
+          <button className="btn btn-secondary btn-sm" onClick={addWaiting}>+ Add</button>
+        </div>
+        <div className="wait-track">
+          {cardsInColumn(board, 'waiting').map(card => {
+            const showLine = dropTarget?.column === 'waiting' && dropTarget.beforeId === card.id && dragId && dragId !== card.id;
+            const warns = cardWarnings(card);
+            return (
+              <article
+                className={`wait-card${dragId === card.id ? ' dragging' : ''}${showLine ? ' drop-before' : ''}`}
+                key={card.id}
+                draggable
+                onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; setDragId(card.id); }}
+                onDragEnd={() => { setDragId(null); setDropTarget(null); }}
+                onDragOver={e => { if (dragId) { e.preventDefault(); e.stopPropagation(); setDropTarget({ column: 'waiting', beforeId: card.id }); } }}
+                onDrop={e => { if (dragId) { e.preventDefault(); e.stopPropagation(); onDrop('waiting', card.id); } }}
+                onClick={() => onOpenCard(card.id)}
+                title={card.title}
+              >
+                <span className="wait-card-title">{card.title}</span>
+                <span className="wait-card-meta">
+                  {formatEstimate(card.estimate, board.settings.estimate_method)}
+                  {card.assignees.length > 0 && ` · ${card.assignees.length}👤`}
+                  {warns.length > 0 && ' ⚠'}
+                </span>
+              </article>
+            );
+          })}
+          {cardsInColumn(board, 'waiting').length === 0 && <span className="wait-empty">Nothing waiting. Drop activities here that can’t start yet.</span>}
+        </div>
+      </section>
 
       <div className="board">
         {columns.map(col => {

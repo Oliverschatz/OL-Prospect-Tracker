@@ -150,5 +150,10 @@ export function buildDemo(): Board {
   card({ title: 'Site safety walkthrough', column: 'review', assignees: [aylin, hlz], size: 'S', story_id: hotel, flags: [{ id: 'safety_critical' }] });
   card({ title: 'Heritage documentation pack', column: 'todo', assignees: [qadoc, eilers], size: 'M', story_id: heritage, flags: [{ id: 'heritage' }] });
 
+  // Waiting — activities that cannot start until something else happens.
+  card({ title: 'Await city scaffolding permit', column: 'waiting', assignees: [office], size: 'S', story_id: hotel });
+  card({ title: 'Await chandelier selection by owner', column: 'waiting', assignees: [priya], size: 'S', story_id: hotel, flags: [{ id: 'customer_decision' }] });
+  card({ title: 'Await asbestos clearance certificate', column: 'waiting', assignees: [qadoc], size: 'M', story_id: heritage, flags: [{ id: 'safety_critical' }, { id: 'heritage' }] });
+
   return b;
 }

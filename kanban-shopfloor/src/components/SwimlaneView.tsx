@@ -29,12 +29,14 @@ export default function SwimlaneView({ board, mode, dismissed, onDismiss, onOpen
   lanes.push({ id: '__unassigned__', name: 'Unassigned', kind: 'unassigned', depth: 0 });
 
   // Global priority order (decreasing): by column order, then position in column.
+  // 'waiting' cards are not actionable yet, so they sort to the far right.
   const colIndex = new Map(board.settings.columns.map((c, i) => [c.id, i]));
+  const rank = (c: Card) => (c.column === 'waiting' ? board.settings.columns.length : colIndex.get(c.column) ?? board.settings.columns.length);
   const ordered: Card[] = liveCards(board)
     .filter(c => !c.parent_id)
-    .sort((a, b) => (colIndex.get(a.column)! - colIndex.get(b.column)!) || (a.sort_order - b.sort_order));
+    .sort((a, b) => (rank(a) - rank(b)) || (a.sort_order - b.sort_order));
 
-  const colLabel = (id: string) => board.settings.columns.find(c => c.id === id)?.label ?? id;
+  const colLabel = (id: string) => (id === 'waiting' ? 'Waiting' : board.settings.columns.find(c => c.id === id)?.label ?? id);
   const estLabel = (c: Card) => (board.settings.estimate_method === 'points'
     ? `${pointsRollup(board, c) ?? 0} pts`
     : formatEstimate(c.estimate, board.settings.estimate_method));
@@ -74,8 +76,8 @@ export default function SwimlaneView({ board, mode, dismissed, onDismiss, onOpen
                     {laneTasks.length === 0
                       ? <span className="swim-empty">—</span>
                       : laneTasks.map((t, i) => (
-                        <button className="swim-chip" key={t.id} onClick={() => onOpenCard(t.id)} title={`${t.title} · ${colLabel(t.column)}`}>
-                          <span className="swim-chip-prio">{i + 1}</span>
+                        <button className={`swim-chip${t.column === 'waiting' ? ' waiting' : ''}`} key={t.id} onClick={() => onOpenCard(t.id)} title={`${t.title} · ${colLabel(t.column)}`}>
+                          <span className="swim-chip-prio">{t.column === 'waiting' ? '⏸' : i + 1}</span>
                           <span className="swim-chip-body">
                             <span className="swim-chip-title">{t.title}</span>
                             <span className="swim-chip-est">{estLabel(t)} · {colLabel(t.column)}</span>
