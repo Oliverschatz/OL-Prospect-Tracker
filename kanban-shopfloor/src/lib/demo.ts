@@ -138,5 +138,17 @@ export function buildDemo(): Board {
   card({ title: 'Change order: walled-up staircase discovered, east wing', column: 'todo', assignees: [robert], size: 'M', story_id: hotel });
   card({ title: 'Bat colony relocation, attic', column: 'todo', size: 'S', story_id: heritage, flags: [{ id: 'heritage' }], deadline: '2026-09-30' });
 
+  // Extra work so most organizations and people appear across several lanes.
+  card({ title: 'Scaffold inspection sign-off', column: 'review', assignees: [brd, aylin], size: 'M', story_id: hotel });
+  card({ title: 'Fresco humidity monitoring', column: 'todo', assignees: [frc], size: 'S', story_id: heritage, flags: [{ id: 'heritage' }] });
+  card({ title: 'MEP coordination drawings', column: 'todo', assignees: [alp, office], size: 'L', story_id: hotel });
+  card({ title: 'Roof underlay delivery', column: 'todo', assignees: [fts], size: 'S', story_id: hotel });
+  card({ title: 'Flashing details approval', column: 'review', assignees: [adl, jonas], size: 'S', story_id: heritage, flags: [{ id: 'heritage' }, { id: 'customer_decision' }] });
+  card({ title: 'Elevator pit waterproofing', column: 'wip', assignees: [lft], size: 'M', story_id: hotel, flags: [{ id: 'safety_critical' }] });
+  card({ title: 'Gilding trial on cornice', column: 'todo', assignees: [gld], size: 'S', story_id: heritage, flags: [{ id: 'heritage' }] });
+  card({ title: 'Cost report Q3', column: 'done', assignees: [robert], size: 'S', story_id: hotel });
+  card({ title: 'Site safety walkthrough', column: 'review', assignees: [aylin, hlz], size: 'S', story_id: hotel, flags: [{ id: 'safety_critical' }] });
+  card({ title: 'Heritage documentation pack', column: 'todo', assignees: [qadoc, eilers], size: 'M', story_id: heritage, flags: [{ id: 'heritage' }] });
+
   return b;
 }

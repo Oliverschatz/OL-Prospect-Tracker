@@ -39,12 +39,12 @@ export default function ReportView({ board, mode, dismissed, onDismiss }: Props)
 
       <Coach id="report" mode={mode} dismissed={dismissed} onDismiss={onDismiss}>
         This is the whole project on one page: details, the OBS diagram, stories, and the board by column.
-        Use <strong>Export PDF</strong> (opens a print window — “Save as PDF”) or <strong>Export Word</strong> (.doc, opens in Word).
+        Use <strong>Export PDF</strong> (opens a print window — “Save as PDF”) or <strong>Export DOCX</strong> (opens in Word).
       </Coach>
 
       <div className="report-actions">
         <button className="btn btn-primary btn-sm" onClick={() => exportResultPdf(board, diagramImg)}>Export PDF</button>
-        <button className="btn btn-secondary btn-sm" onClick={() => exportResultWord(board, diagramImg)}>Export Word</button>
+        <button className="btn btn-secondary btn-sm" onClick={() => exportResultWord(board, diagramImg)}>Export DOCX</button>
       </div>
 
       <iframe className="report-frame" title="Report preview" srcDoc={html} />

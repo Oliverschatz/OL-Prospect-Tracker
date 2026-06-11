@@ -6,7 +6,7 @@ const STEPS: { id: ViewId; n: number; label: string; hint: string }[] = [
   { id: 'diagram', n: 3, label: 'OBS diagram', hint: 'Picture of the structure · export' },
   { id: 'board', n: 4, label: 'Kanban board', hint: 'The work, as cards' },
   { id: 'swim', n: 5, label: 'Swimlanes', hint: 'Assignments by priority' },
-  { id: 'report', n: 6, label: 'Report', hint: 'Preview · export PDF / Word' },
+  { id: 'report', n: 6, label: 'Report', hint: 'Preview · export PDF / DOCX' },
 ];
 
 export default function Sidebar({ view, onNavigate }: { view: ViewId; onNavigate: (v: ViewId) => void }) {

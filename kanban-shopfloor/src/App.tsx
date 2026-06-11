@@ -105,7 +105,7 @@ export default function App() {
       <header className="app-bar">
         <button className="hamburger" aria-label="Menu" onClick={() => setDrawerOpen(o => !o)}>☰</button>
         <button className="app-id app-id-btn" onClick={() => setPrefs({ splash_seen: false })} title="Start page">
-          <div className="name-row"><h1>Kanban Shopfloor</h1><span className="type-badge">v1.6</span></div>
+          <div className="name-row"><h1>Kanban Shopfloor</h1><span className="type-badge">v1.7</span></div>
           <span className="subtitle">{board.name || 'Cross-corporate Kanban board'}</span>
         </button>
         <div className="spacer" />

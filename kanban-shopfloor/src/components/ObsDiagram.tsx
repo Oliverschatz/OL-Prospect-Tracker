@@ -37,13 +37,13 @@ export default function ObsDiagram({ board, mode, dismissed, onDismiss, onEditNo
 
       <Coach id="diagram" mode={mode} dismissed={dismissed} onDismiss={onDismiss}>
         This view is generated from the <strong>Organization</strong> step. Edit the structure there and it redraws here.
-        Use <strong>Download PNG</strong> for the picture, or <strong>Export PDF / Word</strong> for the full project report (diagram included).
+        Use <strong>Download PNG</strong> for the picture, or <strong>Export PDF / DOCX</strong> for the full project report (diagram included).
       </Coach>
 
       <div className="diagram-actions">
         <button className="btn btn-primary btn-sm" disabled={empty || !!busy} onClick={onPng}>{busy === 'png' ? '…' : 'Download PNG'}</button>
         <button className="btn btn-secondary btn-sm" disabled={!!busy} onClick={onPdf}>{busy === 'pdf' ? '…' : 'Export PDF'}</button>
-        <button className="btn btn-secondary btn-sm" disabled={!!busy} onClick={onWord}>{busy === 'word' ? '…' : 'Export Word'}</button>
+        <button className="btn btn-secondary btn-sm" disabled={!!busy} onClick={onWord}>{busy === 'word' ? '…' : 'Export DOCX'}</button>
       </div>
 
       <div className="panel diagram-panel">

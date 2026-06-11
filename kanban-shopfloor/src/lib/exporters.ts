@@ -5,8 +5,10 @@
 
 import { Board } from '../types';
 import {
-  assigneeLabel, cardsInColumn, liveStories, nodePath, organizations, projectManagersOf, storyById, subtasksOf,
+  assigneeLabel, cardsInColumn, childrenOf, liveCards, liveStories, nodePath, organizations,
+  pointsRollup, projectManagersOf, storyById, subtasksOf,
 } from './board';
+import { ObsNode } from '../types';
 import { formatEstimate } from './estimate';
 import { cardWarnings } from './dates';
 
@@ -67,6 +69,7 @@ const DOC_CSS = `
   .project-img img{max-width:60%;height:auto;border:1px solid #e1e6ee;border-radius:6px;margin:8px 0}
   ul{margin:4px 0 10px 18px}
   .tag{display:inline-block;border:1px solid #c0392b;color:#c0392b;border-radius:10px;padding:0 7px;font-size:10px;font-weight:700;margin-right:4px}
+  .swl-chip{display:inline-block;border:1px solid #d7dce5;border-left:3px solid #e07b2c;border-radius:5px;padding:2px 7px;margin:2px 4px 2px 0;font-size:11px}
   .foot{margin-top:28px;border-top:1px solid #e1e6ee;padding-top:10px;color:#6b7686;font-size:11px;text-align:center}
   @page{size:A4;margin:16mm}
   @media print{.no-print{display:none}}
@@ -132,7 +135,30 @@ export function buildResultBody(board: Board, diagramImg: string): string {
       </tbody></table>`;
   }).join('');
 
-  return `<div class="eyebrow">Kanban Shopfloor — Project report</div><h1>${esc(board.name)}</h1>${meta}${policies}${obs}${storyHtml}${board_}`;
+  // Swimlanes: each OBS lane with its tasks in priority order.
+  const lanes: { id: string; name: string; depth: number; un?: boolean }[] = [];
+  const walk = (pid: string | null, depth: number) => {
+    for (const n of childrenOf(board, pid) as ObsNode[]) { lanes.push({ id: n.id, name: n.name || '(unnamed)', depth }); walk(n.id, depth + 1); }
+  };
+  walk(null, 0);
+  lanes.push({ id: '__un__', name: 'Unassigned', depth: 0, un: true });
+  const colIndex = new Map(cols.map((c, i) => [c.id, i]));
+  const ordered = liveCards(board).filter(c => !c.parent_id)
+    .sort((a, b) => (colIndex.get(a.column)! - colIndex.get(b.column)!) || (a.sort_order - b.sort_order));
+  const est = (c: typeof ordered[number]) => (board.settings.estimate_method === 'points'
+    ? `${pointsRollup(board, c) ?? 0} pts` : formatEstimate(c.estimate, board.settings.estimate_method));
+  const colLabel = (id: string) => cols.find(c => c.id === id)?.label ?? id;
+  const swimRows = lanes.map(lane => {
+    const ts = ordered.filter(t => (lane.un ? t.assignees.length === 0 : t.assignees.includes(lane.id)));
+    if (!ts.length) return '';
+    const chips = ts.map((t, i) => `<span class="swl-chip"><strong>#${i + 1}</strong> ${esc(t.title)} <span class="muted">(${esc(est(t))} · ${esc(colLabel(t.column))})</span></span>`).join(' ');
+    return `<tr><td style="padding-left:${8 + lane.depth * 16}px;white-space:nowrap">${esc(lane.name)}</td><td>${chips}</td></tr>`;
+  }).filter(Boolean).join('');
+  const swim = `<h2>Swimlanes — assignments by priority</h2>
+    <p class="muted">Within each lane, tasks are listed left→right in the expected order of completion (not a timeline).</p>
+    <table><thead><tr><th>Lane</th><th>Tasks (priority order)</th></tr></thead><tbody>${swimRows || '<tr><td colspan="2" class="muted">No assignments yet.</td></tr>'}</tbody></table>`;
+
+  return `<div class="eyebrow">Kanban Shopfloor — Project report</div><h1>${esc(board.name)}</h1>${meta}${policies}${obs}${storyHtml}${board_}${swim}`;
 }
 
 // The full report as a standalone HTML document (for the in-app preview iframe).
