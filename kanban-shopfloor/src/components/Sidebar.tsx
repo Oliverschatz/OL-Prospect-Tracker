@@ -1,12 +1,13 @@
-export type ViewId = 'project' | 'obs' | 'diagram' | 'board' | 'swim' | 'report';
+export type ViewId = 'project' | 'prompt' | 'obs' | 'diagram' | 'board' | 'swim' | 'report';
 
 const STEPS: { id: ViewId; n: number; label: string; hint: string }[] = [
   { id: 'project', n: 1, label: 'Project', hint: 'Name, estimates, WIP, DoR / DoD' },
-  { id: 'obs', n: 2, label: 'Organization', hint: 'Who does the work (OBS)' },
-  { id: 'diagram', n: 3, label: 'OBS diagram', hint: 'Picture of the structure · export' },
-  { id: 'board', n: 4, label: 'Kanban board', hint: 'The work, as cards' },
-  { id: 'swim', n: 5, label: 'Swimlanes', hint: 'Assignments by priority' },
-  { id: 'report', n: 6, label: 'Report', hint: 'Preview · export PDF / DOCX' },
+  { id: 'prompt', n: 2, label: 'Sourcing prompt', hint: 'AI prompt: which contractors & work' },
+  { id: 'obs', n: 3, label: 'Organization', hint: 'Who does the work (OBS)' },
+  { id: 'diagram', n: 4, label: 'OBS diagram', hint: 'Picture of the structure · export' },
+  { id: 'board', n: 5, label: 'Kanban board', hint: 'The work, as cards' },
+  { id: 'swim', n: 6, label: 'Swimlanes', hint: 'Assignments by priority' },
+  { id: 'report', n: 7, label: 'Report', hint: 'Preview · export PDF / DOCX' },
 ];
 
 export default function Sidebar({ view, onNavigate }: { view: ViewId; onNavigate: (v: ViewId) => void }) {

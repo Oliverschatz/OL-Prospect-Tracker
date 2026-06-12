@@ -474,6 +474,10 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .wait-card-meta { font-size: 10px; color: var(--muted); }
 .wait-empty { font-size: 12px; color: var(--muted); padding: 4px 0; }
 
+/* Sourcing prompt */
+.view-input { width: 100%; }
+.prompt-out { width: 100%; font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 12px; line-height: 1.45; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; resize: vertical; }
+
 /* Click-to-edit: diagram nodes and swimlane lanes jump to the OBS editor */
 .diagram-scroll [data-node-id] { cursor: pointer; }
 .swim-lane.clickable { cursor: pointer; }

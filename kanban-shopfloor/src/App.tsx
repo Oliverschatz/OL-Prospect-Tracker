@@ -8,6 +8,7 @@ import { loadPrefs, Mode, savePrefs, UiPrefs } from './lib/prefs';
 import { buildDemo } from './lib/demo';
 import Sidebar, { ViewId } from './components/Sidebar';
 import ProjectView from './components/ProjectView';
+import PromptView from './components/PromptView';
 import ObsView from './components/ObsView';
 import ObsDiagram from './components/ObsDiagram';
 import BoardView from './components/BoardView';
@@ -29,6 +30,7 @@ function defaultActor(board: Board): string {
 // Per-view coaching copy (shown only in coached mode).
 const COACH: Record<ViewId, ReactNode> = {
   project: <>Begin here. Name the project, pick how you <strong>estimate</strong>, set a <strong>WIP limit</strong>, and write your <strong>Definition of Ready / Done</strong>. Then move to step 2.</>,
+  prompt: null,
   obs: <>Detail <strong>your own organization</strong> in full (units → people). Add <strong>contractors</strong> and <strong>subcontractors</strong> as opaque boxes — for those you only record the people you know.</>,
   diagram: <>A generated picture of the structure. Export it as <strong>PNG</strong>, or the whole project as a <strong>PDF / Word</strong> report.</>,
   board: <>Add cards and drag them across the flow. Assign each to an OBS node: an <strong>individual</strong> (own work), a <strong>unit/team</strong> (delegated), or an <strong>organization</strong> (procured).</>,
@@ -105,7 +107,7 @@ export default function App() {
       <header className="app-bar">
         <button className="hamburger" aria-label="Menu" onClick={() => setDrawerOpen(o => !o)}>☰</button>
         <button className="app-id app-id-btn" onClick={() => setPrefs({ splash_seen: false })} title="Start page">
-          <div className="name-row"><h1>Kanban Shopfloor</h1><span className="type-badge">v1.8</span></div>
+          <div className="name-row"><h1>Kanban Shopfloor</h1><span className="type-badge">v1.9</span></div>
           <span className="subtitle">{board.name || 'Cross-corporate Kanban board'}</span>
         </button>
         <div className="spacer" />
@@ -128,10 +130,11 @@ export default function App() {
         <aside className={`sidebar${drawerOpen ? ' open' : ''}`}><Sidebar view={view} onNavigate={go} /></aside>
 
         <main className="view-main">
-          {view !== 'diagram' && view !== 'swim' && view !== 'report' && (
+          {view !== 'diagram' && view !== 'swim' && view !== 'report' && view !== 'prompt' && (
             <div className="coach-slot"><Coach id={view} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach}>{COACH[view]}</Coach></div>
           )}
           {view === 'project' && <ProjectView board={board} actor={actor} apply={apply} />}
+          {view === 'prompt' && <PromptView board={board} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach} />}
           {view === 'obs' && <ObsView board={board} actor={actor} apply={apply} focusId={obsFocus} onFocusHandled={() => setObsFocus(null)} />}
           {view === 'diagram' && <ObsDiagram board={board} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach} onEditNode={editNode} />}
           {view === 'board' && <BoardView board={board} actor={actor} apply={apply} onOpenCard={setOpenId} onShowMetrics={() => setShowMetrics(true)} />}
