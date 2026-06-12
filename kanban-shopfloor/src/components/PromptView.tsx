@@ -70,7 +70,7 @@ Group the answer by contractor. For each, give: a short name/type, the industry/
   return (
     <div className="view-scroll">
       <div className="view-head">
-        <h2>Sourcing prompt</h2>
+        <h2>Prompt Engine</h2>
         <p className="muted">Describe your project; the tool builds a prompt you can paste into ChatGPT, Claude or another AI to brainstorm which contractors you need and what work they should do. Nothing is sent from here — the prompt stays in your browser until you copy it.</p>
       </div>
 

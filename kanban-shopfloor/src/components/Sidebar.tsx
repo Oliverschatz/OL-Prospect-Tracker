@@ -2,7 +2,7 @@ export type ViewId = 'project' | 'prompt' | 'obs' | 'diagram' | 'board' | 'swim'
 
 const STEPS: { id: ViewId; n: number; label: string; hint: string }[] = [
   { id: 'project', n: 1, label: 'Project', hint: 'Name, estimates, WIP, DoR / DoD' },
-  { id: 'prompt', n: 2, label: 'Sourcing prompt', hint: 'AI prompt: which contractors & work' },
+  { id: 'prompt', n: 2, label: 'Prompt Engine', hint: 'AI prompt: which contractors & work' },
   { id: 'obs', n: 3, label: 'Organization', hint: 'Who does the work (OBS)' },
   { id: 'diagram', n: 4, label: 'OBS diagram', hint: 'Picture of the structure · export' },
   { id: 'board', n: 5, label: 'Kanban board', hint: 'The work, as cards' },
