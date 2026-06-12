@@ -7,7 +7,7 @@ import {
   Assignee, Board, Card, CardConstraint, CardEvent, CardEventType,
   ConstraintDef, ObsKind, ObsNode, Story, UnitType,
 } from '../types';
-import { cardsInColumn, nextObsColor, stamp, uid } from './board';
+import { cardsInColumn, homeOrg, nextObsColor, stamp, uid } from './board';
 
 function ev(type: CardEventType, by: string, extra: Partial<CardEvent> = {}): CardEvent {
   return { id: uid(), type, at: new Date().toISOString(), by, ...extra };
@@ -240,6 +240,31 @@ export function updateSettings(board: Board, patch: Partial<Board['settings']>, 
 
 export function patchBoardMeta(board: Board, patch: Partial<Pick<Board, 'name' | 'description' | 'image' | 'start_date' | 'end_date'>>, actor: string): Board {
   return stamp({ ...board, ...patch }, actor);
+}
+
+// Import an AI "sourcing" response: add recommended contractors (with industry)
+// under the home org and their work packages as cards assigned to them.
+export interface SourcingContractor { name?: string; industry?: string; workPackages?: unknown; subcontractors?: unknown }
+export function importSourcing(board: Board, data: { contractors?: unknown }, actor: string): { board: Board; orgs: number; cards: number } {
+  let b = board;
+  let orgs = 0, cards = 0;
+  const home = homeOrg(b);
+  if (!home) return { board, orgs, cards };
+
+  const addContractor = (parentId: string, c: SourcingContractor) => {
+    const r = addObs(b, { kind: 'organization', parent_id: parentId, name: (c.name && String(c.name)) || 'Contractor', is_home: false }, actor);
+    b = r.board; orgs++;
+    if (c.industry) b = updateObs(b, r.id, { industry: String(c.industry) }, actor);
+    for (const wp of Array.isArray(c.workPackages) ? c.workPackages : []) {
+      b = addCard(b, { title: String(wp).slice(0, 200), column: 'todo' }, actor);
+      const id = b.cards[b.cards.length - 1].id;
+      b = setAssignees(b, id, [r.id], actor); cards++;
+    }
+    for (const sub of Array.isArray(c.subcontractors) ? c.subcontractors : []) addContractor(r.id, sub as SourcingContractor);
+  };
+
+  for (const c of Array.isArray(data.contractors) ? data.contractors : []) addContractor(home.id, c as SourcingContractor);
+  return { board: b, orgs, cards };
 }
 
 export function addConstraintDef(board: Board, label: string, actor: string): Board {

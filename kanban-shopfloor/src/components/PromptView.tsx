@@ -1,18 +1,29 @@
 import { useMemo, useState } from 'react';
 import { Board } from '../types';
 import { childrenOf, homeOrg, organizations, unitTypeLabel } from '../lib/board';
+import { importSourcing } from '../lib/mutations';
 import { Mode } from '../lib/prefs';
 import Coach from './Coach';
 import Footer from './Footer';
 
 type Props = {
   board: Board;
+  actor: string;
+  apply: (fn: (b: Board) => Board) => void;
   mode: Mode;
   dismissed: Record<string, boolean>;
   onDismiss: (id: string) => void;
+  onImported: () => void;
 };
 
-// Prefill "what we can do ourselves" from the home org's units.
+// Same set + brand colours as Charter Forge's Prompt Engine.
+const AI_TARGETS = [
+  { id: 'chatgpt', label: 'ChatGPT', url: 'https://chatgpt.com/', color: '#10A37F', icon: '🟢' },
+  { id: 'claude', label: 'Claude', url: 'https://claude.ai/new', color: '#8B5CF6', icon: '🟣' },
+  { id: 'gemini', label: 'Gemini', url: 'https://gemini.google.com/app', color: '#4285F4', icon: '🔵' },
+  { id: 'copilot', label: 'Copilot', url: 'https://copilot.microsoft.com/', color: '#E67E22', icon: '🟡' },
+];
+
 function inHouseFromBoard(board: Board): string {
   const home = homeOrg(board);
   if (!home) return '';
@@ -27,13 +38,31 @@ function inHouseFromBoard(board: Board): string {
   const head = `${home.name}${home.industry ? ` — ${home.industry}` : ''}`;
   return lines.length ? `${head}\nUnits:\n${lines.join('\n')}` : head;
 }
-
 function existingContractors(board: Board): string {
-  const ext = organizations(board).filter(o => !o.is_home);
-  return ext.map(o => `- ${o.name}${o.industry ? ` (${o.industry})` : ''}`).join('\n');
+  return organizations(board).filter(o => !o.is_home).map(o => `- ${o.name}${o.industry ? ` (${o.industry})` : ''}`).join('\n');
 }
 
-export default function PromptView({ board, mode, dismissed, onDismiss }: Props) {
+// Robust JSON extraction (mirrors Charter Forge's parser).
+function parseAI(text: string): { data?: { contractors?: unknown }; error?: string } {
+  const c = text.trim().replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
+  const f = c.indexOf('{'), l = c.lastIndexOf('}');
+  if (f === -1 || l <= f) return { error: 'No JSON object found in the pasted text.' };
+  const js = c.substring(f, l + 1);
+  try { return { data: JSON.parse(js) }; }
+  catch (e1) {
+    try {
+      let fx = js;
+      fx = fx.replace(/,\s*([}\]])/g, '$1');
+      const ob = (fx.match(/\[/g) || []).length - (fx.match(/\]/g) || []).length;
+      const oc = (fx.match(/\{/g) || []).length - (fx.match(/\}/g) || []).length;
+      for (let i = 0; i < ob; i++) fx += ']';
+      for (let i = 0; i < oc; i++) fx += '}';
+      return { data: JSON.parse(fx) };
+    } catch { return { error: 'Malformed JSON: ' + (e1 as Error).message }; }
+  }
+}
+
+export default function PromptView({ board, actor, apply, mode, dismissed, onDismiss, onImported }: Props) {
   const [summary, setSummary] = useState(board.description ?? '');
   const [deliverables, setDeliverables] = useState('');
   const [location, setLocation] = useState('');
@@ -42,28 +71,57 @@ export default function PromptView({ board, mode, dismissed, onDismiss }: Props)
   const [constraints, setConstraints] = useState(() => board.settings.constraints.map(c => c.label).join(', '));
   const [existing, setExisting] = useState(() => existingContractors(board));
   const [copied, setCopied] = useState(false);
+  const [sentTo, setSentTo] = useState('');
+  const [manual, setManual] = useState('');
+  const [result, setResult] = useState<{ ok?: string; err?: string } | null>(null);
 
   const prompt = useMemo(() => {
     const L = (label: string, val: string) => (val.trim() ? `${label}:\n${val.trim()}\n` : '');
-    return `You are an expert in cross-corporate project management and procurement (project business).
-Help me decide which contractors I need for the project below and what work each should do.
+    return `You are an expert in cross-corporate project management and procurement (project business), advising via the Project Business Foundation's Kanban Shopfloor tool (project-business.org).
 
-Project: ${board.name || '(unnamed)'}
-${L('Summary', summary)}${L('Deliverables / scope', deliverables)}${L('Location / jurisdiction', location)}${L('Sector / type of work', sector)}${L('What we can do in-house (do not propose contractors for these)', inHouse)}${L('Constraints to respect', constraints)}${L('Contractors already engaged (do not re-propose, but you may suggest subcontractors under them)', existing)}
-Please answer with:
-1. The contractor types (trades / disciplines) I am likely to need beyond our in-house capabilities.
-2. For each contractor: the concrete work packages they should deliver.
-3. Where that contractor would likely engage subcontractors, and for what.
-4. Any work that is safety-critical, regulated/heritage, or needs a customer decision.
+PROJECT
+- Name: ${board.name || '[not specified]'}
+${L('Summary', summary)}${L('Deliverables / scope', deliverables)}${L('Location / jurisdiction', location)}${L('Sector / type of work', sector)}${L('What we can do in-house (do NOT propose contractors for these)', inHouse)}${L('Constraints to respect', constraints)}${L('Contractors already engaged (do NOT re-propose; you may add subcontractors under them)', existing)}
+TASK: Recommend the contractors we need beyond our in-house capabilities, the concrete work packages each should deliver, and where they would likely engage subcontractors.
 
-Group the answer by contractor. For each, give: a short name/type, the industry/function, the work packages, and likely subcontractors. Be specific to this project; avoid generic boilerplate.`;
+Respond with ONLY a JSON object — no markdown fences, no commentary. Use this shape:
+{
+  "contractors": [
+    {
+      "name": "short company type or name",
+      "industry": "what they do (industry / function)",
+      "workPackages": ["concrete task 1", "concrete task 2"],
+      "subcontractors": [
+        { "name": "...", "industry": "...", "workPackages": ["..."] }
+      ]
+    }
+  ]
+}
+Be specific to this project; avoid generic boilerplate. Omit "subcontractors" where none apply.`;
   }, [board.name, summary, deliverables, location, sector, inHouse, constraints, existing]);
 
-  function copy() {
-    const done = () => { setCopied(true); window.setTimeout(() => setCopied(false), 1800); };
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(prompt).then(done).catch(() => fallbackCopy(prompt, done));
-    } else { fallbackCopy(prompt, done); }
+  function copyPrompt(then?: () => void) {
+    const done = () => { setCopied(true); window.setTimeout(() => setCopied(false), 1800); then?.(); };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(prompt).then(done).catch(() => fallbackCopy(prompt, done));
+    else fallbackCopy(prompt, done);
+  }
+  function sendTo(t: typeof AI_TARGETS[number]) {
+    copyPrompt(() => { window.open(t.url, '_blank', 'noopener'); setSentTo(t.label); });
+  }
+  function runImport(text: string) {
+    const r = parseAI(text);
+    if (r.error || !r.data) { setResult({ err: r.error || 'Could not read the response.' }); return; }
+    const res = importSourcing(board, r.data, actor);
+    if (res.orgs === 0) { setResult({ err: 'No contractors found in the JSON.' }); return; }
+    apply(() => res.board);
+    setResult({ ok: `Imported ${res.orgs} organization(s) and ${res.cards} task(s) into the OBS and board.` });
+  }
+  function pasteImport() {
+    setResult(null);
+    if (navigator.clipboard?.readText) {
+      navigator.clipboard.readText().then(t => { if (!t || t.trim().length < 10) setResult({ err: 'Clipboard empty — use manual paste below.' }); else runImport(t); })
+        .catch(() => setResult({ err: 'Clipboard read denied — use manual paste below.' }));
+    } else setResult({ err: 'Clipboard not available — use manual paste below.' });
   }
 
   const field = 'view-input';
@@ -71,11 +129,11 @@ Group the answer by contractor. For each, give: a short name/type, the industry/
     <div className="view-scroll">
       <div className="view-head">
         <h2>Prompt Engine</h2>
-        <p className="muted">Describe your project; the tool builds a prompt you can paste into ChatGPT, Claude or another AI to brainstorm which contractors you need and what work they should do. Nothing is sent from here — the prompt stays in your browser until you copy it.</p>
+        <p className="muted">Describe your project; the tool builds a prompt for your AI to suggest which contractors you need and what work they should do — then paste the AI's answer back to import it. Nothing is sent from here.</p>
       </div>
 
       <Coach id="prompt" mode={mode} dismissed={dismissed} onDismiss={onDismiss}>
-        Fill in what you know (some fields are pre-filled from your project and OBS). Then <strong>Copy</strong> the generated prompt and paste it into your AI. Bring its answer back here to build the Organization (OBS) and the board.
+        Fill in what you know (some fields are pre-filled). <strong>Send</strong> to your AI (copies the prompt + opens the AI), then <strong>Paste &amp; import</strong> its JSON answer to populate the Organization and board.
       </Coach>
 
       <section className="panel">
@@ -92,11 +150,32 @@ Group the answer by contractor. For each, give: a short name/type, the industry/
 
       <section className="panel">
         <div className="panel-head">
-          <h3>Generated prompt</h3>
+          <h3>Send to AI</h3>
           <span className="spacer" />
-          <button className="btn btn-primary btn-sm" onClick={copy}>{copied ? '✓ Copied' : 'Copy prompt'}</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => copyPrompt()}>{copied ? '✓ Copied' : 'Copy prompt'}</button>
         </div>
-        <textarea className="prompt-out" readOnly rows={16} value={prompt} onFocus={e => e.currentTarget.select()} />
+        <p className="muted small" style={{ marginTop: 0 }}>Copies the prompt to your clipboard and opens the AI in a new tab.</p>
+        <div className="ai-targets">
+          {AI_TARGETS.map(t => (
+            <button key={t.id} className="ai-target" style={{ borderColor: t.color }} onClick={() => sendTo(t)}>{t.icon} {t.label}</button>
+          ))}
+        </div>
+        <div className="privacy-note"><span>🔒</span> Communication goes openly over your clipboard — no data is sent from this tool to any server or AI service.</div>
+        <details className="prompt-preview"><summary>Preview / edit the prompt</summary>
+          <textarea className="prompt-out" readOnly rows={14} value={prompt} onFocus={e => e.currentTarget.select()} />
+        </details>
+      </section>
+
+      <section className="panel">
+        <div className="panel-head"><h3>Paste &amp; import the AI's answer</h3></div>
+        <p className="muted small" style={{ marginTop: 0 }}>{sentTo ? `Prompt copied — ${sentTo} opened. ` : ''}When the AI replies, copy its full JSON, then:</p>
+        <button className="btn btn-primary btn-sm" onClick={pasteImport}>📋 Paste from clipboard &amp; import</button>
+        {result?.ok && <div className="import-ok">✓ {result.ok} <button className="linklike" onClick={onImported}>Go to Organization →</button></div>}
+        {result?.err && <div className="import-err">⚠ {result.err}</div>}
+        <details className="prompt-preview"><summary>Clipboard not working? Paste manually</summary>
+          <textarea className="prompt-out" rows={8} value={manual} onChange={e => setManual(e.target.value)} placeholder="Paste the AI's JSON response here…" />
+          <button className="btn btn-secondary btn-sm" style={{ marginTop: 8 }} onClick={() => runImport(manual)}>Import</button>
+        </details>
       </section>
 
       <Footer />
@@ -106,11 +185,8 @@ Group the answer by contractor. For each, give: a short name/type, the industry/
 
 function fallbackCopy(text: string, done: () => void) {
   const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.select();
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
   try { document.execCommand('copy'); done(); } catch { /* ignore */ }
   document.body.removeChild(ta);
 }

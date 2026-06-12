@@ -107,7 +107,7 @@ export default function App() {
       <header className="app-bar">
         <button className="hamburger" aria-label="Menu" onClick={() => setDrawerOpen(o => !o)}>☰</button>
         <button className="app-id app-id-btn" onClick={() => setPrefs({ splash_seen: false })} title="Start page">
-          <div className="name-row"><h1>Kanban Shopfloor</h1><span className="type-badge">v1.10</span></div>
+          <div className="name-row"><h1>Kanban Shopfloor</h1><span className="type-badge">v1.11</span></div>
           <span className="subtitle">{board.name || 'Cross-corporate Kanban board'}</span>
         </button>
         <div className="spacer" />
@@ -134,7 +134,7 @@ export default function App() {
             <div className="coach-slot"><Coach id={view} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach}>{COACH[view]}</Coach></div>
           )}
           {view === 'project' && <ProjectView board={board} actor={actor} apply={apply} />}
-          {view === 'prompt' && <PromptView board={board} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach} />}
+          {view === 'prompt' && <PromptView board={board} actor={actor} apply={apply} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach} onImported={() => go('obs')} />}
           {view === 'obs' && <ObsView board={board} actor={actor} apply={apply} focusId={obsFocus} onFocusHandled={() => setObsFocus(null)} />}
           {view === 'diagram' && <ObsDiagram board={board} mode={prefs.mode} dismissed={prefs.coached_dismissed} onDismiss={dismissCoach} onEditNode={editNode} />}
           {view === 'board' && <BoardView board={board} actor={actor} apply={apply} onOpenCard={setOpenId} onShowMetrics={() => setShowMetrics(true)} />}
