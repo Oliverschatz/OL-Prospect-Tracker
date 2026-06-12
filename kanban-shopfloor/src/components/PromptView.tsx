@@ -2,17 +2,12 @@ import { useMemo, useState } from 'react';
 import { Board } from '../types';
 import { childrenOf, homeOrg, organizations, unitTypeLabel } from '../lib/board';
 import { importSourcing } from '../lib/mutations';
-import { Mode } from '../lib/prefs';
-import Coach from './Coach';
-import Footer from './Footer';
 
 type Props = {
   board: Board;
   actor: string;
   apply: (fn: (b: Board) => Board) => void;
-  mode: Mode;
-  dismissed: Record<string, boolean>;
-  onDismiss: (id: string) => void;
+  onClose: () => void;
   onImported: () => void;
 };
 
@@ -42,7 +37,6 @@ function existingContractors(board: Board): string {
   return organizations(board).filter(o => !o.is_home).map(o => `- ${o.name}${o.industry ? ` (${o.industry})` : ''}`).join('\n');
 }
 
-// Robust JSON extraction (mirrors Charter Forge's parser).
 function parseAI(text: string): { data?: { contractors?: unknown }; error?: string } {
   const c = text.trim().replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
   const f = c.indexOf('{'), l = c.lastIndexOf('}');
@@ -51,8 +45,7 @@ function parseAI(text: string): { data?: { contractors?: unknown }; error?: stri
   try { return { data: JSON.parse(js) }; }
   catch (e1) {
     try {
-      let fx = js;
-      fx = fx.replace(/,\s*([}\]])/g, '$1');
+      let fx = js.replace(/,\s*([}\]])/g, '$1');
       const ob = (fx.match(/\[/g) || []).length - (fx.match(/\]/g) || []).length;
       const oc = (fx.match(/\{/g) || []).length - (fx.match(/\}/g) || []).length;
       for (let i = 0; i < ob; i++) fx += ']';
@@ -62,7 +55,7 @@ function parseAI(text: string): { data?: { contractors?: unknown }; error?: stri
   }
 }
 
-export default function PromptView({ board, actor, apply, mode, dismissed, onDismiss, onImported }: Props) {
+export default function PromptModal({ board, actor, apply, onClose, onImported }: Props) {
   const [summary, setSummary] = useState(board.description ?? '');
   const [deliverables, setDeliverables] = useState('');
   const [location, setLocation] = useState('');
@@ -126,59 +119,53 @@ Be specific to this project; avoid generic boilerplate. Omit "subcontractors" wh
 
   const field = 'view-input';
   return (
-    <div className="view-scroll">
-      <div className="view-head">
-        <h2>Prompt Engine</h2>
-        <p className="muted">Describe your project; the tool builds a prompt for your AI to suggest which contractors you need and what work they should do — then paste the AI's answer back to import it. Nothing is sent from here.</p>
-      </div>
-
-      <Coach id="prompt" mode={mode} dismissed={dismissed} onDismiss={onDismiss}>
-        Fill in what you know (some fields are pre-filled). <strong>Send</strong> to your AI (copies the prompt + opens the AI), then <strong>Paste &amp; import</strong> its JSON answer to populate the Organization and board.
-      </Coach>
-
-      <section className="panel">
-        <div className="field"><label>Project summary</label><textarea rows={2} className={field} value={summary} onChange={e => setSummary(e.target.value)} placeholder="What is this project about?" /></div>
-        <div className="field"><label>Deliverables / scope</label><textarea rows={2} className={field} value={deliverables} onChange={e => setDeliverables(e.target.value)} placeholder="What must be produced or built?" /></div>
-        <div className="field-2">
-          <div className="field"><label>Location / jurisdiction</label><input className={field} value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Bavaria, Germany" /></div>
-          <div className="field"><label>Sector / type of work</label><input className={field} value={sector} onChange={e => setSector(e.target.value)} placeholder="e.g. heritage building conversion" /></div>
-        </div>
-        <div className="field"><label>What we can do in-house</label><textarea rows={3} className={field} value={inHouse} onChange={e => setInHouse(e.target.value)} /></div>
-        <div className="field"><label>Constraints to respect</label><textarea rows={2} className={field} value={constraints} onChange={e => setConstraints(e.target.value)} /></div>
-        <div className="field"><label>Contractors already engaged</label><textarea rows={2} className={field} value={existing} onChange={e => setExisting(e.target.value)} placeholder="(none yet)" /></div>
-      </section>
-
-      <section className="panel">
-        <div className="panel-head">
-          <h3>Send to AI</h3>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal modal-wide" onClick={e => e.stopPropagation()}>
+        <div className="modal-head">
+          <h2>⚡ Prompt Engine</h2>
           <span className="spacer" />
-          <button className="btn btn-secondary btn-sm" onClick={() => copyPrompt()}>{copied ? '✓ Copied' : 'Copy prompt'}</button>
+          <button className="icon-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
-        <p className="muted small" style={{ marginTop: 0 }}>Copies the prompt to your clipboard and opens the AI in a new tab.</p>
-        <div className="ai-targets">
-          {AI_TARGETS.map(t => (
-            <button key={t.id} className="ai-target" style={{ borderColor: t.color }} onClick={() => sendTo(t)}>{t.icon} {t.label}</button>
-          ))}
+        <div className="modal-body">
+          <p className="muted" style={{ marginTop: 0 }}>Describe your project; build a prompt for your AI to suggest which contractors you need and what work they should do — then paste the answer back to import it. Nothing is sent from here.</p>
+
+          <div className="field"><label>Project summary</label><textarea rows={2} className={field} value={summary} onChange={e => setSummary(e.target.value)} placeholder="What is this project about?" /></div>
+          <div className="field"><label>Deliverables / scope</label><textarea rows={2} className={field} value={deliverables} onChange={e => setDeliverables(e.target.value)} placeholder="What must be produced or built?" /></div>
+          <div className="field-2">
+            <div className="field"><label>Location / jurisdiction</label><input className={field} value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Bavaria, Germany" /></div>
+            <div className="field"><label>Sector / type of work</label><input className={field} value={sector} onChange={e => setSector(e.target.value)} placeholder="e.g. heritage building conversion" /></div>
+          </div>
+          <div className="field"><label>What we can do in-house</label><textarea rows={2} className={field} value={inHouse} onChange={e => setInHouse(e.target.value)} /></div>
+          <div className="field"><label>Constraints to respect</label><textarea rows={1} className={field} value={constraints} onChange={e => setConstraints(e.target.value)} /></div>
+          <div className="field"><label>Contractors already engaged</label><textarea rows={1} className={field} value={existing} onChange={e => setExisting(e.target.value)} placeholder="(none yet)" /></div>
+
+          <div className="prompt-sub">
+            <strong>Send to AI</strong>
+            <button className="btn btn-secondary btn-sm" onClick={() => copyPrompt()}>{copied ? '✓ Copied' : 'Copy prompt'}</button>
+          </div>
+          <p className="muted small" style={{ marginTop: 0 }}>Copies the prompt to your clipboard and opens the AI in a new tab.</p>
+          <div className="ai-targets">
+            {AI_TARGETS.map(t => (
+              <button key={t.id} className="ai-target" style={{ borderColor: t.color }} onClick={() => sendTo(t)}>{t.icon} {t.label}</button>
+            ))}
+          </div>
+          <div className="privacy-note"><span>🔒</span> Communication goes openly over your clipboard — no data is sent from this tool to any server or AI service.</div>
+          <details className="prompt-preview"><summary>Preview / edit the prompt</summary>
+            <textarea className="prompt-out" readOnly rows={12} value={prompt} onFocus={e => e.currentTarget.select()} />
+          </details>
+
+          <div className="prompt-sub"><strong>Paste &amp; import the AI's answer</strong></div>
+          <p className="muted small" style={{ marginTop: 0 }}>{sentTo ? `Prompt copied — ${sentTo} opened. ` : ''}When the AI replies, copy its full JSON, then:</p>
+          <button className="btn btn-primary btn-sm" onClick={pasteImport}>📋 Paste from clipboard &amp; import</button>
+          {result?.ok && <div className="import-ok">✓ {result.ok} <button className="linklike" onClick={onImported}>Go to Organization →</button></div>}
+          {result?.err && <div className="import-err">⚠ {result.err}</div>}
+          <details className="prompt-preview"><summary>Clipboard not working? Paste manually</summary>
+            <textarea className="prompt-out" rows={8} value={manual} onChange={e => setManual(e.target.value)} placeholder="Paste the AI's JSON response here…" />
+            <button className="btn btn-secondary btn-sm" style={{ marginTop: 8 }} onClick={() => runImport(manual)}>Import</button>
+          </details>
         </div>
-        <div className="privacy-note"><span>🔒</span> Communication goes openly over your clipboard — no data is sent from this tool to any server or AI service.</div>
-        <details className="prompt-preview"><summary>Preview / edit the prompt</summary>
-          <textarea className="prompt-out" readOnly rows={14} value={prompt} onFocus={e => e.currentTarget.select()} />
-        </details>
-      </section>
-
-      <section className="panel">
-        <div className="panel-head"><h3>Paste &amp; import the AI's answer</h3></div>
-        <p className="muted small" style={{ marginTop: 0 }}>{sentTo ? `Prompt copied — ${sentTo} opened. ` : ''}When the AI replies, copy its full JSON, then:</p>
-        <button className="btn btn-primary btn-sm" onClick={pasteImport}>📋 Paste from clipboard &amp; import</button>
-        {result?.ok && <div className="import-ok">✓ {result.ok} <button className="linklike" onClick={onImported}>Go to Organization →</button></div>}
-        {result?.err && <div className="import-err">⚠ {result.err}</div>}
-        <details className="prompt-preview"><summary>Clipboard not working? Paste manually</summary>
-          <textarea className="prompt-out" rows={8} value={manual} onChange={e => setManual(e.target.value)} placeholder="Paste the AI's JSON response here…" />
-          <button className="btn btn-secondary btn-sm" style={{ marginTop: 8 }} onClick={() => runImport(manual)}>Import</button>
-        </details>
-      </section>
-
-      <Footer />
+        <div className="modal-foot"><span className="spacer" /><button className="btn btn-primary btn-sm" onClick={onClose}>Done</button></div>
+      </div>
     </div>
   );
 }

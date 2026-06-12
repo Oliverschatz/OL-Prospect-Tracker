@@ -72,7 +72,7 @@ const embed = `/*! Kanban Shopfloor — embeddable widget (Project Business Foun
     el.appendChild(iframe);
     return iframe;
   }
-  var api = { mount: mount, html: HTML, version: '1.11.0' };
+  var api = { mount: mount, html: HTML, version: '1.12.0' };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.KanbanShopfloor = api;
 })();

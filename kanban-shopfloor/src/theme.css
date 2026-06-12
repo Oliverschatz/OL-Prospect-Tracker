@@ -477,6 +477,8 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 /* Sourcing prompt */
 .view-input { width: 100%; }
 .prompt-out { width: 100%; font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 12px; line-height: 1.45; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; resize: vertical; }
+.prompt-sub { display: flex; align-items: center; gap: 10px; margin: 16px 0 4px; border-top: 1px solid var(--border); padding-top: 12px; font-size: 13px; color: var(--navy); }
+.prompt-sub strong { flex: 1; font-size: 13px; }
 .ai-targets { display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0 12px; }
 .ai-target { flex: 1 1 130px; background: #fff; color: var(--navy); border: 2px solid var(--border); border-radius: 10px; padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .ai-target:hover { filter: brightness(0.98); box-shadow: var(--shadow); }

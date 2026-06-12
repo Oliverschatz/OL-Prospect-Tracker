@@ -3,13 +3,14 @@ import { Mode } from '../lib/prefs';
 const LOGO_URL = 'https://project-business.org/wp-content/uploads/PBF-Logo_wide_white_r_300.png';
 
 export default function Splash({
-  hasWork, projectName, currentMode, onEnter, onLoadDemo, onBack,
+  hasWork, projectName, currentMode, onEnter, onLoadDemo, onPromptEngine, onBack,
 }: {
   hasWork: boolean;
   projectName: string;
   currentMode: Mode;
   onEnter: (mode: Mode) => void;
   onLoadDemo: () => void;
+  onPromptEngine: () => void;
   onBack: () => void;
 }) {
   return (
@@ -42,6 +43,15 @@ export default function Splash({
             <p>A populated cross-corporate board: an owner, a general contractor with units and people, three specialist contractors and their subcontractors, heritage constraints, and cards spread across the flow — including one stuck in approval and one nobody owns.</p>
           </div>
           <button className="splash-example-go" onClick={onLoadDemo} title="Load the sample project">→</button>
+        </div>
+
+        <div className="splash-example">
+          <div className="splash-example-icon">⚡</div>
+          <div className="splash-example-text">
+            <strong>Prompt Engine — let an AI suggest your contractors</strong>
+            <p>Describe the project and generate a prompt for ChatGPT, Claude, Gemini or Copilot to recommend which contractors you need and what work each should do — then paste the answer back to populate the board. Nothing is sent from here.</p>
+          </div>
+          <button className="splash-example-go" onClick={onPromptEngine} title="Open the Prompt Engine">→</button>
         </div>
 
         <h2 className="splash-section-heading">Working styles</h2>
